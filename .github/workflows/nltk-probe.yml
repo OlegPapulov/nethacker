@@ -62,14 +62,18 @@ jobs:
           # require_solution_root rejects anything else -- so run from the repo
           # root and pass "." rather than staging a copy under run/.
           cp one_episode.py .
-          python one_episode.py 2>&1 | tee episode.log || true
+          # `pipefail` so a python failure is not hidden by tee, and write the
+          # log unconditionally so the artifact has it even on failure.
+          set -o pipefail
+          python one_episode.py > episode.log 2>&1 || true
+          cat episode.log
 
       - name: Summary
         if: always()
         run: |
           echo "=== runner ==="; cat runner-facts.txt 2>/dev/null
-          echo "=== imports ==="; cat imports.log 2>/dev/null | grep -E 'RESULT|IMPORTS_DONE' || echo none
-          echo "=== episode ==="; cat run/probe-result.json 2>/dev/null || cat run/episode.log 2>/dev/null || echo none
+          echo "=== imports ==="; grep -E 'RESULT|IMPORTS_DONE' imports.log 2>/dev/null || echo none
+          echo "=== episode ==="; cat probe-result.json 2>/dev/null || cat episode.log 2>/dev/null || echo none
 
       - name: Upload artifacts
         if: always()
@@ -79,6 +83,6 @@ jobs:
           path: |
             runner-facts.txt
             imports.log
-            run/probe-result.json
-            run/episode.log
+            probe-result.json
+            episode.log
           if-no-files-found: warn
