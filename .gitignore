@@ -1,0 +1,6 @@
+# Run artifacts and pulled trees are committed deliberately by the workflow;
+# these are only ever local scratch.
+models.json
+models.err
+elite.json
+seed-bot/
