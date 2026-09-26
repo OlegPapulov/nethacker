@@ -1,0 +1,84 @@
+name: nltk-probe
+
+# Answers one question on native x86_64: does `import nltk` complete, and does a
+# real arena episode run?
+#
+# On the M1 (arm64 under Rosetta) `import nltk` never returned within 15
+# minutes, so every episode died at "bot startup exceeded 120 seconds" and
+# scored 0.0. Numba imported in 1.1 s and cv2 in 0.1 s, so the cost is
+# specific to nltk. This runs the same pinned arena image on a GitHub-hosted
+# runner -- native amd64, 16 GB, no emulation -- which is also the reference
+# architecture the hub accepts for registerable evidence.
+#
+# Free on public repositories.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [probe]
+    tags: ["probe-*"]
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Runner facts
+        run: |
+          {
+            echo "arch=$(uname -m)"
+            echo "cpus=$(nproc)"
+            echo "mem_gb=$(free -g | awk '/^Mem:/{print $2}')"
+            echo "docker=$(docker version --format '{{.Server.Version}}')"
+          } | tee runner-facts.txt
+
+      - name: Pull the pinned arena image
+        run: |
+          docker pull ghcr.io/dunnolab/nethackers-arena@sha256:0d0b0e779ebda4a05b5a22b39cfafcd2d2d9ef739ea60d9aae79052d55c767ae
+
+      - name: Time the imports the elite performs
+        run: |
+          set -o pipefail
+          docker run --rm --network none \
+            -v "$PWD:/bot:ro" \
+            -v "$PWD/time_imports.py:/probe.py:ro" \
+            --entrypoint python3 \
+            ghcr.io/dunnolab/nethackers-arena@sha256:0d0b0e779ebda4a05b5a22b39cfafcd2d2d9ef739ea60d9aae79052d55c767ae \
+            /probe.py 2>&1 | tee imports.log || true
+          echo "--- import log ---"
+          cat imports.log
+
+      - name: One real episode through the arena
+        run: |
+          pip install --quiet nethackers==0.37.3
+          nethackers --version | tee -a runner-facts.txt
+          mkdir -p run
+          cp bot.py arena_adapter.py nethackers.solution.json one_episode.py run/
+          cp -r autoascend run/
+          cd run
+          python one_episode.py 2>&1 | tee episode.log || true
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "=== runner ==="; cat runner-facts.txt 2>/dev/null
+          echo "=== imports ==="; cat imports.log 2>/dev/null | grep -E 'RESULT|IMPORTS_DONE' || echo none
+          echo "=== episode ==="; cat run/probe-result.json 2>/dev/null || cat run/episode.log 2>/dev/null || echo none
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: probe-result
+          path: |
+            runner-facts.txt
+            imports.log
+            run/probe-result.json
+            run/episode.log
+          if-no-files-found: warn
