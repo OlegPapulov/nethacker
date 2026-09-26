@@ -201,14 +201,19 @@ jobs:
         run: |
           set -o pipefail
           set +e
+          # --workdir must be ABSOLUTE: the operator bind-mounts paths under it
+          # into the mutator container, and Docker rejects a relative mount
+          # source as an invalid volume name.
+          WORKDIR="$GITHUB_WORKSPACE/runs"
+          mkdir -p "$WORKDIR"
           ARGS=(
             evolve "$IDENTITY"
-            --seed ./seed-bot
+            --seed "$GITHUB_WORKSPACE/seed-bot"
             --operator "$OPERATOR"
             --model "$MODEL"
             --iterations "$ITERATIONS"
             --offline
-            --workdir ./runs
+            --workdir "$WORKDIR"
             --run-name "gh-${{ github.run_id }}"
           )
           [ "$SEED_MODE" = "autoascend" ] && ARGS+=(--from-seed)
