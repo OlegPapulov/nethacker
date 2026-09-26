@@ -58,10 +58,10 @@ jobs:
         run: |
           pip install --quiet nethackers==0.37.3
           nethackers --version | tee -a runner-facts.txt
-          mkdir -p run
-          cp bot.py arena_adapter.py nethackers.solution.json one_episode.py run/
-          cp -r autoascend run/
-          cd run
+          # The solution root is the directory *containing* bot.py, and
+          # require_solution_root rejects anything else -- so run from the repo
+          # root and pass "." rather than staging a copy under run/.
+          cp one_episode.py .
           python one_episode.py 2>&1 | tee episode.log || true
 
       - name: Summary

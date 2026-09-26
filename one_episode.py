@@ -29,7 +29,7 @@ def main() -> None:
         aggregation="mean",
     )
     mean, evidence = E.evaluate(
-        "bot", spec, IMAGE, now=now(), runtime="docker", max_parallel_evals=1
+        ".", spec, IMAGE, now=now(), runtime="docker", max_parallel_evals=1
     )
     result = evidence.results[0]
     payload = {
