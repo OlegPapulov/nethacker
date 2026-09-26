@@ -59,11 +59,9 @@ jobs:
           pip install --quiet nethackers==0.37.3
           nethackers --version | tee -a runner-facts.txt
           # The solution root is the directory *containing* bot.py, and
-          # require_solution_root rejects anything else -- so run from the repo
-          # root and pass "." rather than staging a copy under run/.
-          cp one_episode.py .
-          # `pipefail` so a python failure is not hidden by tee, and write the
-          # log unconditionally so the artifact has it even on failure.
+          # require_solution_root rejects anything else -- so the script runs
+          # from the repo root and passes ".". No staging copy: one_episode.py
+          # is already checked out here, and `cp x .` would be a self-copy.
           set -o pipefail
           python one_episode.py > episode.log 2>&1 || true
           cat episode.log
