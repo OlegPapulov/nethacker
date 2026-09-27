@@ -128,6 +128,16 @@ jobs:
             echo "::error::$TREE/nethackers.solution.json missing -- the hub requires it"
             exit 1
           }
+          # A best/<identity>/ tree carries a .origin file naming the run that
+          # wrote it. Comparing a stale one against a current parent is how a
+          # leftover looked like a 0.0126 measurement difference in N3b, so say
+          # so loudly rather than quietly producing a number.
+          if [ -f "$TREE/.origin" ]; then
+            echo "TREE PROVENANCE" | tee -a "$GITHUB_STEP_SUMMARY"
+            sed 's/^/  /' "$TREE/.origin" | tee -a "$GITHUB_STEP_SUMMARY"
+          elif [ -n "$EXTERNAL" ] || [ -n "${{ inputs.parent }}" ]; then
+            echo "::notice::$TREE has no .origin; it predates provenance tracking"
+          fi
           du -sh "$TREE"
           echo "TREE=$TREE" >> "$GITHUB_ENV"
 

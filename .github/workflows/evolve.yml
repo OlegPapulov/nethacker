@@ -457,12 +457,21 @@ jobs:
             if [ -f "$cand/bot.py" ]; then BEST="$cand"; break; fi
           done
           if [ -n "$BEST" ]; then
+            # Replace, never merge: a stale best/ left by a cancelled run is
+            # exactly how a leftover tree became a comparison baseline and read
+            # as a 0.0126 measurement difference (N3b).
+            rm -rf "best/$IDENTITY"
             mkdir -p "best/$IDENTITY"
-            # Never overwrite a carried-forward tree with something unscored:
-            # `evolve` only leaves a mutated tree behind if it was evaluated.
+            # Never publish a carried-forward tree as a new "best": `evolve`
+            # only leaves a mutated tree behind if it was evaluated.
             cp -f "$BEST"/bot.py "$BEST"/nethackers.solution.json "best/$IDENTITY/" 2>/dev/null || true
             [ -d "$BEST/autoascend" ] && cp -r "$BEST/autoascend" "best/$IDENTITY/" 2>/dev/null || true
             [ -f "$BEST/arena_adapter.py" ] && cp -f "$BEST/arena_adapter.py" "best/$IDENTITY/" 2>/dev/null || true
+            # Provenance: a bare best/<identity>/ cannot be told apart from a
+            # leftover, so record which run wrote it and from what parent.
+            IDENTITY="$IDENTITY" ITERATION="$ITERATION" PARENT="$PARENT" \
+              SEED_MODE="$SEED_MODE" RUN_ID="${{ github.run_id }}" \
+              python write_origin.py
           fi
 
           git add -A "$DEST" best 2>/dev/null || true
