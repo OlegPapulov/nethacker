@@ -67,7 +67,13 @@ permissions:
   actions: read
 
 concurrency:
-  group: evolve-${{ github.ref }}
+  # Keyed by IDENTITY, not by ref. With `evolve-${{ github.ref }}` and
+  # cancel-in-progress false, every evolve run in the repo serialises: a run
+  # left queued from earlier blocked a later dispatch for 11 minutes and had
+  # to be cancelled by hand. For a loop meant to run unattended that is a
+  # silent failure mode -- a stuck run starves every later one. Different
+  # identities must not block each other; only two runs on the SAME cell do.
+  group: evolve-${{ inputs.identity }}
   cancel-in-progress: false
 
 env:
