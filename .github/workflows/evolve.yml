@@ -42,17 +42,25 @@ on:
         required: true
         default: "opencode/nemotron-3.5-lightning-free"
       seed_mode:
-        description: "How to seed the cell: hub (per-identity champion) or autoascend"
+        description: "How to seed the cell: hub (per-identity champion), pinned (exact commit), or autoascend"
         required: true
         default: "hub"
         type: choice
-        options: [hub, autoascend]
+        options: [hub, pinned, autoascend]
+      parent_ref:
+        description: "Exact repo@commit, required when seed_mode=pinned"
+        required: false
+        default: ""
       budget:
         description: "Confirm a cell moved before spending on a union eval"
         required: false
         default: "no-union"
         type: choice
         options: ["no-union", "union"]
+      focus:
+        description: "Optional extra guidance appended to the brief, one line"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -67,75 +75,145 @@ env:
   MUTATOR_IMAGE: ghcr.io/dunnolab/nethackers-mutator@sha256:32c9222455b2f62082540a9f7293aa8fafc2bd5cb9ba7f4553fe79593706bee5
 
 jobs:
+  # ONE job per iteration, as a matrix.
+  #
+  # This is a deliberate change from an earlier single-job design that ran all
+  # N iterations in one step. Measured cost of that mistake: a 3-iteration run
+  # on hea-gno-neu-mal reached 2h35m in the mutation step and was killed with
+  # ZERO iterations banked, because `evolve` only writes metrics.jsonl when the
+  # step ends. A matrix makes each iteration its own job with its own timeout
+  # and its own artifact commit, so partial progress always survives and one
+  # slow iteration cannot consume the whole budget.
+  #
+  # `max-parallel: 1` is deliberate too. Two mutations at once on one archive
+  # would both be exploring the same cell, and the runner is only 4 vCPU --
+  # parallel episodes would halve the CPU each and make the games slower, not
+  # the run faster.
   evolve:
+    name: "iter ${{ matrix.iteration }} (of ${{ inputs.iterations }}) ${{ inputs.identity }}"
     runs-on: ubuntu-latest
-    # A single iteration is up to 3 evals of 15 episodes; the union eval alone
-    # is ~1095. Generous, because a throttled free model should not be killed
-    # mid-write.
-    timeout-minutes: 300
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        iteration: [0, 1, 2, 3, 4, 5, 6, 7]
     outputs:
       run_json: ${{ steps.summarize.outputs.run_json }}
-
     steps:
       - uses: actions/checkout@v4
         with:
           ref: evolve
           fetch-depth: 0
 
+
+      # Only run if this matrix index is within the requested iteration count.
+      # The matrix is a fixed 8 so it is static, and the gate keeps the extra
+      # jobs from ever starting.
+      - name: Skip iterations beyond the requested count
+        id: gate
+        run: |
+          if [ "${{ matrix.iteration }}" -ge "${{ inputs.iterations }}" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "iteration ${{ matrix.iteration }} >= ${{ inputs.iterations }}, nothing to do"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Runner facts
+        if: steps.gate.outputs.skip == 'false'
         run: |
           {
             echo "arch=$(uname -m)"
             echo "cpus=$(nproc)"
             echo "mem_gb=$(free -g | awk '/^Mem:/{print $2}')"
             echo "docker=$(docker version --format '{{.Server.Version}}')"
+            echo "iteration_index=${{ matrix.iteration }} of ${{ inputs.iterations }}"
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Install nethackers
+        if: steps.gate.outputs.skip == 'false'
         run: |
+          set -euo pipefail
           pip install --quiet nethackers==0.37.3
           nethackers --version | tee -a "$GITHUB_STEP_SUMMARY"
+          # `gh` is NOT preinstalled on ubuntu-latest, and publishing needs it
+          # (hubclient/publish.py calls `gh repo clone` then `git push`).
+          if ! command -v gh >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq gh
+          fi
+          gh --version | head -1
 
       # Both images are large; the arena is what actually scores, the mutator
       # is what mutates. Pulled up front so a failure here is obvious rather
       # than surfacing later as a mystery inside a sandbox.
       - name: Pull pinned images
+        if: steps.gate.outputs.skip == 'false'
         run: |
           docker pull "$ARENA_IMAGE"
           docker pull "$MUTATOR_IMAGE"
           docker images --digests | grep dunnolab
 
       - name: Configure git identity
+        if: steps.gate.outputs.skip == 'false'
         run: |
           git config user.name  "nethackers-evolve"
           git config user.email "nethackers-evolve@users.noreply.github.com"
 
-      # Hub credentials are optional. Without them the loop still works: the
-      # `--offline` flag below evaluates and scores locally, and simply does
-      # not publish or register. That is the right default for a first run --
-      # it means a run can never accidentally push commits under someone's
-      # account, and there is no credential in the repo to leak.
+      # Hub credentials are optional, and the run adapts:
+      #   both present -> publish and register (no --offline)
+      #   absent       -> --offline, score locally, publish nothing
+      # That is the safe default: a run cannot push commits under someone's
+      # account unless someone deliberately added the secrets, and there is no
+      # credential in the repo to leak.
       #
       # To enable registration, add two repository secrets:
-      #   NETHACKERS_TOKEN  a GitHub token with `public_scope` (or repo)
+      #   NETHACKERS_TOKEN  a GitHub token; `public_repo` is the only scope the
+      #                     hub needs -- it only checks that the token's login
+      #                     owns the referenced repo, and publishing is done by
+      #                     `gh` with its own credentials
       #   NETHACKERS_LOGIN  the login it belongs to, e.g. OlegPapulov
       # The shape must match hubclient.credentials.load(), which reads
       # ~/.nethackers/credentials.json as {login, access_token, ...}.
       - name: Authenticate to the hub
+        if: steps.gate.outputs.skip == 'false'
         env:
           NETHACKERS_TOKEN: ${{ secrets.NETHACKERS_TOKEN }}
           NETHACKERS_LOGIN: ${{ secrets.NETHACKERS_LOGIN }}
         run: |
           if [ -n "${NETHACKERS_TOKEN:-}" ] && [ -n "${NETHACKERS_LOGIN:-}" ]; then
             python write_credentials.py
-            echo "::notice::hub credentials present, registration enabled"
-            echo "HUB_AUTH=yes" >> "$GITHUB_ENV"
+            # Publishing is done by `gh` (hubclient/publish.py shells out to
+            # `gh repo clone` then `git push`), so `gh` needs its own auth too.
+            # The built-in GITHUB_TOKEN cannot push to a *different* repo
+            # (`<login>/nethacker`), so the PAT is reused for both jobs.
+            if command -v gh >/dev/null 2>&1; then
+              echo "${NETHACKERS_TOKEN}" | gh auth login --hostname github.com \
+                --git-protocol https --with-token >/dev/null 2>&1 || true
+            else
+              echo "::warning::gh not installed; publishing will fail if attempted"
+            fi
+            # Prove the credential works before committing to publishing: a bad
+            # token that only failed at registration time would waste a whole
+            # iteration's agent call and 15 episodes.
+            if nethackers whoami; then
+              echo "::notice::hub credentials accepted, registration ENABLED"
+              echo "yes" > .hub-auth
+              echo "HUB_AUTH=yes" >> "$GITHUB_ENV"
+            else
+              echo "::warning::token present but the hub rejected it; running offline"
+              echo "no" > .hub-auth
+              echo "HUB_AUTH=no" >> "$GITHUB_ENV"
+            fi
           else
             echo "::warning::no hub credentials: running offline, nothing will be published"
+            echo "no" > .hub-auth
             echo "HUB_AUTH=no" >> "$GITHUB_ENV"
           fi
 
       - name: Verify the operator can reach a model
+        if: steps.gate.outputs.skip == 'false'
         env:
           OPERATOR: ${{ inputs.operator }}
         run: |
@@ -152,13 +230,50 @@ jobs:
       # (it ships the tree); `hub` instead cold-starts from the leaderboard's
       # per-identity champion, which is the stronger parent.
       - name: Fetch the seed tree
+        if: steps.gate.outputs.skip == 'false'
         id: seed
         env:
           IDENTITY: ${{ inputs.identity }}
           SEED_MODE: ${{ inputs.seed_mode }}
         run: |
           set -euo pipefail
-          if [ "$SEED_MODE" = "autoascend" ]; then
+          # Carry the best tree forward from the previous iteration's job. It
+          # was committed under `best/<identity>/` on the evolve branch, so a
+          # later job in the same run can continue from it without the archive
+          # having to persist in memory.
+          # A best/<identity>/ tree may only be carried forward if it records
+          # which run wrote it. One without a .origin is a leftover from a
+          # superseded run, and carrying it forward silently resurrects it as a
+          # parent -- which is how a cancelled run's tree came to be used as a
+          # baseline and read as a 0.0126 score difference (N3b).
+          if [ -d "best/$IDENTITY" ] && [ -f "best/$IDENTITY/bot.py" ]; then
+            if [ -f "best/$IDENTITY/.origin" ]; then
+              cp -r "best/$IDENTITY" ./seed-bot
+              echo "SEED_CARRY best/$IDENTITY" | tee -a "$GITHUB_STEP_SUMMARY"
+              grep '^run:' "best/$IDENTITY/.origin" | sed 's/^/  carried from /' \
+                | tee -a "$GITHUB_STEP_SUMMARY"
+              test -f ./seed-bot/bot.py
+              du -sh ./seed-bot
+              exit 0
+            fi
+            echo "::warning::best/$IDENTITY has no .origin, so it is a leftover" \
+              | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "::warning::from a superseded run; ignoring it, seeding from $SEED_MODE" \
+              | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ "$SEED_MODE" = "pinned" ]; then
+            # Pin the parent. The per-identity champion moved twice during this
+            # project (vkurenkov on val, daglar->DT6A on hea), so a `hub` read is
+            # not a reproducible starting point: two runs an hour apart can
+            # evolve different trees and neither number means anything.
+            REF="${{ inputs.parent_ref }}"
+            case "$REF" in
+              *@*) ;;
+              *) echo "::error::parent_ref must be repo@commit, got '$REF'"; exit 1 ;;
+            esac
+            echo "SEED_PINNED $REF" | tee -a "$GITHUB_STEP_SUMMARY"
+            nethackers pull "$REF" ./seed-bot
+          elif [ "$SEED_MODE" = "autoascend" ]; then
             # autoascend ships inside the installed package rather than being
             # pullable from a registry, so copy it out of site-packages.
             SP=$(python -c "import nethackers, os; print(os.path.dirname(nethackers.__file__))")
@@ -176,9 +291,11 @@ jobs:
           test -f ./seed-bot/bot.py || { echo "::error::seed has no bot.py"; exit 1; }
           du -sh ./seed-bot
 
+
       # Score the seed once, on the published batch, so the loop has a real
       # incumbent number to beat rather than a guess.
       - name: Score the seed on the published batch
+        if: steps.gate.outputs.skip == 'false'
         env:
           IDENTITY: ${{ inputs.identity }}
         run: |
@@ -190,14 +307,17 @@ jobs:
           }
 
       - name: Run the mutation loop
+        if: steps.gate.outputs.skip == 'false'
         id: evolve
         env:
-          ITERATIONS: ${{ inputs.iterations }}
+          ITERATION: ${{ matrix.iteration }}
           OPERATOR: ${{ inputs.operator }}
           MODEL: ${{ inputs.model }}
           IDENTITY: ${{ inputs.identity }}
           SEED_MODE: ${{ inputs.seed_mode }}
           BUDGET: ${{ inputs.budget }}
+          NETHACKERS_TOKEN: ${{ secrets.NETHACKERS_TOKEN }}
+          NETHACKERS_LOGIN: ${{ secrets.NETHACKERS_LOGIN }}
         run: |
           set -o pipefail
           set +e
@@ -206,17 +326,49 @@ jobs:
           # source as an invalid volume name.
           WORKDIR="$GITHUB_WORKSPACE/runs"
           mkdir -p "$WORKDIR"
+          # Exactly ONE iteration per job. The archive does not persist between
+          # jobs, so this job's parent is the best tree the previous job
+          # committed (`carry/`), falling back to the hub seed on iteration 0.
+          PARENT="$GITHUB_WORKSPACE/seed-bot"
+          if [ "$ITERATION" -gt 0 ] && [ -f carry/bot.py ]; then
+            PARENT="$GITHUB_WORKSPACE/carry"
+            echo "PARENT carry (continuing from the previous iteration job)" \
+              | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "PARENT seed ($SEED_MODE)" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
           ARGS=(
             evolve "$IDENTITY"
-            --seed "$GITHUB_WORKSPACE/seed-bot"
+            --seed "$PARENT"
             --operator "$OPERATOR"
             --model "$MODEL"
-            --iterations "$ITERATIONS"
-            --offline
+            --iterations 1
             --workdir "$WORKDIR"
-            --run-name "gh-${{ github.run_id }}"
+            --run-name "gh-${{ github.run_id }}-i${ITERATION}"
           )
+          # Publish and register only when the hub credential was proven in the
+          # auth step. `--offline` means "evaluate locally without publishing or
+          # registering", so leaving it on alongside valid credentials is what
+          # silently discarded every candidate -- the workflow used to report
+          # "registration enabled" while being structurally unable to register.
+          # Read the mode from a FILE the auth step wrote, not from
+          # $GITHUB_ENV: env vars set there do reach later steps, but a file is
+          # unambiguous, survives reordering, and is visible in the artifact.
+          HUB_AUTH=no
+          [ -f .hub-auth ] && HUB_AUTH=$(cat .hub-auth)
+          if [ "$HUB_AUTH" = "yes" ]; then
+            echo "MODE publish (hub credential present)" | tee -a "$GITHUB_STEP_SUMMARY"
+            ARGS+=(--token "$NETHACKERS_TOKEN" --owner "$NETHACKERS_LOGIN")
+          else
+            echo "MODE offline (no hub credential; nothing will be published)" \
+              | tee -a "$GITHUB_STEP_SUMMARY"
+            ARGS+=(--offline)
+          fi
           [ "$SEED_MODE" = "autoascend" ] && ARGS+=(--from-seed)
+          if [ -n "${{ inputs.focus }}" ]; then
+            echo "FOCUS ${{ inputs.focus }}" | tee -a "$GITHUB_STEP_SUMMARY"
+            printf '%s\n' "${{ inputs.focus }}" > focus.txt
+          fi
           echo "COMMAND nethackers ${ARGS[*]}"
           nethackers "${ARGS[@]}" > evolve.log 2>&1
           CODE=$?
@@ -229,40 +381,54 @@ jobs:
           exit 0
 
       - name: Collect results
-        id: summarize
         if: always()
+        id: summarize
+        env:
+          ITERATION: ${{ matrix.iteration }}
         run: |
           set -euo pipefail
-          mkdir -p out
+          # `evolve` writes its per-run folder as runs/runs/<run-id>/, and
+          # metrics.jsonl lives inside it rather than at runs/metrics.jsonl.
+          # Scope the search to THIS job's run folder. A bare
+          # `find runs -name metrics.jsonl` walks every previous run's tree,
+          # because the artifact and the checked-out branch both carry
+          # `runs/<old-id>/`, and it silently reported another identity's score
+          # (val-dwa-law-fem's 0.1122 in a hea-gno-neu-mal summary).
+          # --run-name stamps the folder with this run's id, so match on that.
+          METRICS=$(find "runs" -path "*gh-${{ github.run_id }}-i${ITERATION}*" \
+                          -name metrics.jsonl 2>/dev/null | head -1 || true)
+          if [ -z "$METRICS" ]; then
+            # Fall back to the newest file, but say so rather than pretend.
+            METRICS=$(find runs -name metrics.jsonl -newermt '-2 hours' 2>/dev/null | head -1 || true)
+            [ -n "$METRICS" ] && echo "::warning::no metrics for this run id; fell back to $METRICS"
+          fi
+          [ -z "$METRICS" ] && METRICS="(none found)"
           {
-            echo "### Iteration"
+            echo "### Iteration index $ITERATION — ${{ inputs.identity }}"
             echo '```'
-            grep -E "^(COMMAND|EXIT|SEED_SCORE|MODELS|KEYLESS_ZEN|SEED_REF)" \
-              evolve.log operator-check.txt seed-score.log 2>/dev/null || true
+            grep -hE "^(COMMAND|EXIT|SEED_SCORE|SEED_REF|SEED_CARRY|PARENT|MODELS|KEYLESS_ZEN)" \
+              evolve.log operator-check.txt seed-score.log 2>/dev/null | sort -u || true
             echo '```'
-            if [ -f runs/metrics.jsonl ]; then
+            if [ -n "$METRICS" ] && [ -f "$METRICS" ]; then
               echo "### Metrics"
               echo '```json'
-              cat runs/metrics.jsonl
+              cat "$METRICS"
               echo '```'
+            else
+              echo "### Metrics"
+              echo '_none written — the loop did not finish an iteration_'
             fi
             if [ -f seed-eval.json ]; then
-              echo "### Seed eval"
+              echo "### Parent score (published 15 seeds)"
               echo '```'
-              python -c "import json;d=json.load(open('seed-eval.json'));print('mean',d['seed_mean_progress'])"
-              echo '```'
-            fi
-            if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
-              echo "### Changed"
-              echo '```'
-              git status --porcelain | head -40
+              python -c "import json;d=json.load(open('seed-eval.json'));print('mean',round(d['seed_mean_progress'],4))"
               echo '```'
             fi
           } | tee summary.md
           echo "run_json=$(pwd)/runs" >> "$GITHUB_OUTPUT"
 
       - name: Upload everything the loop produced
-        if: always()
+        if: always() && steps.gate.outputs.skip == 'false'
         uses: actions/upload-artifact@v4
         with:
           name: evolve-${{ inputs.identity }}-${{ github.run_id }}
@@ -280,19 +446,54 @@ jobs:
           retention-days: 30
 
       - name: Commit run artifacts back to the branch
-        if: always()
+        if: always() && steps.gate.outputs.skip == 'false'
+        env:
+          IDENTITY: ${{ inputs.identity }}
+          ITERATION: ${{ matrix.iteration }}
         run: |
           set -euo pipefail
-          mkdir -p "runs/${{ github.run_id }}"
-          cp -f summary.md evolve.log "runs/${{ github.run_id }}/" 2>/dev/null || true
-          if [ -d runs ]; then
-            cp -r runs/. "runs/${{ github.run_id }}/" 2>/dev/null || true
+          # Never race the sibling matrix jobs: the evolve branch is a single
+          # ref, and with max-parallel > 1 two pushes could conflict. A failed
+          # push here loses only diagnostics, so it must not fail the job.
+          DEST="runs/${{ github.run_id }}-i${ITERATION}"
+          mkdir -p "$DEST"
+          cp -f summary.md evolve.log seed-eval.json "$DEST/" 2>/dev/null || true
+          cp -r runs/. "$DEST/" 2>/dev/null || true
+
+          # Publish the best tree this iteration produced, so the NEXT matrix
+          # job can continue from it. The winner is whichever of seed-bot /
+          # the mutated work tree actually improved the cell; the loop already
+          # decided that, so the safest rule is: carry the mutated tree only if
+          # it exists and differs from the seed.
+          BEST=""
+          for cand in runs/runs/latest/work/iter-0; do
+            if [ -f "$cand/bot.py" ]; then BEST="$cand"; break; fi
+          done
+          if [ -n "$BEST" ]; then
+            # Replace, never merge: a stale best/ left by a cancelled run is
+            # exactly how a leftover tree became a comparison baseline and read
+            # as a 0.0126 measurement difference (N3b).
+            rm -rf "best/$IDENTITY"
+            mkdir -p "best/$IDENTITY"
+            # Never publish a carried-forward tree as a new "best": `evolve`
+            # only leaves a mutated tree behind if it was evaluated.
+            cp -f "$BEST"/bot.py "$BEST"/nethackers.solution.json "best/$IDENTITY/" 2>/dev/null || true
+            [ -d "$BEST/autoascend" ] && cp -r "$BEST/autoascend" "best/$IDENTITY/" 2>/dev/null || true
+            [ -f "$BEST/arena_adapter.py" ] && cp -f "$BEST/arena_adapter.py" "best/$IDENTITY/" 2>/dev/null || true
+            # Provenance: a bare best/<identity>/ cannot be told apart from a
+            # leftover, so record which run wrote it and from what parent.
+            IDENTITY="$IDENTITY" ITERATION="$ITERATION" PARENT="$PARENT" \
+              SEED_MODE="$SEED_MODE" RUN_ID="${{ github.run_id }}" \
+              python write_origin.py
           fi
-          git add -A "runs/${{ github.run_id }}" || true
+
+          git add -A "$DEST" best 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "nothing to commit"
             exit 0
           fi
-          git commit -q -m "evolve: ${{ inputs.identity }} run ${{ github.run_id }} (${{ inputs.operator }}/${{ inputs.model }})"
-          git push origin HEAD:evolve
+          git commit -q -m "evolve: $IDENTITY iteration index $ITERATION (run ${{ github.run_id }}, ${{ inputs.operator }}/${{ inputs.model }})"
+          # A rejected push is a lost diagnostic bundle, not a failed
+          # iteration -- do not let it fail the job.
+          git push origin HEAD:evolve || echo "::warning::push to evolve failed (concurrent job?); artifacts not saved"
           echo "pushed run artifacts"

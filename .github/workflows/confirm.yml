@@ -1,0 +1,236 @@
+name: confirm
+
+# Score one solution tree on the published 15-seed batch, on native x86_64.
+#
+# Why this exists: `evolve` reports a `dev_fitness` per iteration, but when a
+# run ends in `local-only` (no gh publisher, or --offline) the winning tree is
+# never published, so the number exists only inside a run artifact. This scores
+# a tree on demand and writes evidence.json in the shape
+# `nethackers register --evidence` accepts, so a local win can be published
+# later without re-running anything.
+#
+# It is also the honesty check on a claim: a tree claiming 0.5054 is scored
+# here from scratch, and the two numbers are compared before anything is
+# registered.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch holding the tree (default: evolve)"
+        required: false
+        default: "evolve"
+      identity:
+        description: "Identity the tree plays"
+        required: true
+        default: "val-dwa-law-fem"
+      tree:
+        description: "Path to the tree inside this repo (e.g. best/val-dwa-law-fem)"
+        required: false
+        default: "best/val-dwa-law-fem"
+      external:
+        description: "Optional repo@commit to score INSTEAD of a local path"
+        required: false
+        default: ""
+      parent:
+        description: "Optional parent repo@commit to score as the baseline, paired"
+        required: false
+        default: ""
+      stable_from:
+        description: "reproducibility.json of stable seeds; unstable ones are excluded"
+        required: false
+        default: ""
+      expected:
+        description: "Score to compare against (0 to skip)"
+        required: false
+        default: "0"
+
+permissions:
+  contents: write
+
+env:
+  ARENA_IMAGE: ghcr.io/dunnolab/nethackers-arena@sha256:0d0b0e779ebda4a05b5a22b39cfafcd2d2d9ef739ea60d9aae79052d55c767ae
+
+jobs:
+  confirm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      # The scoring scripts live on main, but the tree under test lives on the
+      # branch named by `ref`. Checkout that branch for the TREE, then bring the
+      # scripts across from main -- otherwise a ref != main run cannot find its
+      # own helper.
+      - name: Fetch the scoring scripts from main
+        run: |
+          set -euo pipefail
+          for f in confirm_score.py report_confirm.py; do
+            git show "origin/main:$f" > "$f" 2>/dev/null || {
+              echo "::error::$f not on origin/main"
+              exit 1
+            }
+          done
+          ls -la confirm_score.py report_confirm.py
+
+      - name: Install nethackers
+        run: |
+          pip install --quiet nethackers==0.37.3
+          nethackers --version
+
+      - name: Pull the pinned arena image
+        run: docker pull "$ARENA_IMAGE"
+
+      # `nethackers pull` shells out to `gh repo clone`, so an external
+      # repo@commit cannot be fetched without it. Not preinstalled.
+      - name: Install gh
+        if: inputs.external != ''
+        run: |
+          if ! command -v gh >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq gh
+          fi
+          # A read-only clone of a public repo needs no auth.
+          gh auth setup-git 2>/dev/null || true
+
+      - name: Materialise the tree
+        env:
+          TREE: ${{ inputs.tree }}
+          EXTERNAL: ${{ inputs.external }}
+          IDENTITY: ${{ inputs.identity }}
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.parent }}" ]; then
+            nethackers pull "${{ inputs.parent }}" ./parent
+            test -f ./parent/bot.py || { echo "::error::parent has no bot.py"; exit 1; }
+            find ./parent -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+            find ./parent -name "*.pyc" -delete 2>/dev/null || true
+            echo "PARENT ${{ inputs.parent }}" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -n "$EXTERNAL" ]; then
+            # Score someone else's program at a pinned commit -- used to measure
+            # a candidate against its own parent in the same run, on the same
+            # runner, so the comparison is not across machines.
+            echo "EXTERNAL $EXTERNAL" | tee -a "$GITHUB_STEP_SUMMARY"
+            nethackers pull "$EXTERNAL" ./external
+            TREE=./external
+          fi
+          test -f "$TREE/bot.py" || { echo "::error::$TREE/bot.py missing"; exit 1; }
+          # Strip bytecode: it is build output, never part of a solution, and
+          # it changes the content digest between a run and a checkout.
+          find "$TREE" -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+          find "$TREE" -name "*.pyc" -delete 2>/dev/null || true
+          test -f "$TREE/nethackers.solution.json" || {
+            echo "::error::$TREE/nethackers.solution.json missing -- the hub requires it"
+            exit 1
+          }
+          # A best/<identity>/ tree carries a .origin file naming the run that
+          # wrote it. Comparing a stale one against a current parent is how a
+          # leftover looked like a 0.0126 measurement difference in N3b, so say
+          # so loudly rather than quietly producing a number.
+          if [ -f "$TREE/.origin" ]; then
+            echo "TREE PROVENANCE" | tee -a "$GITHUB_STEP_SUMMARY"
+            sed 's/^/  /' "$TREE/.origin" | tee -a "$GITHUB_STEP_SUMMARY"
+          elif [ -n "$EXTERNAL" ] || [ -n "${{ inputs.parent }}" ]; then
+            echo "::notice::$TREE has no .origin; it predates provenance tracking"
+          fi
+          du -sh "$TREE"
+          echo "TREE=$TREE" >> "$GITHUB_ENV"
+
+      - name: Score on the published batch
+        env:
+          IDENTITY: ${{ inputs.identity }}
+          EXPECTED: ${{ inputs.expected }}
+        run: |
+          set -o pipefail
+          ARGS=("$TREE" "$IDENTITY" evidence.json)
+          [ -d ./parent ] && ARGS+=("./parent")
+          python confirm_score.py "${ARGS[@]}" 2>&1 | tee confirm.log || true
+          test -f evidence.json || { echo "::error::scoring produced no evidence"; exit 1; }
+
+      # The publication gate. `report_confirm.py` exits non-zero unless the
+      # paired verdict is WIN, so a candidate that improved nothing cannot be
+      # registered by accident. This is the check N1 was missing: it published a
+      # row that improved 0 of 15 seeds.
+      #
+      # Pass `parent=` to enable it. Without a parent the verdict is UNVERIFIED
+      # and this step fails closed, on the principle that an unverifiable claim
+      # is not a publishable one.
+      - name: Judge fitness to register
+        id: judge
+        env:
+          EXPECTED: ${{ inputs.expected }}
+        run: |
+          set -o pipefail
+          ARGS=(evidence.json "$EXPECTED")
+          # A stability list, when the `reproduce` workflow has produced one for
+          # this identity, keeps unstable seeds out of the verdict. N2' found a
+          # seed whose outcome changes between identical runs, which is enough
+          # to move a 15-seed mean by 0.0126 on its own.
+          if [ -n "${{ inputs.stable_from }}" ]; then
+            ARGS+=(--stable-from "${{ inputs.stable_from }}")
+          elif [ -f "reproducibility/latest/${{ inputs.identity }}.json" ]; then
+            echo "using committed stability list for ${{ inputs.identity }}"
+            ARGS+=(--stable-from "reproducibility/latest/${{ inputs.identity }}.json")
+          fi
+          python report_confirm.py "${ARGS[@]}" | tee confirm-report.md
+          CODE=${PIPESTATUS[0]}
+          if [ "$CODE" -ne 0 ]; then
+            echo "::warning::this tree is not fit to register; see REGISTERABLE above"
+          fi
+          echo "registerable=$([ "$CODE" -eq 0 ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          # Do not fail the job: the evidence is the point of the run even when
+          # the verdict is negative. A separate step gates any publish.
+          exit 0
+
+      - name: Enforce the gate
+        if: always()
+        env:
+          REGISTERABLE: ${{ steps.judge.outputs.registerable }}
+          IDENTITY: ${{ inputs.identity }}
+        run: |
+          {
+            echo "### ${{ inputs.identity }} — verdict"
+            echo
+            cat confirm-report.md 2>/dev/null || echo "no report"
+            echo
+            echo "**registerable: $REGISTERABLE**"
+            if [ "$REGISTERABLE" != "yes" ]; then
+              echo
+              echo "Refused to publish. A candidate must improve at least 3 of the"
+              echo "15 paired seeds and be net positive to be registered."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit the evidence
+        if: always()
+        env:
+          IDENTITY: ${{ inputs.identity }}
+        run: |
+          set -euo pipefail
+          DEST="evidence/$IDENTITY-${{ github.run_id }}"
+          mkdir -p "$DEST"
+          cp -f evidence.json confirm.log confirm-report.md "$DEST/" 2>/dev/null || true
+          git config user.name  "nethackers-confirm"
+          git config user.email "nethackers-confirm@users.noreply.github.com"
+          git add -A "$DEST" || true
+          if git diff --cached --quiet; then
+            echo "nothing to commit"; exit 0
+          fi
+          git commit -q -m "confirm: $IDENTITY evidence (run ${{ github.run_id }})"
+          git push origin HEAD:${{ inputs.ref }} || echo "::warning::push failed"
+
+      - name: Upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: confirm-${{ inputs.identity }}-${{ github.run_id }}
+          path: |
+            evidence.json
+            confirm.log
+            confirm-report.md
+          if-no-files-found: warn
