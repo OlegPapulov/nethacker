@@ -138,13 +138,48 @@ jobs:
           python confirm_score.py "${ARGS[@]}" 2>&1 | tee confirm.log || true
           test -f evidence.json || { echo "::error::scoring produced no evidence"; exit 1; }
 
-      - name: Compare against the claimed score
+      # The publication gate. `report_confirm.py` exits non-zero unless the
+      # paired verdict is WIN, so a candidate that improved nothing cannot be
+      # registered by accident. This is the check N1 was missing: it published a
+      # row that improved 0 of 15 seeds.
+      #
+      # Pass `parent=` to enable it. Without a parent the verdict is UNVERIFIED
+      # and this step fails closed, on the principle that an unverifiable claim
+      # is not a publishable one.
+      - name: Judge fitness to register
+        id: judge
         env:
           EXPECTED: ${{ inputs.expected }}
         run: |
-          set -euo pipefail
+          set -o pipefail
           python report_confirm.py evidence.json "$EXPECTED" | tee confirm-report.md
-          cat confirm-report.md >> "$GITHUB_STEP_SUMMARY"
+          CODE=${PIPESTATUS[0]}
+          if [ "$CODE" -ne 0 ]; then
+            echo "::warning::this tree is not fit to register; see REGISTERABLE above"
+          fi
+          echo "registerable=$([ "$CODE" -eq 0 ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          # Do not fail the job: the evidence is the point of the run even when
+          # the verdict is negative. A separate step gates any publish.
+          exit 0
+
+      - name: Enforce the gate
+        if: always()
+        env:
+          REGISTERABLE: ${{ steps.judge.outputs.registerable }}
+          IDENTITY: ${{ inputs.identity }}
+        run: |
+          {
+            echo "### ${{ inputs.identity }} — verdict"
+            echo
+            cat confirm-report.md 2>/dev/null || echo "no report"
+            echo
+            echo "**registerable: $REGISTERABLE**"
+            if [ "$REGISTERABLE" != "yes" ]; then
+              echo
+              echo "Refused to publish. A candidate must improve at least 3 of the"
+              echo "15 paired seeds and be net positive to be registered."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Commit the evidence
         if: always()
