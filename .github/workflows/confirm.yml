@@ -36,6 +36,10 @@ on:
         description: "Optional parent repo@commit to score as the baseline, paired"
         required: false
         default: ""
+      stable_from:
+        description: "reproducibility.json of stable seeds; unstable ones are excluded"
+        required: false
+        default: ""
       expected:
         description: "Score to compare against (0 to skip)"
         required: false
@@ -152,7 +156,18 @@ jobs:
           EXPECTED: ${{ inputs.expected }}
         run: |
           set -o pipefail
-          python report_confirm.py evidence.json "$EXPECTED" | tee confirm-report.md
+          ARGS=(evidence.json "$EXPECTED")
+          # A stability list, when the `reproduce` workflow has produced one for
+          # this identity, keeps unstable seeds out of the verdict. N2' found a
+          # seed whose outcome changes between identical runs, which is enough
+          # to move a 15-seed mean by 0.0126 on its own.
+          if [ -n "${{ inputs.stable_from }}" ]; then
+            ARGS+=(--stable-from "${{ inputs.stable_from }}")
+          elif [ -f "reproducibility/latest/${{ inputs.identity }}.json" ]; then
+            echo "using committed stability list for ${{ inputs.identity }}"
+            ARGS+=(--stable-from "reproducibility/latest/${{ inputs.identity }}.json")
+          fi
+          python report_confirm.py "${ARGS[@]}" | tee confirm-report.md
           CODE=${PIPESTATUS[0]}
           if [ "$CODE" -ne 0 ]; then
             echo "::warning::this tree is not fit to register; see REGISTERABLE above"

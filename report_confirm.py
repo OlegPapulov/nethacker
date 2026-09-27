@@ -20,12 +20,20 @@ row that did not hold up:
    identical.** Fourteen bit-identical results means the mutation barely fires
    on this batch, and the entire apparent delta lived in one seed.
 
+**Unstable seeds are excluded.** Not every seed is reproducible. The
+``reproduce`` workflow scores one tree repeatedly and finds the seeds that
+disagree between runs -- long games in particular. N2' found one where the same
+commit produced 21,384 turns at dlvl 19 in one run and 21,830 at dlvl 27 in the
+next, and that single seed moved a 15-seed mean by 0.0126. Counting such a seed
+as evidence that a mutation "did something" is counting noise, so
+``--stable-from`` drops those seeds from the verdict entirely.
+
 So the verdict is driven by the paired counts when a parent was scored, and by
 the claimed-vs-rescored gap when one was not. Anything short of a win exits
 non-zero so a workflow step can refuse to publish.
 
 Usage:
-    report_confirm.py <evidence.json> [expected]
+    report_confirm.py <evidence.json> [expected] [--stable-from repro.json]
 """
 
 from __future__ import annotations
@@ -55,7 +63,7 @@ MATERIAL_GAP = 0.02
 MIN_SEEDS_MOVED = 3
 
 
-def paired_verdict(data: dict) -> tuple[str, str] | None:
+def paired_verdict(data: dict, stable: set[int] | None = None) -> tuple[str, str] | None:
     """Compare candidate and parent seed-by-seed. None when no parent was scored.
 
     "Moved" means turns or depth or progression changed at all -- the count of
@@ -70,6 +78,15 @@ def paired_verdict(data: dict) -> tuple[str, str] | None:
     mine = {r["trajectory_id"]: r for r in data["results"]}
     theirs = {r["trajectory_id"]: r for r in parent["results"]}
     shared = sorted(set(mine) & set(theirs))
+    dropped = []
+    if stable is not None:
+        dropped = [s for s in shared if s not in stable]
+        shared = [s for s in shared if s in stable]
+        if not shared:
+            return "UNVERIFIED", (
+                "  no stable seeds remain: every seed in this batch was "
+                "unstable under repeated scoring, so nothing can be measured"
+            )
 
     def moved(s: int) -> bool:
         a, b = mine[s], theirs[s]
@@ -114,6 +131,10 @@ def paired_verdict(data: dict) -> tuple[str, str] | None:
         )
     if changed:
         lines.append(f"  moved seeds: {changed}")
+    if dropped:
+        lines.append(
+            f"  EXCLUDED as unstable under repeated scoring: {dropped}"
+        )
 
     # Verdict. The primary requirement is REACH -- a mutation that touches one
     # or two seeds has not demonstrated anything. Direction is then judged on
@@ -149,9 +170,24 @@ def paired_verdict(data: dict) -> tuple[str, str] | None:
     return verdict, "\n".join([f"  {why}", *lines])
 
 
+def load_stable(path: str | None) -> set[int] | None:
+    """Seeds that survived repeated scoring of one tree. None when unknown."""
+    if not path:
+        return None
+    data = json.load(open(path))
+    stable = data.get("stable_seeds")
+    if stable is None:
+        return None
+    return set(stable)
+
+
 def main() -> None:
-    data = json.load(open(sys.argv[1]))
-    expected = float(sys.argv[2]) if len(sys.argv) > 2 else 0.0
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    stable_from = None
+    if "--stable-from" in sys.argv:
+        stable_from = load_stable(sys.argv[sys.argv.index("--stable-from") + 1])
+    data = json.load(open(args[0]))
+    expected = float(args[1]) if len(args) > 1 else 0.0
 
     mean = data["mean_progress"]
     results = data["results"]
@@ -186,7 +222,11 @@ def main() -> None:
 
     print()
     print("== paired against parent ==")
-    paired = paired_verdict(data)
+    if stable_from is None:
+        print("  (no stable-seed list supplied: every seed counted)")
+    else:
+        print("  unstable seeds excluded via --stable-from")
+    paired = paired_verdict(data, stable_from)
     if paired is None:
         print("  (no parent scored; nothing to compare)")
         verdict = "UNVERIFIED"
