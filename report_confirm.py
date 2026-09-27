@@ -42,14 +42,27 @@ import sys
 MATERIAL_GAP = 0.02
 
 # --- paired verdict ----------------------------------------------------------
-# A candidate must improve at least this many seeds, and must not be net
-# negative. One improved seed out of fifteen is indistinguishable from a coin
-# flip; three is the smallest count that carries any information at all.
-MIN_SEEDS_IMPROVED = 3
+# A candidate must move at least this many seeds on ANY observable signal, and
+# the movement must be positive.
+#
+# N3a is why this counts turns and depth and not just progression. Over 15
+# seeds the progression metric takes only FIVE distinct values, because BALROG
+# progression pins to milestone plateaus, so its SE of the mean is 0.0281 --
+# larger than any single change this loop produces. Turns takes 15 distinct
+# values and is near-continuous, and it resolved a seed progression missed
+# entirely. A gate on progression alone is therefore close to unreachable for a
+# genuine single change, and would either pass noise or reject everything.
+MIN_SEEDS_MOVED = 3
 
 
 def paired_verdict(data: dict) -> tuple[str, str] | None:
-    """Compare candidate and parent seed-by-seed. None when no parent was scored."""
+    """Compare candidate and parent seed-by-seed. None when no parent was scored.
+
+    "Moved" means turns or depth or progression changed at all -- the count of
+    seeds the mutation actually reached. "Improved" is the subset where the
+    movement was in the right direction. A real change moves many seeds; a no-op
+    moves one or two, which is what the petrify-guard change did.
+    """
     parent = data.get("parent")
     if not parent:
         return None
@@ -58,52 +71,80 @@ def paired_verdict(data: dict) -> tuple[str, str] | None:
     theirs = {r["trajectory_id"]: r for r in parent["results"]}
     shared = sorted(set(mine) & set(theirs))
 
-    improved = [s for s in shared if mine[s]["progress"] > theirs[s]["progress"] + 1e-9]
-    worsened = [s for s in shared if mine[s]["progress"] < theirs[s]["progress"] - 1e-9]
-    identical = [s for s in shared if abs(mine[s]["progress"] - theirs[s]["progress"]) <= 1e-9]
-    deeper = [
-        s
-        for s in shared
-        if mine[s]["max_depth"] > theirs[s]["max_depth"]
-    ]
+    def moved(s: int) -> bool:
+        a, b = mine[s], theirs[s]
+        return (
+            abs(a["progress"] - b["progress"]) > 1e-9
+            or a["turns"] != b["turns"]
+            or a["max_depth"] != b["max_depth"]
+        )
+
+    def forward(s: int) -> bool:
+        a, b = mine[s], theirs[s]
+        return (
+            a["progress"] > b["progress"] + 1e-9
+            or a["max_depth"] > b["max_depth"]
+            or (a["max_depth"] == b["max_depth"] and a["turns"] > b["turns"])
+        )
+
+    changed = [s for s in shared if moved(s)]
+    improved = [s for s in changed if forward(s)]
+    regressed = [s for s in changed if not forward(s)]
+    still = [s for s in shared if not moved(s)]
+    prog_up = [s for s in shared if mine[s]["progress"] > theirs[s]["progress"] + 1e-9]
+    prog_down = [s for s in shared if mine[s]["progress"] < theirs[s]["progress"] - 1e-9]
+    deeper = [s for s in shared if mine[s]["max_depth"] > theirs[s]["max_depth"]]
 
     delta = data["mean_progress"] - parent["mean_progress"]
     lines = [
-        f"  seeds improved {len(improved)}  worsened {len(worsened)}  "
-        f"identical {len(identical)}   (of {len(shared)})",
+        f"  seeds moved at all: {len(changed)}/{len(shared)}"
+        f"   (forward {len(improved)}, backward {len(regressed)})",
+        f"  seeds unchanged:    {len(still)}/{len(shared)}",
+        f"  of the moved seeds, progression rose on {len(prog_up)} "
+        f"and fell on {len(prog_down)}",
         f"  seeds reaching a deeper level: {len(deeper)}/{len(shared)}",
-        f"  mean delta {delta:+.4f}",
+        f"  mean progression delta {delta:+.4f}",
     ]
-    if identical and len(identical) >= len(shared) - 1:
+    if not changed:
+        lines.append("  nothing changed on any seed: this tree is the parent.")
+    elif len(still) >= len(shared) - 2:
         lines.append(
-            f"  {len(identical)} of {len(shared)} seeds are bit-identical: the "
-            "change barely fires on this batch, and the whole delta lives in "
-            "the seeds that differ."
+            f"  {len(still)} of {len(shared)} seeds are bit-identical: the change "
+            "barely fires, and the whole delta lives in the seeds that differ."
         )
-    if improved:
-        lines.append(f"  improved seeds: {improved}")
-    if worsened:
-        lines.append(f"  worsened seeds: {worsened}")
+    if changed:
+        lines.append(f"  moved seeds: {changed}")
 
-    if len(improved) == 0:
-        verdict = "NOT-A-WIN"
-        why = "no seed improved"
-    elif len(improved) < MIN_SEEDS_IMPROVED:
-        verdict = "NOT-A-WIN"
-        why = (
-            f"only {len(improved)} seed(s) improved, below the "
-            f"{MIN_SEEDS_IMPROVED} needed to distinguish a real effect from a "
-            "coin flip"
+    # Verdict. The primary requirement is REACH -- a mutation that touches one
+    # or two seeds has not demonstrated anything. Direction is then judged on
+    # the count of seeds moving forward, because N3a showed progression is too
+    # coarse to arbitrate on its own: its SE of the mean is 0.0281, larger than
+    # any single change this loop makes, so a small negative mean is not on its
+    # own evidence of harm. `deeper` is reported for context, and is used only
+    # to break a tie between equal forward counts, never to overrule a majority
+    # that moved backwards.
+    if not changed:
+        verdict, why = "NOT-A-WIN", "no seed moved on any signal"
+    elif len(changed) < MIN_SEEDS_MOVED:
+        verdict, why = "NOT-A-WIN", (
+            f"only {len(changed)} seed(s) moved, below the {MIN_SEEDS_MOVED} "
+            "needed to show the change reaches more than a fluke"
         )
-    elif len(worsened) > len(improved):
-        verdict = "NOT-A-WIN"
-        why = f"more seeds worsened ({len(worsened)}) than improved ({len(improved)})"
-    elif delta <= 0:
-        verdict = "NOT-A-WIN"
-        why = f"mean delta is {delta:+.4f}, not positive"
+    elif len(regressed) >= len(improved):
+        verdict, why = "NOT-A-WIN", (
+            f"of the {len(changed)} seeds that moved, at least as many went "
+            f"backwards ({len(regressed)}) as forwards ({len(improved)})"
+        )
+    elif delta <= 0 and not deeper:
+        verdict, why = "NOT-A-WIN", (
+            f"mean progression {delta:+.4f} and no seed reached a deeper level"
+        )
     else:
         verdict = "WIN"
-        why = f"{len(improved)} seeds improved, mean {delta:+.4f}"
+        why = (
+            f"{len(changed)} seeds moved ({len(improved)} forward, "
+            f"{len(regressed)} back), mean {delta:+.4f}, {len(deeper)} deeper"
+        )
 
     return verdict, "\n".join([f"  {why}", *lines])
 
