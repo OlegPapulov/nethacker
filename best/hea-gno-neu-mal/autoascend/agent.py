@@ -848,7 +848,18 @@ class Agent:
                     yield ' '
                 if 'In what direction?' in self.message:
                     success[0] = True
-                    yield direction
+                    # hypothesis: the direction used to be typed as raw keys, and with vi-keys 'n' is
+                    # south-east, 's' is "at yourself", 'e'/'w' are no direction and 'ne' etc. is two keys
+                    # (an assert), so a wizard's force bolt aimed at a monster hit its own pet (the god
+                    # is angered and the Dlvl 1 grind loses its prayer food) or bashed the wizard itself.
+                    # Sending the compass action makes the bolt go where it was aimed.
+                    yield {
+                        'n': A.CompassDirection.N, 's': A.CompassDirection.S,
+                        'e': A.CompassDirection.E, 'w': A.CompassDirection.W,
+                        'ne': A.CompassDirection.NE, 'se': A.CompassDirection.SE,
+                        'nw': A.CompassDirection.NW, 'sw': A.CompassDirection.SW,
+                        '.': A.MiscDirection.WAIT,
+                    }[direction]
 
             self.step(A.Command.CAST, type_letters())
             if success[0]:
@@ -921,17 +932,7 @@ class Agent:
                     (self.blstats.y, self.blstats.x)] = (level.key(), (expected_y, expected_x))
 
         else:
-            level = self.current_level()
-            my_y, my_x = self.blstats.y, self.blstats.x
             self.direction(dir)
-
-            # a doorway the map shows as doorless can still hold an (open or broken-looking) door;
-            # remember it or the diagonal-shortest path retries the same refused step forever.
-            # From github.com/eL1fe/nethacker@dc2765b.
-            if "move diagonally into an intact doorway" in self.message:
-                level.no_diagonal[expected_y, expected_x] = True
-            if "move diagonally out of an intact doorway" in self.message:
-                level.no_diagonal[my_y, my_x] = True
 
             if self.blstats.y != expected_y or self.blstats.x != expected_x:
                 raise AgentPanic(f'agent position do not match after "move": '
@@ -1021,8 +1022,7 @@ class Agent:
 
         dis = utils.bfs(y, x,
                         walkable=walkable,
-                        walkable_diagonally=walkable & ~utils.isin(level.objects, G.DOORS) & (level.objects != -1) &
-                                            ~level.no_diagonal,
+                        walkable_diagonally=walkable & ~utils.isin(level.objects, G.DOORS) & (level.objects != -1),
                         can_squeeze=(self.inventory.items.total_weight <= 600 if default_squeeze else can_squeeze) and \
                                     self.current_level().dungeon_number != Level.SOKOBAN,
                         )

@@ -196,6 +196,7 @@ ROLE_EARLY_DIG_XL = {}
 # ablation switches for fixes made while diving (see their call sites)
 DIVE_SKIPS_EXPLORATION = True
 LEAVE_GRIND_WHEN_HUNGRY = False
+GRIND_ENDS_WHEN_GOD_ANGRY = True
 # Roles for which leaving the Dlvl 1 grind when out of food pays (73-identity A/B): the others
 # (Healers, Knights, Priests, Rogues, Tourists, Valkyries) do better finishing the grind.
 ROLES_LEAVING_GRIND_WHEN_HUNGRY = {Character.ARCHEOLOGIST, Character.BARBARIAN, Character.CAVEMAN,
@@ -539,19 +540,17 @@ class GlobalLogic:
             # sufficient condition for being an initial pet
             return False
 
-        # a chaotic character offering a corpse of its own race summons a demon lord (Juiblex,
-        # Orcus, ...) onto the altar; never offer same-race corpses, whatever the alignment.
-        # From github.com/eL1fe/nethacker@dc2765b.
-        mapping = {
-            Character.HUMAN: MON.M2_HUMAN | MON.M2_WERE,
-            Character.DWARF: MON.M2_DWARF,
-            Character.ELF: MON.M2_ELF,
-            Character.GNOME: MON.M2_GNOME,
-            Character.ORC: MON.M2_ORC,
-        }
-        f2 = MON.permonst(item.monster_id + nh.GLYPH_MON_OFF).mflags2
-        if (f2 & mapping[self.agent.character.race]) > 0:
-            return False
+        if self.agent.character.alignment != Character.CHAOTIC:
+            mapping = {
+                Character.HUMAN: MON.M2_HUMAN | MON.M2_WERE,
+                Character.DWARF: MON.M2_DWARF,
+                Character.ELF: MON.M2_ELF,
+                Character.GNOME: MON.M2_GNOME,
+                Character.ORC: MON.M2_ORC,
+            }
+            f2 = MON.permonst(item.monster_id + nh.GLYPH_MON_OFF).mflags2
+            if (f2 & mapping[self.agent.character.race]) > 0:
+                return False
 
         return True
 
@@ -639,6 +638,57 @@ class GlobalLogic:
 
         self.agent.go_to(y, x, stop_one_before=True)
 
+    @utils.debug_log('hunt_peaceful_dwarf')
+    @Strategy.wrap
+    def hunt_peaceful_dwarf(self):
+        # hypothesis: the Mines' dwarves carry the pick-axes and mattocks (about one in three) that
+        # turn the rest of the game into a dig_down dive, but they are peaceful to gnomes, to dwarves
+        # and -- being lawful themselves -- mostly to lawful characters too, and the bot never
+        # attacks a peaceful monster. So their picks are never taken: gnome and dwarf non-Archeologists
+        # walk the Mines and average 0.05-0.2, and lawful humans' pick hunts come back empty
+        # (Caveman 0.14 vs 0.28 neutral, Monk 0.19 vs 0.30, Priest 0.12 vs 0.18). Attacking a
+        # peaceful dwarf (outside Minetown and its watch) only costs a point of alignment: it turns
+        # hostile before it dies, so there is no peaceful-kill Luck penalty, and it is no murder.
+        # A dropped pick is picked up, the milestone switches to GO_DOWN and dig_down takes over.
+        if self.agent.character.prop.hallu or \
+                self.agent.blstats.experience_level < early_dig_xl(self.agent.character) or \
+                self.agent.pick_for_digging() is not None:
+            yield False
+        # anywhere but Minetown: a dwarf met on the Dlvl 1 grind levels ends the grind with a dive
+        level = self.agent.current_level()
+        if level.dungeon_number == Level.SOKOBAN or level.key() == self.minetown_level:
+            yield False
+        if self.agent.blstats.hitpoints < self.agent.blstats.max_hitpoints * 2 / 3 or \
+                self.agent.blstats.hunger_state >= Hunger.WEAK:
+            yield False
+
+        dis = self.agent.bfs()
+        targets = []
+        for y, x in zip(*self.agent.monster_tracker.peaceful_monster_mask.nonzero()):
+            glyph = self.agent.glyphs[y, x]
+            if not MON.is_monster(glyph):
+                continue
+            name = MON.permonst(glyph).mname
+            if name in ('watchman', 'watch captain'):
+                yield False  # Minetown, before its shopkeeper has been seen
+            if name not in ('dwarf', 'dwarf lord'):
+                continue
+            reach = [dis[ny, nx] for ny, nx in self.agent.neighbors(y, x, shuffle=False) if dis[ny, nx] != -1]
+            if reach:
+                targets.append((min(reach), y, x))
+        if not targets:
+            yield False
+
+        yield True
+        _, y, x = min(targets)
+        if not utils.adjacent((y, x), (self.agent.blstats.y, self.agent.blstats.x)):
+            self.agent.go_to(y, x, stop_one_before=True, max_steps=3)
+            return
+        # the "Really attack?" prompt is answered yes by Agent.step
+        self.agent.melee_attack(y, x)
+        # rescan the map so the now-angry dwarf is seen as hostile and fight2 finishes it off
+        self.agent.monster_tracker._last_glyphs = None
+
     @Strategy.wrap
     def current_strategy(self):
         yield True
@@ -649,7 +699,15 @@ class GlobalLogic:
                 # Dlvl 1 has few monsters and fewer corpses: a grind that runs out of food starves
                 # there, fainting in front of the next pack of jackals. Hungry with nothing left to
                 # eat, move on down where corpses (and experience) come faster.
+                # hypothesis: the grind lives on hunger prayers, and traces of Dlvl 1 deaths show
+                # most of them follow a prayer that angered the god (too soon, or a negative Luck
+                # or alignment): from then on every prayer fails, so the character faints from
+                # hunger over and over on a level with few corpses until a newt, gecko or kitten
+                # bites it to death at Xp 4-6. Such a grind cannot finish; leaving at once for the
+                # usual next phase (the Mines' gnomes and dwarves leave meaty corpses, a pick digs
+                # down, and every new level is fresh food and depth) beats waiting to starve.
                 condition = lambda: self.agent.blstats.experience_level >= self._grind_xl() or \
+                    (GRIND_ENDS_WHEN_GOD_ANGRY and self.agent.prayer_failed) or \
                     (LEAVE_GRIND_WHEN_HUNGRY and
                      self.agent.character.role in ROLES_LEAVING_GRIND_WHEN_HUNGRY and
                      self.agent.blstats.hunger_state >= Hunger.HUNGRY and
@@ -815,61 +873,6 @@ class GlobalLogic:
             else:
                 idle_iterations = 0
 
-    # hypothesis: gnomes and dwarves (cav/hea/ran-gno, val-dwa) walk the Mines after the Xp 8 grind
-    # among *peaceful* dwarves, so unlike every other race they never kill one for the pick-axe or
-    # mattock ~64% of them carry, and without a digging tool they dive by the stairs and die at
-    # Dlvl 2-10 (the Archeologist, who has a pick, averages Dlvl 17). Deliberately picking a fight
-    # with one peaceful dwarf is cheap: melee angers it before it dies, so there is no Luck
-    # penalty, only a few alignment points, and an Xp 8 character with most of its HP wins the
-    # fight. Once the pick is in the pack the existing machinery (milestone -> GO_DOWN, dig_down
-    # under Elbereth) turns the rest of the game into a dig dive. Only applies after the grind, so
-    # the Dlvl 1 game is byte-identical to the parent's.
-    # From github.com/Komershan/nethacker@d3d40a6.
-    @Strategy.wrap
-    def anger_peaceful_dwarf(self):
-        a = self.agent
-        if a.character.race not in (Character.GNOME, Character.DWARF) or \
-                self.milestone == Milestone.BE_ON_FIRST_LEVEL or \
-                a.character.prop.hallu or a.character.prop.polymorph or \
-                a.blstats.hitpoints < 0.8 * a.blstats.max_hitpoints or \
-                a.blstats.hunger_state >= Hunger.WEAK or \
-                a.pick_for_digging() is not None:
-            yield False
-        level = a.current_level()
-        # never where the Watch or a shopkeeper could get involved
-        if (self.minetown_level is not None and level.key() == self.minetown_level) or \
-                utils.isin(a.glyphs, G.SHOPKEEPER).any() or level.shop[a.blstats.y, a.blstats.x]:
-            yield False
-        peaceful = a.monster_tracker.peaceful_monster_mask
-        dis = a.bfs()
-        best = None
-        for y, x in zip(*peaceful.nonzero()):
-            if not MON.is_monster(a.glyphs[y, x]):
-                continue
-            name = MON.permonst(a.glyphs[y, x]).mname
-            if name.startswith('watch'):
-                yield False
-            if name not in ('dwarf', 'dwarf lord', 'dwarf king'):
-                continue
-            nd = dis[max(y - 1, 0):y + 2, max(x - 1, 0):x + 2]
-            nd = nd[nd != -1]
-            if nd.size == 0:
-                continue
-            d = int(nd.min())
-            if d <= 12 and (best is None or d < best[0]):
-                best = (d, y, x)
-        if best is None:
-            yield False
-        yield True
-        _, y, x = best
-        if utils.adjacent((y, x), (a.blstats.y, a.blstats.x)):
-            a.melee_attack(y, x)
-            # the tracker carries peacefulness over from the previous frame; force a fresh
-            # monster listing so fight2 sees the now hostile dwarf
-            a.monster_tracker.on_panic()
-            return
-        a.go_to(y, x, stop_one_before=True, max_steps=1)
-
     def global_strategy(self):
         return (
             self.current_strategy().repeat()
@@ -895,10 +898,10 @@ class GlobalLogic:
                 self.agent.eat_from_inventory().every(5),
             ])
             .preempt(self.agent, [
-                self.follow_guard(),
+                self.hunt_peaceful_dwarf(),
             ])
             .preempt(self.agent, [
-                self.anger_peaceful_dwarf(),
+                self.follow_guard(),
             ])
             .preempt(self.agent, [
                 self.agent.fight2(),
