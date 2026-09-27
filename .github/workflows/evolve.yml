@@ -126,8 +126,16 @@ jobs:
       - name: Install nethackers
         if: steps.gate.outputs.skip == 'false'
         run: |
+          set -euo pipefail
           pip install --quiet nethackers==0.37.3
           nethackers --version | tee -a "$GITHUB_STEP_SUMMARY"
+          # `gh` is NOT preinstalled on ubuntu-latest, and publishing needs it
+          # (hubclient/publish.py calls `gh repo clone` then `git push`).
+          if ! command -v gh >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq gh
+          fi
+          gh --version | head -1
 
       # Both images are large; the arena is what actually scores, the mutator
       # is what mutates. Pulled up front so a failure here is obvious rather
@@ -145,14 +153,18 @@ jobs:
           git config user.name  "nethackers-evolve"
           git config user.email "nethackers-evolve@users.noreply.github.com"
 
-      # Hub credentials are optional. Without them the loop still works: the
-      # `--offline` flag below evaluates and scores locally, and simply does
-      # not publish or register. That is the right default for a first run --
-      # it means a run can never accidentally push commits under someone's
-      # account, and there is no credential in the repo to leak.
+      # Hub credentials are optional, and the run adapts:
+      #   both present -> publish and register (no --offline)
+      #   absent       -> --offline, score locally, publish nothing
+      # That is the safe default: a run cannot push commits under someone's
+      # account unless someone deliberately added the secrets, and there is no
+      # credential in the repo to leak.
       #
       # To enable registration, add two repository secrets:
-      #   NETHACKERS_TOKEN  a GitHub token with `public_scope` (or repo)
+      #   NETHACKERS_TOKEN  a GitHub token; `public_repo` is the only scope the
+      #                     hub needs -- it only checks that the token's login
+      #                     owns the referenced repo, and publishing is done by
+      #                     `gh` with its own credentials
       #   NETHACKERS_LOGIN  the login it belongs to, e.g. OlegPapulov
       # The shape must match hubclient.credentials.load(), which reads
       # ~/.nethackers/credentials.json as {login, access_token, ...}.
@@ -164,10 +176,31 @@ jobs:
         run: |
           if [ -n "${NETHACKERS_TOKEN:-}" ] && [ -n "${NETHACKERS_LOGIN:-}" ]; then
             python write_credentials.py
-            echo "::notice::hub credentials present, registration enabled"
-            echo "HUB_AUTH=yes" >> "$GITHUB_ENV"
+            # Publishing is done by `gh` (hubclient/publish.py shells out to
+            # `gh repo clone` then `git push`), so `gh` needs its own auth too.
+            # The built-in GITHUB_TOKEN cannot push to a *different* repo
+            # (`<login>/nethacker`), so the PAT is reused for both jobs.
+            if command -v gh >/dev/null 2>&1; then
+              echo "${NETHACKERS_TOKEN}" | gh auth login --hostname github.com \
+                --git-protocol https --with-token >/dev/null 2>&1 || true
+            else
+              echo "::warning::gh not installed; publishing will fail if attempted"
+            fi
+            # Prove the credential works before committing to publishing: a bad
+            # token that only failed at registration time would waste a whole
+            # iteration's agent call and 15 episodes.
+            if nethackers whoami; then
+              echo "::notice::hub credentials accepted, registration ENABLED"
+              echo "yes" > .hub-auth
+              echo "HUB_AUTH=yes" >> "$GITHUB_ENV"
+            else
+              echo "::warning::token present but the hub rejected it; running offline"
+              echo "no" > .hub-auth
+              echo "HUB_AUTH=no" >> "$GITHUB_ENV"
+            fi
           else
             echo "::warning::no hub credentials: running offline, nothing will be published"
+            echo "no" > .hub-auth
             echo "HUB_AUTH=no" >> "$GITHUB_ENV"
           fi
 
@@ -250,6 +283,8 @@ jobs:
           IDENTITY: ${{ inputs.identity }}
           SEED_MODE: ${{ inputs.seed_mode }}
           BUDGET: ${{ inputs.budget }}
+          NETHACKERS_TOKEN: ${{ secrets.NETHACKERS_TOKEN }}
+          NETHACKERS_LOGIN: ${{ secrets.NETHACKERS_LOGIN }}
         run: |
           set -o pipefail
           set +e
@@ -275,10 +310,27 @@ jobs:
             --operator "$OPERATOR"
             --model "$MODEL"
             --iterations 1
-            --offline
             --workdir "$WORKDIR"
             --run-name "gh-${{ github.run_id }}-i${ITERATION}"
           )
+          # Publish and register only when the hub credential was proven in the
+          # auth step. `--offline` means "evaluate locally without publishing or
+          # registering", so leaving it on alongside valid credentials is what
+          # silently discarded every candidate -- the workflow used to report
+          # "registration enabled" while being structurally unable to register.
+          # Read the mode from a FILE the auth step wrote, not from
+          # $GITHUB_ENV: env vars set there do reach later steps, but a file is
+          # unambiguous, survives reordering, and is visible in the artifact.
+          HUB_AUTH=no
+          [ -f .hub-auth ] && HUB_AUTH=$(cat .hub-auth)
+          if [ "$HUB_AUTH" = "yes" ]; then
+            echo "MODE publish (hub credential present)" | tee -a "$GITHUB_STEP_SUMMARY"
+            ARGS+=(--token "$NETHACKERS_TOKEN" --owner "$NETHACKERS_LOGIN")
+          else
+            echo "MODE offline (no hub credential; nothing will be published)" \
+              | tee -a "$GITHUB_STEP_SUMMARY"
+            ARGS+=(--offline)
+          fi
           [ "$SEED_MODE" = "autoascend" ] && ARGS+=(--from-seed)
           echo "COMMAND nethackers ${ARGS[*]}"
           nethackers "${ARGS[@]}" > evolve.log 2>&1
