@@ -82,7 +82,7 @@ jobs:
   # parallel episodes would halve the CPU each and make the games slower, not
   # the run faster.
   evolve:
-    name: "iter ${{ matrix.iteration + 1 }}/${{ inputs.iterations }} ${{ inputs.identity }}"
+    name: "iter ${{ matrix.iteration }} (of ${{ inputs.iterations }}) ${{ inputs.identity }}"
     runs-on: ubuntu-latest
     timeout-minutes: 150
     strategy:
@@ -120,7 +120,7 @@ jobs:
             echo "cpus=$(nproc)"
             echo "mem_gb=$(free -g | awk '/^Mem:/{print $2}')"
             echo "docker=$(docker version --format '{{.Server.Version}}')"
-            echo "iteration=${{ matrix.iteration + 1 }} of ${{ inputs.iterations }}"
+            echo "iteration_index=${{ matrix.iteration }} of ${{ inputs.iterations }}"
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Install nethackers
@@ -264,7 +264,7 @@ jobs:
           PARENT="$GITHUB_WORKSPACE/seed-bot"
           if [ "$ITERATION" -gt 0 ] && [ -f carry/bot.py ]; then
             PARENT="$GITHUB_WORKSPACE/carry"
-            echo "PARENT carry (iteration $((ITERATION + 1)) continues from the previous job)" \
+            echo "PARENT carry (continuing from the previous iteration job)" \
               | tee -a "$GITHUB_STEP_SUMMARY"
           else
             echo "PARENT seed ($SEED_MODE)" | tee -a "$GITHUB_STEP_SUMMARY"
@@ -303,7 +303,7 @@ jobs:
           METRICS=$(find runs -name metrics.jsonl -newermt '-6 hours' 2>/dev/null | head -1 || true)
           [ -z "$METRICS" ] && METRICS=$(find runs -name metrics.jsonl 2>/dev/null | head -1 || true)
           {
-            echo "### Iteration $((ITERATION + 1)) — ${{ inputs.identity }}"
+            echo "### Iteration index $ITERATION — ${{ inputs.identity }}"
             echo '```'
             grep -hE "^(COMMAND|EXIT|SEED_SCORE|SEED_REF|SEED_CARRY|PARENT|MODELS|KEYLESS_ZEN)" \
               evolve.log operator-check.txt seed-score.log 2>/dev/null | sort -u || true
@@ -382,7 +382,7 @@ jobs:
             echo "nothing to commit"
             exit 0
           fi
-          git commit -q -m "evolve: $IDENTITY iteration $((ITERATION + 1)) (run ${{ github.run_id }}, ${{ inputs.operator }}/${{ inputs.model }})"
+          git commit -q -m "evolve: $IDENTITY iteration index $ITERATION (run ${{ github.run_id }}, ${{ inputs.operator }}/${{ inputs.model }})"
           # A rejected push is a lost diagnostic bundle, not a failed
           # iteration -- do not let it fail the job.
           git push origin HEAD:evolve || echo "::warning::push to evolve failed (concurrent job?); artifacts not saved"
