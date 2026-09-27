@@ -43,14 +43,21 @@ def now() -> str:
 
 
 def rows(evidence) -> list[dict]:
-    """Per-seed shape, kept small: turn count is the signal, not the score."""
+    """Per-seed shape, kept small: turn count is the signal, not the score.
+
+    ``progress`` is kept at FULL precision. Rounding it to 4dp made two runs of
+    the same commit look different on all 15 seeds, which cost a real
+    investigation: turns and depth matched exactly and only the display was
+    rounded, so a 1e-5 residual read as a discrepancy. Display rounding
+    belongs in the report, never in the data.
+    """
     return [
         {
             "seed": r.trajectory_id,
             "status": r.status,
             "turns": r.turns,
             "depth": r.max_depth,
-            "progress": round(r.progress, 4),
+            "progress": r.progress,
             "milestone": r.milestone,
             "death": r.cause_of_death,
             "error": (r.error or "")[:160],

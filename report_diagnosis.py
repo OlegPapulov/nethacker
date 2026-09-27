@@ -1,5 +1,9 @@
 """Render a diagnosis.json as a fixed-width table for the run summary.
 
+Progress is rounded HERE, for display only. The data keeps full precision:
+rounding at write time made two runs of the same commit look different on every
+seed, when turns and depth had matched exactly.
+
 Kept as a file rather than a heredoc inside the workflow's ``run: |`` block. A
 heredoc nested there has to be indented to the block's own level, and getting
 that wrong produces a step that fails silently with an empty log -- which is
@@ -22,7 +26,7 @@ def table(rows: list[dict]) -> str:
         death = row.get("death") or "-"
         lines.append(
             f"{row['seed']:>5} {row['status']:<10} {row['turns']:>7} "
-            f"{row['depth']:>6} {row['progress']:>7}  {death}"
+            f"{row['depth']:>6} {row['progress']:.4f}  {death}"
         )
     return "\n".join(lines)
 
