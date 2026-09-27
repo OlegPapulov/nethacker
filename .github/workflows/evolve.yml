@@ -241,12 +241,25 @@ jobs:
           # was committed under `best/<identity>/` on the evolve branch, so a
           # later job in the same run can continue from it without the archive
           # having to persist in memory.
+          # A best/<identity>/ tree may only be carried forward if it records
+          # which run wrote it. One without a .origin is a leftover from a
+          # superseded run, and carrying it forward silently resurrects it as a
+          # parent -- which is how a cancelled run's tree came to be used as a
+          # baseline and read as a 0.0126 score difference (N3b).
           if [ -d "best/$IDENTITY" ] && [ -f "best/$IDENTITY/bot.py" ]; then
-            cp -r "best/$IDENTITY" ./seed-bot
-            echo "SEED_CARRY best/$IDENTITY" | tee -a "$GITHUB_STEP_SUMMARY"
-            test -f ./seed-bot/bot.py
-            du -sh ./seed-bot
-            exit 0
+            if [ -f "best/$IDENTITY/.origin" ]; then
+              cp -r "best/$IDENTITY" ./seed-bot
+              echo "SEED_CARRY best/$IDENTITY" | tee -a "$GITHUB_STEP_SUMMARY"
+              grep '^run:' "best/$IDENTITY/.origin" | sed 's/^/  carried from /' \
+                | tee -a "$GITHUB_STEP_SUMMARY"
+              test -f ./seed-bot/bot.py
+              du -sh ./seed-bot
+              exit 0
+            fi
+            echo "::warning::best/$IDENTITY has no .origin, so it is a leftover" \
+              | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "::warning::from a superseded run; ignoring it, seeding from $SEED_MODE" \
+              | tee -a "$GITHUB_STEP_SUMMARY"
           fi
           if [ "$SEED_MODE" = "pinned" ]; then
             # Pin the parent. The per-identity champion moved twice during this
