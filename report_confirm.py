@@ -28,8 +28,9 @@ def main() -> None:
     mean = data["mean_progress"]
     results = data["results"]
 
-    print(f"tree:      {data.get('tree')}")
+    print(f"digest:    {data.get('solution_digest')}")
     print(f"identity:  {data.get('identity')}")
+    print(f"seed_set:  {(data.get('objective') or {}).get('seed_set')}")
     print(f"episodes:  {data.get('episodes')}   ascensions: {data.get('ascensions')}")
     print(f"CONFIRMED  {mean:.4f}")
     print()
