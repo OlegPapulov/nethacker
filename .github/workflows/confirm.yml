@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: "Branch holding best/<identity>/ (default: evolve)"
+        description: "Branch holding the tree (default: evolve)"
         required: false
         default: "evolve"
       identity:
@@ -25,11 +25,19 @@ on:
         required: true
         default: "val-dwa-law-fem"
       tree:
-        description: "Path to the tree inside the repo (e.g. best/val-dwa-law-fem)"
-        required: true
+        description: "Path to the tree inside this repo (e.g. best/val-dwa-law-fem)"
+        required: false
         default: "best/val-dwa-law-fem"
+      external:
+        description: "Optional repo@commit to score INSTEAD of a local path"
+        required: false
+        default: ""
+      parent:
+        description: "Optional parent repo@commit to score as the baseline, paired"
+        required: false
+        default: ""
       expected:
-        description: "Score the run claimed, for comparison (0 to skip)"
+        description: "Score to compare against (0 to skip)"
         required: false
         default: "0"
 
@@ -73,11 +81,40 @@ jobs:
       - name: Pull the pinned arena image
         run: docker pull "$ARENA_IMAGE"
 
+      # `nethackers pull` shells out to `gh repo clone`, so an external
+      # repo@commit cannot be fetched without it. Not preinstalled.
+      - name: Install gh
+        if: inputs.external != ''
+        run: |
+          if ! command -v gh >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq gh
+          fi
+          # A read-only clone of a public repo needs no auth.
+          gh auth setup-git 2>/dev/null || true
+
       - name: Materialise the tree
         env:
           TREE: ${{ inputs.tree }}
+          EXTERNAL: ${{ inputs.external }}
+          IDENTITY: ${{ inputs.identity }}
         run: |
           set -euo pipefail
+          if [ -n "${{ inputs.parent }}" ]; then
+            nethackers pull "${{ inputs.parent }}" ./parent
+            test -f ./parent/bot.py || { echo "::error::parent has no bot.py"; exit 1; }
+            find ./parent -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+            find ./parent -name "*.pyc" -delete 2>/dev/null || true
+            echo "PARENT ${{ inputs.parent }}" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -n "$EXTERNAL" ]; then
+            # Score someone else's program at a pinned commit -- used to measure
+            # a candidate against its own parent in the same run, on the same
+            # runner, so the comparison is not across machines.
+            echo "EXTERNAL $EXTERNAL" | tee -a "$GITHUB_STEP_SUMMARY"
+            nethackers pull "$EXTERNAL" ./external
+            TREE=./external
+          fi
           test -f "$TREE/bot.py" || { echo "::error::$TREE/bot.py missing"; exit 1; }
           # Strip bytecode: it is build output, never part of a solution, and
           # it changes the content digest between a run and a checkout.
@@ -88,16 +125,17 @@ jobs:
             exit 1
           }
           du -sh "$TREE"
-          ls "$TREE"
+          echo "TREE=$TREE" >> "$GITHUB_ENV"
 
       - name: Score on the published batch
         env:
           IDENTITY: ${{ inputs.identity }}
-          TREE: ${{ inputs.tree }}
           EXPECTED: ${{ inputs.expected }}
         run: |
           set -o pipefail
-          python confirm_score.py "$TREE" "$IDENTITY" evidence.json 2>&1 | tee confirm.log || true
+          ARGS=("$TREE" "$IDENTITY" evidence.json)
+          [ -d ./parent ] && ARGS+=("./parent")
+          python confirm_score.py "${ARGS[@]}" 2>&1 | tee confirm.log || true
           test -f evidence.json || { echo "::error::scoring produced no evidence"; exit 1; }
 
       - name: Compare against the claimed score
