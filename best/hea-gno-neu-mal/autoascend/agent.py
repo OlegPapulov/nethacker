@@ -1635,13 +1635,13 @@ class Agent:
         # hypothesis: many runs die in melee at low XP (Xp5-7) across all four identities. This
         # Elbereth last resort sits at the very bottom of emergency_strategy -- below the healing
         # cast, healing potion, fruit juice and prayer -- so it only fires when the Healer is at
-        # critical HP (< max/5 or < 5) with every other emergency option already exhausted, i.e. a
+        # HP (< max/3 or < 5) with every other emergency option already exhausted, i.e. a
         # near-certain death. Engraving Elbereth in the dust scares off the common early attackers
         # (most animals, humanoids, etc.), and waiting on it lets HP regenerate, converting otherwise
         # terminal combat deaths into survival == more XP == more score. Because it triggers only in
         # this otherwise-fatal, resource-empty state, resourced/healthy runs never reach it.
         if self.inventory.engraving_below_me.lower() != 'elbereth' and self.can_engrave() and \
-                (self.blstats.hitpoints < 1 / 5 * self.blstats.max_hitpoints or self.blstats.hitpoints < 5):
+                (self.blstats.hitpoints < 1 / 3 * self.blstats.max_hitpoints or self.blstats.hitpoints < 5):
             yield True
             self.engrave('Elbereth')
             for _ in range(8):
