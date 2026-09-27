@@ -352,8 +352,20 @@ jobs:
           set -euo pipefail
           # `evolve` writes its per-run folder as runs/runs/<run-id>/, and
           # metrics.jsonl lives inside it rather than at runs/metrics.jsonl.
-          METRICS=$(find runs -name metrics.jsonl -newermt '-6 hours' 2>/dev/null | head -1 || true)
-          [ -z "$METRICS" ] && METRICS=$(find runs -name metrics.jsonl 2>/dev/null | head -1 || true)
+          # Scope the search to THIS job's run folder. A bare
+          # `find runs -name metrics.jsonl` walks every previous run's tree,
+          # because the artifact and the checked-out branch both carry
+          # `runs/<old-id>/`, and it silently reported another identity's score
+          # (val-dwa-law-fem's 0.1122 in a hea-gno-neu-mal summary).
+          # --run-name stamps the folder with this run's id, so match on that.
+          METRICS=$(find "runs" -path "*gh-${{ github.run_id }}-i${ITERATION}*" \
+                          -name metrics.jsonl 2>/dev/null | head -1 || true)
+          if [ -z "$METRICS" ]; then
+            # Fall back to the newest file, but say so rather than pretend.
+            METRICS=$(find runs -name metrics.jsonl -newermt '-2 hours' 2>/dev/null | head -1 || true)
+            [ -n "$METRICS" ] && echo "::warning::no metrics for this run id; fell back to $METRICS"
+          fi
+          [ -z "$METRICS" ] && METRICS="(none found)"
           {
             echo "### Iteration index $ITERATION — ${{ inputs.identity }}"
             echo '```'
