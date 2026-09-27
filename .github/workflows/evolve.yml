@@ -42,17 +42,25 @@ on:
         required: true
         default: "opencode/nemotron-3.5-lightning-free"
       seed_mode:
-        description: "How to seed the cell: hub (per-identity champion) or autoascend"
+        description: "How to seed the cell: hub (per-identity champion), pinned (exact commit), or autoascend"
         required: true
         default: "hub"
         type: choice
-        options: [hub, autoascend]
+        options: [hub, pinned, autoascend]
+      parent_ref:
+        description: "Exact repo@commit, required when seed_mode=pinned"
+        required: false
+        default: ""
       budget:
         description: "Confirm a cell moved before spending on a union eval"
         required: false
         default: "no-union"
         type: choice
         options: ["no-union", "union"]
+      focus:
+        description: "Optional extra guidance appended to the brief, one line"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -240,7 +248,19 @@ jobs:
             du -sh ./seed-bot
             exit 0
           fi
-          if [ "$SEED_MODE" = "autoascend" ]; then
+          if [ "$SEED_MODE" = "pinned" ]; then
+            # Pin the parent. The per-identity champion moved twice during this
+            # project (vkurenkov on val, daglar->DT6A on hea), so a `hub` read is
+            # not a reproducible starting point: two runs an hour apart can
+            # evolve different trees and neither number means anything.
+            REF="${{ inputs.parent_ref }}"
+            case "$REF" in
+              *@*) ;;
+              *) echo "::error::parent_ref must be repo@commit, got '$REF'"; exit 1 ;;
+            esac
+            echo "SEED_PINNED $REF" | tee -a "$GITHUB_STEP_SUMMARY"
+            nethackers pull "$REF" ./seed-bot
+          elif [ "$SEED_MODE" = "autoascend" ]; then
             # autoascend ships inside the installed package rather than being
             # pullable from a registry, so copy it out of site-packages.
             SP=$(python -c "import nethackers, os; print(os.path.dirname(nethackers.__file__))")
@@ -332,6 +352,10 @@ jobs:
             ARGS+=(--offline)
           fi
           [ "$SEED_MODE" = "autoascend" ] && ARGS+=(--from-seed)
+          if [ -n "${{ inputs.focus }}" ]; then
+            echo "FOCUS ${{ inputs.focus }}" | tee -a "$GITHUB_STEP_SUMMARY"
+            printf '%s\n' "${{ inputs.focus }}" > focus.txt
+          fi
           echo "COMMAND nethackers ${ARGS[*]}"
           nethackers "${ARGS[@]}" > evolve.log 2>&1
           CODE=$?
