@@ -1,0 +1,212 @@
+{
+  "tree": "./tree",
+  "identity": "hea-gno-neu-mal",
+  "published_mean": 0.09948393340009527,
+  "validation_mean": 0.12800240531272913,
+  "turn1_published": 0,
+  "turn1_validation": 0,
+  "published": [
+    {
+      "seed": 0,
+      "status": "completed",
+      "turns": 24883,
+      "depth": 7,
+      "progress": 0.0745,
+      "milestone": "Xp:8",
+      "death": "killed by an owlbear",
+      "error": ""
+    },
+    {
+      "seed": 1,
+      "status": "completed",
+      "turns": 17860,
+      "depth": 1,
+      "progress": 0.0508,
+      "milestone": "Xp:7",
+      "death": "killed by a gnome zombie",
+      "error": ""
+    },
+    {
+      "seed": 2,
+      "status": "completed",
+      "turns": 11815,
+      "depth": 1,
+      "progress": 0.0242,
+      "milestone": "Xp:4",
+      "death": "died of starvation",
+      "error": ""
+    },
+    {
+      "seed": 3,
+      "status": "completed",
+      "turns": 13048,
+      "depth": 1,
+      "progress": 0.0369,
+      "milestone": "Xp:6",
+      "death": "killed by a cave spider",
+      "error": ""
+    },
+    {
+      "seed": 4,
+      "status": "completed",
+      "turns": 33190,
+      "depth": 6,
+      "progress": 0.0745,
+      "milestone": "Xp:8",
+      "death": "killed by a Woodland-elf",
+      "error": ""
+    },
+    {
+      "seed": 5,
+      "status": "completed",
+      "turns": 2388,
+      "depth": 1,
+      "progress": 0.0208,
+      "milestone": "Xp:3",
+      "death": "killed by a brown mold",
+      "error": ""
+    },
+    {
+      "seed": 6,
+      "status": "completed",
+      "turns": 5909,
+      "depth": 1,
+      "progress": 0.0291,
+      "milestone": "Xp:5",
+      "death": "killed by a cave spider",
+      "error": ""
+    },
+    {
+      "seed": 7,
+      "status": "completed",
+      "turns": 22712,
+      "depth": 25,
+      "progress": 0.4664,
+      "milestone": "Dlvl:25",
+      "death": "killed by a raven",
+      "error": ""
+    },
+    {
+      "seed": 8,
+      "status": "completed",
+      "turns": 21384,
+      "depth": 19,
+      "progress": 0.3655,
+      "milestone": "Dlvl:19",
+      "death": "killed by an ogre king",
+      "error": ""
+    },
+    {
+      "seed": 9,
+      "status": "completed",
+      "turns": 9746,
+      "depth": 1,
+      "progress": 0.0369,
+      "milestone": "Xp:6",
+      "death": "killed by a wererat",
+      "error": ""
+    },
+    {
+      "seed": 10,
+      "status": "completed",
+      "turns": 22390,
+      "depth": 8,
+      "progress": 0.0696,
+      "milestone": "Dlvl:8",
+      "death": "killed by a Woodland-elf",
+      "error": ""
+    },
+    {
+      "seed": 11,
+      "status": "completed",
+      "turns": 39844,
+      "depth": 11,
+      "progress": 0.1613,
+      "milestone": "Dlvl:11",
+      "death": "killed by a killer bee",
+      "error": ""
+    },
+    {
+      "seed": 12,
+      "status": "completed",
+      "turns": 4743,
+      "depth": 1,
+      "progress": 0.0242,
+      "milestone": "Xp:4",
+      "death": "killed by a hobbit",
+      "error": ""
+    },
+    {
+      "seed": 13,
+      "status": "completed",
+      "turns": 13864,
+      "depth": 1,
+      "progress": 0.0369,
+      "milestone": "Xp:6",
+      "death": "killed by a little dog",
+      "error": ""
+    },
+    {
+      "seed": 14,
+      "status": "completed",
+      "turns": 2936,
+      "depth": 1,
+      "progress": 0.0208,
+      "milestone": "Xp:3",
+      "death": "killed by a hobbit",
+      "error": ""
+    }
+  ],
+  "validation": [
+    {
+      "seed": 1000,
+      "status": "completed",
+      "turns": 29318,
+      "depth": 1,
+      "progress": 0.0508,
+      "milestone": "Xp:7",
+      "death": "died of starvation",
+      "error": ""
+    },
+    {
+      "seed": 1001,
+      "status": "completed",
+      "turns": 18184,
+      "depth": 16,
+      "progress": 0.3249,
+      "milestone": "Dlvl:16",
+      "death": "killed by a giant mummy",
+      "error": ""
+    },
+    {
+      "seed": 1002,
+      "status": "completed",
+      "turns": 6952,
+      "depth": 1,
+      "progress": 0.0291,
+      "milestone": "Xp:5",
+      "death": "killed by a werejackal",
+      "error": ""
+    },
+    {
+      "seed": 1003,
+      "status": "completed",
+      "turns": 22480,
+      "depth": 1,
+      "progress": 0.0291,
+      "milestone": "Xp:5",
+      "death": "killed by a brown mold",
+      "error": ""
+    },
+    {
+      "seed": 1004,
+      "status": "completed",
+      "turns": 24850,
+      "depth": 12,
+      "progress": 0.2061,
+      "milestone": "Dlvl:12",
+      "death": "killed by a sergeant",
+      "error": ""
+    }
+  ]
+}
