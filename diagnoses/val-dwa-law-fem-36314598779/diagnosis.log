@@ -1,0 +1,29 @@
+== published batch (seeds 0-14) ==
+arena · running 15 episode(s)…
+arena · episode 4/15 (val-dwa-law-fem): progress=0.051 completed turns=17593 depth=1
+arena · episode 2/15 (val-dwa-law-fem): progress=0.117 completed turns=35249 depth=4
+arena · episode 3/15 (val-dwa-law-fem): progress=0.051 completed turns=16295 depth=1
+arena · episode 6/15 (val-dwa-law-fem): progress=0.117 completed turns=28998 depth=5
+arena · episode 7/15 (val-dwa-law-fem): progress=0.051 completed turns=20978 depth=1
+arena · episode 9/15 (val-dwa-law-fem): progress=0.029 completed turns=9079 depth=1
+arena · episode 1/15 (val-dwa-law-fem): progress=0.117 completed turns=39767 depth=4
+arena · episode 5/15 (val-dwa-law-fem): progress=0.161 completed turns=33478 depth=11
+arena · episode 10/15 (val-dwa-law-fem): progress=0.037 completed turns=15572 depth=1
+arena · episode 8/15 (val-dwa-law-fem): progress=0.179 completed turns=35134 depth=9
+arena · episode 12/15 (val-dwa-law-fem): progress=0.029 completed turns=8419 depth=1
+arena · episode 13/15 (val-dwa-law-fem): progress=0.117 completed turns=28923 depth=3
+arena · episode 14/15 (val-dwa-law-fem): progress=0.117 completed turns=27487 depth=5
+arena · episode 11/15 (val-dwa-law-fem): progress=0.255 completed turns=53644 depth=7
+arena · episode 15/15 (val-dwa-law-fem): progress=0.255 completed turns=40533 depth=11
+PUBLISHED_MEAN 0.1122
+== validation batch (seeds 1000-1004) ==
+arena · running 5 episode(s)…
+arena · episode 1/5 (val-dwa-law-fem): progress=0.037 completed turns=12479 depth=1
+arena · episode 3/5 (val-dwa-law-fem): progress=0.075 completed turns=25241 depth=2
+arena · episode 4/5 (val-dwa-law-fem): progress=0.075 completed turns=30176 depth=3
+arena · episode 2/5 (val-dwa-law-fem): progress=0.179 completed turns=28809 depth=6
+arena · episode 5/5 (val-dwa-law-fem): progress=0.179 completed turns=35119 depth=8
+VALIDATION_MEAN 0.1088
+TURN1_PUBLISHED 0/15
+TURN1_VALIDATION 0/5
+DIAG_COMPLETE
