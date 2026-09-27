@@ -50,6 +50,21 @@ jobs:
           ref: ${{ inputs.ref }}
           fetch-depth: 0
 
+      # The scoring scripts live on main, but the tree under test lives on the
+      # branch named by `ref`. Checkout that branch for the TREE, then bring the
+      # scripts across from main -- otherwise a ref != main run cannot find its
+      # own helper.
+      - name: Fetch the scoring scripts from main
+        run: |
+          set -euo pipefail
+          for f in confirm_score.py report_confirm.py; do
+            git show "origin/main:$f" > "$f" 2>/dev/null || {
+              echo "::error::$f not on origin/main"
+              exit 1
+            }
+          done
+          ls -la confirm_score.py report_confirm.py
+
       - name: Install nethackers
         run: |
           pip install --quiet nethackers==0.37.3
