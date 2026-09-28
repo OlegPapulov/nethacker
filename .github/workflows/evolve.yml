@@ -469,33 +469,49 @@ jobs:
           IDENTITY: ${{ inputs.identity }}
           ITERATION: ${{ matrix.iteration }}
         run: |
-          # `set -e` is deliberately dropped for this whole step. Everything
-          # here is bookkeeping -- diagnostics, a best-tree copy, a push -- and
-          # none of it is the experiment. An `if: always()` step that can still
-          # fail on a missing path loses the artifacts of a run that actually
-          # succeeded, which is how N2'' reported `failure` with every
-          # substantive step green.
+          set -euo pipefail
+          # Never race the sibling matrix jobs: the evolve branch is a single
+          # ref, and with max-parallel > 1 two pushes could conflict. A failed
+          # push here loses only diagnostics, so it must not fail the job.
+          # `set -e` is deliberately dropped for the whole step. Everything here
+          # is bookkeeping -- diagnostics, a best-tree copy, a push -- and none
+          # of it is the experiment. An `if: always()` step that can still fail
+          # on a missing file loses the artifacts of a run that actually
+          # succeeded, which is how iteration 0 of N2'' reported `failure` with
+          # every substantive step green.
           set +e
           DEST="runs/${{ github.run_id }}-i${ITERATION}"
           mkdir -p "$DEST"
           cp -f summary.md evolve.log seed-eval.json "$DEST/" 2>/dev/null
           if [ -d runs ]; then cp -r runs/. "$DEST/" 2>/dev/null; fi
 
-          # Publish the tree the loop actually scored, verified by digest.
-          # publish_best.py refuses to write when the working copy does not
-          # hash to the loop's own child_digest -- in N4 those differed, so
-          # best/ was holding bytes the loop had never measured and every
-          # confirm downstream scored the wrong artifact.
-          CHILD=$(python publish_best.py --print-digest)
-          if [ -n "$CHILD" ]; then
-            echo "loop child_digest: $CHILD"
+          # Publish the best tree this iteration produced, so the NEXT matrix
+          # job can continue from it. The winner is whichever of seed-bot /
+          # the mutated work tree actually improved the cell; the loop already
+          # decided that, so the safest rule is: carry the mutated tree only if
+          # it exists and differs from the seed.
+          BEST=""
+          for cand in runs/runs/latest/work/iter-0; do
+            if [ -f "$cand/bot.py" ]; then BEST="$cand"; break; fi
+          done
+          if [ -n "$BEST" ]; then
+            # Replace, never merge: a stale best/ left by a cancelled run is
+            # exactly how a leftover tree became a comparison baseline and read
+            # as a 0.0126 measurement difference (N3b).
+            rm -rf "best/$IDENTITY"
+            mkdir -p "best/$IDENTITY"
+            # Never publish a carried-forward tree as a new "best": `evolve`
+            # only leaves a mutated tree behind if it was evaluated.
+            cp -f "$BEST"/bot.py "$BEST"/nethackers.solution.json "best/$IDENTITY/" 2>/dev/null
+            [ -d "$BEST/autoascend" ] && cp -r "$BEST/autoascend" "best/$IDENTITY/" 2>/dev/null
+            [ -f "$BEST/arena_adapter.py" ] && cp -f "$BEST/arena_adapter.py" "best/$IDENTITY/" 2>/dev/null
+            # Provenance: a bare best/<identity>/ cannot be told apart from a
+            # leftover, so record which run wrote it and from what parent.
             IDENTITY="$IDENTITY" ITERATION="$ITERATION" PARENT="$PARENT" \
               SEED_MODE="$SEED_MODE" RUN_ID="${{ github.run_id }}" \
-              python publish_best.py runs/runs/latest/work/iter-0 "$IDENTITY" "$CHILD" \
-              || echo "::warning::publish_best failed"
+              python write_origin.py || echo "::warning::could not write .origin"
           else
-            echo "::notice::no child_digest this iteration (nothing improved, or the"
-            echo "::notice::gate rejected it) -- best/$IDENTITY left untouched"
+            echo "::notice::no mutated tree in work/iter-0; best/$IDENTITY left untouched"
           fi
 
           git add -A "$DEST" best 2>/dev/null
