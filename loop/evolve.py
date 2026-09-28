@@ -35,7 +35,22 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+def _find_repo_root(start: Path) -> Path:
+    """The directory holding experience.md / experiments.md.
+
+    Searched upward rather than assumed, because this module gets run from two
+    places: the repository's `loop/` directory, and a copy dropped at the
+    repository root by CI. `parent.parent` is correct for the first and one
+    level too high for the second, which silently produced a brief with the
+    measured baseline but none of the notes.
+    """
+    for candidate in [start, *start.parents]:
+        if (candidate / "experience.md").is_file() or (candidate / "experiments.md").is_file():
+            return candidate
+    return start.parent
+
+
+REPO_ROOT = _find_repo_root(Path(__file__).resolve().parent)
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import brief as brief_mod  # noqa: E402
@@ -188,7 +203,13 @@ def main() -> int:
     parser.add_argument("--workdir", default="runs")
     args = parser.parse_args()
 
-    work = Path(args.workdir)
+    # ABSOLUTE, always. The mutator bind-mounts the worktree into the container
+    # with `-v {worktree}:/workspace`, and Docker rejects a relative mount
+    # source as an invalid volume name -- `docker run` exits 125 with
+    # "includes invalid characters for a local volume name". A relative
+    # --workdir therefore fails at the operator call, after the baseline has
+    # already been scored, which is where an entire iteration goes to die.
+    work = Path(args.workdir).resolve()
     work.mkdir(parents=True, exist_ok=True)
 
     print(f"=== {args.identity} · our loop · {args.iterations} iteration(s) ===", flush=True)

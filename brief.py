@@ -48,7 +48,22 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+def _find_repo_root(start: Path) -> Path:
+    """The directory holding experience.md / experiments.md.
+
+    Searched upward rather than assumed, because this module gets run from two
+    places: the repository's `loop/` directory, and a copy dropped at the
+    repository root by CI. `parent.parent` is correct for the first and one
+    level too high for the second, which silently produced a brief with the
+    measured baseline but none of the notes.
+    """
+    for candidate in [start, *start.parents]:
+        if (candidate / "experience.md").is_file() or (candidate / "experiments.md").is_file():
+            return candidate
+    return start.parent
+
+
+REPO_ROOT = _find_repo_root(Path(__file__).resolve().parent)
 
 # The contract, as the project states it. Reproduced rather than imported so
 # the brief stands alone if the package layout changes.
