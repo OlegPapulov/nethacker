@@ -1,0 +1,212 @@
+{
+  "tree": "./tree",
+  "identity": "val-dwa-law-fem",
+  "published_mean": 0.11217378678998739,
+  "validation_mean": 0.10883171430693528,
+  "turn1_published": 0,
+  "turn1_validation": 0,
+  "published": [
+    {
+      "seed": 0,
+      "status": "completed",
+      "turns": 39767,
+      "depth": 4,
+      "progress": 0.117,
+      "milestone": "Xp:9",
+      "death": null,
+      "error": ""
+    },
+    {
+      "seed": 1,
+      "status": "completed",
+      "turns": 35249,
+      "depth": 4,
+      "progress": 0.117,
+      "milestone": "Xp:9",
+      "death": "killed by a watch captain",
+      "error": ""
+    },
+    {
+      "seed": 2,
+      "status": "completed",
+      "turns": 16295,
+      "depth": 1,
+      "progress": 0.0508,
+      "milestone": "Xp:7",
+      "death": null,
+      "error": ""
+    },
+    {
+      "seed": 3,
+      "status": "completed",
+      "turns": 17593,
+      "depth": 1,
+      "progress": 0.0508,
+      "milestone": "Xp:7",
+      "death": "died of starvation",
+      "error": ""
+    },
+    {
+      "seed": 4,
+      "status": "completed",
+      "turns": 33478,
+      "depth": 11,
+      "progress": 0.1613,
+      "milestone": "Dlvl:11",
+      "death": null,
+      "error": ""
+    },
+    {
+      "seed": 5,
+      "status": "completed",
+      "turns": 28998,
+      "depth": 5,
+      "progress": 0.117,
+      "milestone": "Xp:9",
+      "death": "petrified by touching a cockatrice corpse bare-handed",
+      "error": ""
+    },
+    {
+      "seed": 6,
+      "status": "completed",
+      "turns": 20978,
+      "depth": 1,
+      "progress": 0.0508,
+      "milestone": "Xp:7",
+      "death": "killed by a hill orc",
+      "error": ""
+    },
+    {
+      "seed": 7,
+      "status": "completed",
+      "turns": 35134,
+      "depth": 9,
+      "progress": 0.1791,
+      "milestone": "Xp:10",
+      "death": "poisoned by a rotted garter snake corpse",
+      "error": ""
+    },
+    {
+      "seed": 8,
+      "status": "completed",
+      "turns": 9079,
+      "depth": 1,
+      "progress": 0.0291,
+      "milestone": "Xp:5",
+      "death": "killed by a sewer rat",
+      "error": ""
+    },
+    {
+      "seed": 9,
+      "status": "completed",
+      "turns": 15572,
+      "depth": 1,
+      "progress": 0.0369,
+      "milestone": "Xp:6",
+      "death": "killed by a wererat",
+      "error": ""
+    },
+    {
+      "seed": 10,
+      "status": "completed",
+      "turns": 53644,
+      "depth": 7,
+      "progress": 0.2548,
+      "milestone": "Xp:11",
+      "death": "killed by a death ray",
+      "error": ""
+    },
+    {
+      "seed": 11,
+      "status": "completed",
+      "turns": 8419,
+      "depth": 1,
+      "progress": 0.0291,
+      "milestone": "Xp:5",
+      "death": "killed by a garter snake",
+      "error": ""
+    },
+    {
+      "seed": 12,
+      "status": "completed",
+      "turns": 28923,
+      "depth": 3,
+      "progress": 0.117,
+      "milestone": "Xp:9",
+      "death": "killed by an orc zombie",
+      "error": ""
+    },
+    {
+      "seed": 13,
+      "status": "completed",
+      "turns": 27487,
+      "depth": 5,
+      "progress": 0.117,
+      "milestone": "Xp:9",
+      "death": "killed by a tengu",
+      "error": ""
+    },
+    {
+      "seed": 14,
+      "status": "completed",
+      "turns": 40533,
+      "depth": 11,
+      "progress": 0.2548,
+      "milestone": "Xp:11",
+      "death": null,
+      "error": ""
+    }
+  ],
+  "validation": [
+    {
+      "seed": 1000,
+      "status": "completed",
+      "turns": 12479,
+      "depth": 1,
+      "progress": 0.0369,
+      "milestone": "Xp:6",
+      "death": "killed by a fox",
+      "error": ""
+    },
+    {
+      "seed": 1001,
+      "status": "completed",
+      "turns": 28809,
+      "depth": 6,
+      "progress": 0.1791,
+      "milestone": "Xp:10",
+      "death": null,
+      "error": ""
+    },
+    {
+      "seed": 1002,
+      "status": "completed",
+      "turns": 25241,
+      "depth": 2,
+      "progress": 0.0745,
+      "milestone": "Xp:8",
+      "death": "killed by a giant rat",
+      "error": ""
+    },
+    {
+      "seed": 1003,
+      "status": "completed",
+      "turns": 30176,
+      "depth": 3,
+      "progress": 0.0745,
+      "milestone": "Xp:8",
+      "death": "killed by a rabid rat",
+      "error": ""
+    },
+    {
+      "seed": 1004,
+      "status": "completed",
+      "turns": 35119,
+      "depth": 8,
+      "progress": 0.1791,
+      "milestone": "Xp:10",
+      "death": null,
+      "error": ""
+    }
+  ]
+}

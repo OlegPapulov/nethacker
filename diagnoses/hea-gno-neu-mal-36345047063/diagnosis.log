@@ -1,0 +1,31 @@
+== published batch (seeds 0-14) ==
+arena · running 15 episode(s)…
+arena · episode 4/15 (hea-gno-neu-mal): progress=0.037 completed turns=13048 depth=1
+arena · episode 3/15 (hea-gno-neu-mal): progress=0.024 completed turns=11815 depth=1
+arena · episode 6/15 (hea-gno-neu-mal): progress=0.021 completed turns=2388 depth=1
+arena · episode 2/15 (hea-gno-neu-mal): progress=0.051 completed turns=17860 depth=1
+arena · episode 7/15 (hea-gno-neu-mal): progress=0.029 completed turns=5909 depth=1
+arena · episode 1/15 (hea-gno-neu-mal): progress=0.075 completed turns=24883 depth=7
+arena · episode 10/15 (hea-gno-neu-mal): progress=0.037 completed turns=9746 depth=1
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 8/15 (hea-gno-neu-mal): progress=0.466 completed turns=22712 depth=25
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 9/15 (hea-gno-neu-mal): progress=0.365 completed turns=21384 depth=19
+arena · episode 13/15 (hea-gno-neu-mal): progress=0.024 completed turns=4743 depth=1
+arena · episode 5/15 (hea-gno-neu-mal): progress=0.075 completed turns=33190 depth=6
+arena · episode 11/15 (hea-gno-neu-mal): progress=0.070 completed turns=22390 depth=8
+arena · episode 15/15 (hea-gno-neu-mal): progress=0.021 completed turns=2936 depth=1
+arena · episode 14/15 (hea-gno-neu-mal): progress=0.037 completed turns=13864 depth=1
+arena · episode 12/15 (hea-gno-neu-mal): progress=0.161 completed turns=39844 depth=11
+PUBLISHED_MEAN 0.0995
+== validation batch (seeds 1000-1004) ==
+arena · running 5 episode(s)…
+arena · episode 3/5 (hea-gno-neu-mal): progress=0.029 completed turns=6952 depth=1
+arena · episode 2/5 (hea-gno-neu-mal): progress=0.325 completed turns=18184 depth=16
+arena · episode 1/5 (hea-gno-neu-mal): progress=0.051 completed turns=29318 depth=1
+arena · episode 5/5 (hea-gno-neu-mal): progress=0.206 completed turns=24850 depth=12
+arena · episode 4/5 (hea-gno-neu-mal): progress=0.029 completed turns=22480 depth=1
+VALIDATION_MEAN 0.1280
+TURN1_PUBLISHED 0/15
+TURN1_VALIDATION 0/5
+DIAG_COMPLETE

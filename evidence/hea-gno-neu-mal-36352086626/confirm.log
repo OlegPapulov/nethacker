@@ -1,0 +1,81 @@
+arena · running 15 episode(s)…
+arena · episode 4/15 (hea-gno-neu-mal): progress=0.037 completed turns=13048 depth=1
+arena · episode 3/15 (hea-gno-neu-mal): progress=0.024 completed turns=11815 depth=1
+arena · episode 6/15 (hea-gno-neu-mal): progress=0.021 completed turns=2388 depth=1
+arena · episode 2/15 (hea-gno-neu-mal): progress=0.051 completed turns=17860 depth=1
+arena · episode 7/15 (hea-gno-neu-mal): progress=0.029 completed turns=5909 depth=1
+arena · episode 1/15 (hea-gno-neu-mal): progress=0.075 completed turns=24883 depth=7
+arena · episode 10/15 (hea-gno-neu-mal): progress=0.037 completed turns=9746 depth=1
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 8/15 (hea-gno-neu-mal): progress=0.466 completed turns=22712 depth=25
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 9/15 (hea-gno-neu-mal): progress=0.554 completed turns=21809 depth=27
+arena · episode 13/15 (hea-gno-neu-mal): progress=0.024 completed turns=4743 depth=1
+arena · episode 5/15 (hea-gno-neu-mal): progress=0.075 completed turns=33190 depth=6
+arena · episode 11/15 (hea-gno-neu-mal): progress=0.070 completed turns=22390 depth=8
+arena · episode 15/15 (hea-gno-neu-mal): progress=0.021 completed turns=2936 depth=1
+arena · episode 14/15 (hea-gno-neu-mal): progress=0.037 completed turns=13864 depth=1
+arena · episode 12/15 (hea-gno-neu-mal): progress=0.161 completed turns=39844 depth=11
+arena · running 15 episode(s)…
+arena · episode 4/15 (hea-gno-neu-mal): progress=0.037 completed turns=13048 depth=1
+arena · episode 3/15 (hea-gno-neu-mal): progress=0.024 completed turns=11815 depth=1
+arena · episode 6/15 (hea-gno-neu-mal): progress=0.021 completed turns=2388 depth=1
+arena · episode 2/15 (hea-gno-neu-mal): progress=0.051 completed turns=17860 depth=1
+arena · episode 7/15 (hea-gno-neu-mal): progress=0.029 completed turns=5909 depth=1
+arena · episode 1/15 (hea-gno-neu-mal): progress=0.075 completed turns=24883 depth=7
+arena · episode 10/15 (hea-gno-neu-mal): progress=0.037 completed turns=9746 depth=1
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 8/15 (hea-gno-neu-mal): progress=0.466 completed turns=22712 depth=25
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 9/15 (hea-gno-neu-mal): progress=0.365 completed turns=21384 depth=19
+arena · episode 13/15 (hea-gno-neu-mal): progress=0.024 completed turns=4743 depth=1
+arena · episode 5/15 (hea-gno-neu-mal): progress=0.075 completed turns=33190 depth=6
+arena · episode 11/15 (hea-gno-neu-mal): progress=0.070 completed turns=22390 depth=8
+arena · episode 15/15 (hea-gno-neu-mal): progress=0.021 completed turns=2936 depth=1
+arena · episode 14/15 (hea-gno-neu-mal): progress=0.037 completed turns=13864 depth=1
+arena · episode 12/15 (hea-gno-neu-mal): progress=0.161 completed turns=39844 depth=11
+
+== candidate  best/hea-gno-neu-mal ==
+  mean 0.1121   turns min 2388 mean 16475 max 39844   depth max 27
+    0   24883    7  0.0745  killed by an owlbear
+    1   17860    1  0.0508  killed by a gnome zombie
+    2   11815    1  0.0242  died of starvation
+    3   13048    1  0.0369  killed by a cave spider
+    4   33190    6  0.0745  killed by a Woodland-elf
+    5    2388    1  0.0208  killed by a brown mold
+    6    5909    1  0.0291  killed by a cave spider
+    7   22712   25  0.4664  killed by a raven
+    8   21809   27  0.5544  killed by a bolt of lightning
+    9    9746    1  0.0369  killed by a wererat
+   10   22390    8  0.0696  killed by a Woodland-elf
+   11   39844   11  0.1613  killed by a killer bee
+   12    4743    1  0.0242  killed by a hobbit
+   13   13864    1  0.0369  killed by a little dog
+   14    2936    1  0.0208  killed by a hobbit
+
+CONFIRM_MEAN 0.1121
+DIGEST sha256:f42182df96b41617bebb5201ca883bd71902b141b1f71d51d019d6d6564cc04c
+
+== parent     ./parent ==
+  mean 0.0995   turns min 2388 mean 16447 max 39844   depth max 25
+    0   24883    7  0.0745  killed by an owlbear
+    1   17860    1  0.0508  killed by a gnome zombie
+    2   11815    1  0.0242  died of starvation
+    3   13048    1  0.0369  killed by a cave spider
+    4   33190    6  0.0745  killed by a Woodland-elf
+    5    2388    1  0.0208  killed by a brown mold
+    6    5909    1  0.0291  killed by a cave spider
+    7   22712   25  0.4664  killed by a raven
+    8   21384   19  0.3655  killed by an ogre king
+    9    9746    1  0.0369  killed by a wererat
+   10   22390    8  0.0696  killed by a Woodland-elf
+   11   39844   11  0.1613  killed by a killer bee
+   12    4743    1  0.0242  killed by a hobbit
+   13   13864    1  0.0369  killed by a little dog
+   14    2936    1  0.0208  killed by a hobbit
+
+== paired comparison, same 15 seeds ==
+  candidate mean 0.1121   parent mean 0.0995   delta +0.0126
+  seeds improved 1   worsened 0   identical 14
+  seeds reaching a deeper level: 1/15
+  mean paired delta +0.0126

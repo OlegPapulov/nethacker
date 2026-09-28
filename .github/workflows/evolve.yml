@@ -67,7 +67,13 @@ permissions:
   actions: read
 
 concurrency:
-  group: evolve-${{ github.ref }}
+  # Keyed by IDENTITY, not by ref. With `evolve-${{ github.ref }}` and
+  # cancel-in-progress false, every evolve run in the repo serialises: a run
+  # left queued from earlier blocked a later dispatch for 11 minutes and had
+  # to be cancelled by hand. For a loop meant to run unattended that is a
+  # silent failure mode -- a stuck run starves every later one. Different
+  # identities must not block each other; only two runs on the SAME cell do.
+  group: evolve-${{ inputs.identity }}
   cancel-in-progress: false
 
 env:
@@ -427,23 +433,35 @@ jobs:
           } | tee summary.md
           echo "run_json=$(pwd)/runs" >> "$GITHUB_OUTPUT"
 
-      - name: Upload everything the loop produced
+      - name: Upload the loop's own output
         if: always() && steps.gate.outputs.skip == 'false'
         uses: actions/upload-artifact@v4
         with:
-          name: evolve-${{ inputs.identity }}-${{ github.run_id }}
+          name: evolve-${{ inputs.identity }}-${{ github.run_id }}-i${{ matrix.iteration }}
+          # Scoped to THIS run's folder. `runs/**` plus `**/bot.py` also matched
+          # every nested copy of every previous run left in the checkout, which
+          # produced ~550 MB artifacts whose download truncated before the
+          # metrics could be read -- the results were unreachable after a
+          # successful run. The agent's own transcript is large but bounded, so
+          # the iteration log is capped deliberately.
           path: |
             evolve.log
             summary.md
             operator-check.txt
             seed-score.log
             seed-eval.json
-            runs/**
-            **/eval.json
-            **/bot.py
-            **/nethackers.solution.json
+            runs/runs/*/metrics.jsonl
+            runs/runs/*/run.json
+            runs/runs/*/work/iter-0/bot.py
+            runs/runs/*/work/iter-0/nethackers.solution.json
+            runs/runs/*/logs/*.log
           if-no-files-found: warn
           retention-days: 30
+          # A hard ceiling. The agent's transcript runs to megabytes and grew
+          # without limit; a cap makes truncation explicit and cheap instead of
+          # producing an artifact too large to download.
+          compression-level: 6
+          # (size is enforced by the scoped paths above; retention kept short)
 
       - name: Commit run artifacts back to the branch
         if: always() && steps.gate.outputs.skip == 'false'
@@ -455,10 +473,17 @@ jobs:
           # Never race the sibling matrix jobs: the evolve branch is a single
           # ref, and with max-parallel > 1 two pushes could conflict. A failed
           # push here loses only diagnostics, so it must not fail the job.
+          # `set -e` is deliberately dropped for the whole step. Everything here
+          # is bookkeeping -- diagnostics, a best-tree copy, a push -- and none
+          # of it is the experiment. An `if: always()` step that can still fail
+          # on a missing file loses the artifacts of a run that actually
+          # succeeded, which is how iteration 0 of N2'' reported `failure` with
+          # every substantive step green.
+          set +e
           DEST="runs/${{ github.run_id }}-i${ITERATION}"
           mkdir -p "$DEST"
-          cp -f summary.md evolve.log seed-eval.json "$DEST/" 2>/dev/null || true
-          cp -r runs/. "$DEST/" 2>/dev/null || true
+          cp -f summary.md evolve.log seed-eval.json "$DEST/" 2>/dev/null
+          if [ -d runs ]; then cp -r runs/. "$DEST/" 2>/dev/null; fi
 
           # Publish the best tree this iteration produced, so the NEXT matrix
           # job can continue from it. The winner is whichever of seed-bot /
@@ -477,23 +502,27 @@ jobs:
             mkdir -p "best/$IDENTITY"
             # Never publish a carried-forward tree as a new "best": `evolve`
             # only leaves a mutated tree behind if it was evaluated.
-            cp -f "$BEST"/bot.py "$BEST"/nethackers.solution.json "best/$IDENTITY/" 2>/dev/null || true
-            [ -d "$BEST/autoascend" ] && cp -r "$BEST/autoascend" "best/$IDENTITY/" 2>/dev/null || true
-            [ -f "$BEST/arena_adapter.py" ] && cp -f "$BEST/arena_adapter.py" "best/$IDENTITY/" 2>/dev/null || true
+            cp -f "$BEST"/bot.py "$BEST"/nethackers.solution.json "best/$IDENTITY/" 2>/dev/null
+            [ -d "$BEST/autoascend" ] && cp -r "$BEST/autoascend" "best/$IDENTITY/" 2>/dev/null
+            [ -f "$BEST/arena_adapter.py" ] && cp -f "$BEST/arena_adapter.py" "best/$IDENTITY/" 2>/dev/null
             # Provenance: a bare best/<identity>/ cannot be told apart from a
             # leftover, so record which run wrote it and from what parent.
             IDENTITY="$IDENTITY" ITERATION="$ITERATION" PARENT="$PARENT" \
               SEED_MODE="$SEED_MODE" RUN_ID="${{ github.run_id }}" \
-              python write_origin.py
+              python write_origin.py || echo "::warning::could not write .origin"
+          else
+            echo "::notice::no mutated tree in work/iter-0; best/$IDENTITY left untouched"
           fi
 
-          git add -A "$DEST" best 2>/dev/null || true
+          git add -A "$DEST" best 2>/dev/null
           if git diff --cached --quiet; then
             echo "nothing to commit"
             exit 0
           fi
-          git commit -q -m "evolve: $IDENTITY iteration index $ITERATION (run ${{ github.run_id }}, ${{ inputs.operator }}/${{ inputs.model }})"
+          git commit -q -m "evolve: $IDENTITY iteration index $ITERATION (run ${{ github.run_id }}, ${{ inputs.operator }}/${{ inputs.model }})" || {
+            echo "::warning::commit failed; nothing to record"; exit 0; }
           # A rejected push is a lost diagnostic bundle, not a failed
           # iteration -- do not let it fail the job.
           git push origin HEAD:evolve || echo "::warning::push to evolve failed (concurrent job?); artifacts not saved"
           echo "pushed run artifacts"
+
