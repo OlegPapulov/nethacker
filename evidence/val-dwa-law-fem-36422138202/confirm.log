@@ -1,0 +1,105 @@
+arena · running 15 episode(s)…
+arena · episode 2/15 (val-dwa-law-fem): progress=0.161 completed turns=8907 depth=11
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 1/15 (val-dwa-law-fem): progress=0.466 completed turns=11410 depth=25
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 4/15 (val-dwa-law-fem): progress=0.554 completed turns=13884 depth=27
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 3/15 (val-dwa-law-fem): progress=0.445 completed turns=16444 depth=24
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 5/15 (val-dwa-law-fem): progress=0.554 completed turns=10249 depth=27
+Warning: NetHack asked for env variable ROGUEOPTS
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 6/15 (val-dwa-law-fem): progress=0.554 completed turns=15654 depth=27
+arena · episode 7/15 (val-dwa-law-fem): progress=0.554 completed turns=11116 depth=27
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 9/15 (val-dwa-law-fem): progress=0.554 completed turns=10059 depth=27
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 8/15 (val-dwa-law-fem): progress=0.466 completed turns=17580 depth=25
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 10/15 (val-dwa-law-fem): progress=0.554 completed turns=15683 depth=27
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 12/15 (val-dwa-law-fem): progress=0.466 completed turns=13510 depth=25
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 11/15 (val-dwa-law-fem): progress=0.602 completed turns=21417 depth=28
+Warning: NetHack asked for env variable ROGUEOPTS
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 13/15 (val-dwa-law-fem): progress=0.554 completed turns=12109 depth=27
+arena · episode 14/15 (val-dwa-law-fem): progress=0.466 completed turns=11734 depth=25
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 15/15 (val-dwa-law-fem): progress=0.554 completed turns=12663 depth=27
+arena · running 15 episode(s)…
+arena · episode 2/15 (val-dwa-law-fem): progress=0.161 completed turns=8907 depth=11
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 1/15 (val-dwa-law-fem): progress=0.466 completed turns=11410 depth=25
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 4/15 (val-dwa-law-fem): progress=0.507 completed turns=14210 depth=26
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 3/15 (val-dwa-law-fem): progress=0.445 completed turns=16444 depth=24
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 5/15 (val-dwa-law-fem): progress=0.554 completed turns=10613 depth=27
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 7/15 (val-dwa-law-fem): progress=0.379 completed turns=11081 depth=20
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 6/15 (val-dwa-law-fem): progress=0.647 completed turns=16939 depth=29
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 9/15 (val-dwa-law-fem): progress=0.602 completed turns=10257 depth=28
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 8/15 (val-dwa-law-fem): progress=0.647 completed turns=18918 depth=29
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 10/15 (val-dwa-law-fem): progress=0.554 completed turns=15683 depth=27
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 12/15 (val-dwa-law-fem): progress=0.466 completed turns=13510 depth=25
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 11/15 (val-dwa-law-fem): progress=0.507 completed turns=18540 depth=26
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 14/15 (val-dwa-law-fem): progress=0.445 completed turns=10201 depth=24
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 13/15 (val-dwa-law-fem): progress=0.554 completed turns=11951 depth=27
+Warning: NetHack asked for env variable ROGUEOPTS
+arena · episode 15/15 (val-dwa-law-fem): progress=0.554 completed turns=12643 depth=27
+
+== candidate  best/val-dwa-law-fem ==
+  mean 0.5006   turns min 8907 mean 13494 max 21417   depth max 28
+    0   11410   25  0.4664  killed by a minotaur
+    1    8907   11  0.1613  killed by a bolt of lightning
+    2   16444   24  0.4452  killed by a raven
+    3   13884   27  0.5544  petrified by Medusa
+    4   10249   27  0.5544  killed by a baby silver dragon
+    5   15654   27  0.5544  killed by a raven
+    6   11116   27  0.5544  killed by a fire elemental
+    7   17580   25  0.4664  killed by a raven
+    8   10059   27  0.5544  poisoned by a cobra
+    9   15683   27  0.5544  killed by a minotaur
+   10   21417   28  0.6016  killed by an umber hulk
+   11   13510   25  0.4664  killed by a cobra
+   12   12109   27  0.5544  killed by a xorn
+   13   11734   25  0.4664  killed by a werewolf
+   14   12663   27  0.5544  killed by a minotaur
+
+CONFIRM_MEAN 0.5006
+DIGEST sha256:aa9cce20b68abe32ab1052b0a107e6987cb6b657e8633eac7a189c84d3350fcf
+
+== parent     ./parent ==
+  mean 0.4993   turns min 8907 mean 13420 max 18918   depth max 29
+    0   11410   25  0.4664  killed by a minotaur
+    1    8907   11  0.1613  killed by a bolt of lightning
+    2   16444   24  0.4452  killed by a raven
+    3   14210   26  0.5068  killed by a giant eel
+    4   10613   27  0.5544  killed by a shark
+    5   16939   29  0.6465  killed by a shark
+    6   11081   20  0.3790  killed by a soldier
+    7   18918   29  0.6465  killed by an earth elemental
+    8   10257   28  0.6016  killed by a skeleton
+    9   15683   27  0.5544  killed by a minotaur
+   10   18540   26  0.5068  killed by a cobra
+   11   13510   25  0.4664  killed by a cobra
+   12   11951   27  0.5544  killed by a minotaur
+   13   10201   24  0.4452  killed by a raven
+   14   12643   27  0.5544  killed by a minotaur
+
+== paired comparison, same 15 seeds ==
+  candidate mean 0.5006   parent mean 0.4993   delta +0.0013
+  seeds improved 4   worsened 3   identical 8
+  seeds reaching a deeper level: 4/15
+  mean paired delta +0.0013
