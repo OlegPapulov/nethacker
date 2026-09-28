@@ -1,0 +1,152 @@
+name: classify
+
+# E2: why does AutoAscend die on wiz-hum-cha-mal, and are the ten dlvl-1
+# deaths even the same bug?
+#
+# E1 measured the baseline at 0.0624 with 10 of 15 seeds never leaving dlvl 1.
+# The obvious fix -- better early combat -- would address at most seven of those
+# ten, because seed 3 (grid bug, 3,052 turns) and seed 13 (starvation, 5,206
+# turns) are not combat deaths and happen four times earlier than the rest.
+#
+# So this runs the packaged bot UNCHANGED, wrapped in a tracer that observes
+# every observation and every returned action without altering either, then
+# sorts each seed by what the bot was doing when it died. No mutation, no
+# agent, no tokens -- it costs one 15-episode batch and answers the question the
+# next experiment depends on.
+#
+# This runs on a native x86_64 runner by necessity: under arm64 emulation
+# AutoAscend's import hangs past the arena's 120 s startup guard and every seed
+# returns turns=0.
+
+on:
+  workflow_dispatch:
+    inputs:
+      identity:
+        description: "Identity to analyse"
+        required: true
+        default: "wiz-hum-cha-mal"
+      source:
+        description: "Which tree to trace"
+        required: true
+        default: "autoascend"
+        type: choice
+        options: [autoascend, hub-elite]
+      seeds:
+        description: "How many published seeds to trace (max 15)"
+        required: false
+        default: "15"
+
+permissions:
+  contents: write
+
+env:
+  ARENA_IMAGE: ghcr.io/dunnolab/nethackers-arena@sha256:0d0b0e779ebda4a05b5a22b39cfafcd2d2d9ef739ea60d9aae79052d55c767ae
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Install nethackers
+        run: |
+          pip install --quiet nethackers==0.37.3
+          nethackers --version
+          command -v gh >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq gh; }
+
+      - name: Fetch the bot scripts from main
+        run: |
+          set -euo pipefail
+          for f in classify_deaths.py tracing_bot.py pick_elite.py; do
+            git show "origin/main:loop/$f" > "$f" || git show "origin/main:$f" > "$f" || {
+              echo "::error::$f not found on origin/main"; exit 1; }
+          done
+          ls -la classify_deaths.py tracing_bot.py
+
+      - name: Pull the pinned arena image
+        run: docker pull "$ARENA_IMAGE"
+
+      - name: Materialise the tree to trace
+        env:
+          SOURCE: ${{ inputs.source }}
+          IDENTITY: ${{ inputs.identity }}
+        run: |
+          set -euo pipefail
+          SP=$(python -c "import nethackers, os; print(os.path.dirname(nethackers.__file__))")
+          if [ "$SOURCE" = "autoascend" ]; then
+            cp -r "$SP/roots/autoascend" ./trace-bot
+          else
+            nethackers elites --scope "$IDENTITY" > elite.json
+            REF=$(python pick_elite.py elite.json "$IDENTITY")
+            echo "TREE $REF"
+            nethackers pull "$REF" ./trace-bot
+          fi
+          test -f ./trace-bot/bot.py || { echo "::error::no bot.py"; exit 1; }
+          # Swap in the tracing wrapper. The adapter, the autoascend package and
+          # the manifest are untouched -- only the class make_agent() returns
+          # changes, so the bot's decisions are identical.
+          cp tracing_bot.py ./trace-bot/bot.py
+          find ./trace-bot -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+          ls ./trace-bot
+
+      - name: Run the traced bot
+        env:
+          IDENTITY: ${{ inputs.identity }}
+          SEEDS: ${{ inputs.seeds }}
+        run: |
+          set -euo pipefail
+          export NETHACK_TRACE_DIR="$PWD/traces"
+          mkdir -p "$NETHACK_TRACE_DIR"
+          python run_traced.py "$IDENTITY" "$SEEDS" 2>&1 | tee traced.log
+
+      - name: Summarise the deaths
+        run: |
+          set -euo pipefail
+          ls traces/ | head
+          python classify_deaths.py traces diagnosis.json verdict.json | tee verdict.txt
+
+      - name: Report
+        if: always()
+        run: |
+          {
+            echo "### ${{ inputs.identity }} -- death classification"
+            echo
+            cat verdict.txt 2>/dev/null || echo "no verdict"
+          } | tee report.md
+          cat report.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+
+      - name: Commit the verdict
+        if: always()
+        env:
+          IDENTITY: ${{ inputs.identity }}
+        run: |
+          set +e
+          DEST="classify/$IDENTITY-${{ github.run_id }}"
+          mkdir -p "$DEST"
+          cp -f verdict.json verdict.txt report.md traced.log diagnosis.json "$DEST/" 2>/dev/null
+          mkdir -p "classify/latest"
+          cp -f verdict.json "classify/latest/$IDENTITY.json" 2>/dev/null
+          git config user.name  "nethackers-classify"
+          git config user.email "nethackers-classify@users.noreply.github.com"
+          git add -A "$DEST" classify 2>/dev/null
+          git diff --cached --quiet && { echo "nothing to commit"; exit 0; }
+          git commit -q -m "classify: $IDENTITY death verdict (run ${{ github.run_id }})"
+          git push origin HEAD:main || echo "::warning::push failed"
+
+      - name: Upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: classify-${{ inputs.identity }}-${{ github.run_id }}
+          path: |
+            verdict.json
+            verdict.txt
+            report.md
+            traced.log
+            traces/*.json
+          if-no-files-found: warn
