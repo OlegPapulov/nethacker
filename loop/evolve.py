@@ -35,22 +35,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-def _find_repo_root(start: Path) -> Path:
-    """The directory holding experience.md / experiments.md.
-
-    Searched upward rather than assumed, because this module gets run from two
-    places: the repository's `loop/` directory, and a copy dropped at the
-    repository root by CI. `parent.parent` is correct for the first and one
-    level too high for the second, which silently produced a brief with the
-    measured baseline but none of the notes.
-    """
-    for candidate in [start, *start.parents]:
-        if (candidate / "experience.md").is_file() or (candidate / "experiments.md").is_file():
-            return candidate
-    return start.parent
-
-
-REPO_ROOT = _find_repo_root(Path(__file__).resolve().parent)
+REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import brief as brief_mod  # noqa: E402
@@ -311,7 +296,52 @@ def run_operator(worktree: Path, brief_text: str, args) -> str | None:
     return extract_hypothesis(worktree)
 
 
-_HYP = __import__("re").compile(r"#\s*hypothesis:\s*(.+)", __import__("re").IGNORECASE)
+# A hypothesis is a COMMENT BLOCK, not a line. The regex used to be
+# `# hypothesis: (.+)` with no DOTALL, so it stopped at the first newline and
+# returned half a sentence whenever the model wrote its rationale across
+# several lines -- which it does, reliably, when the brief asks for one.
+#
+# The text runs from the marker to the next line that starts a new comment or a
+# new top-level definition, which is where the author's reasoning about *this*
+# change ends. Contiguity is what marks it out: a block broken by unrelated code
+# is two separate comments, not one hypothesis.
+_HYP_START = __import__("re").compile(r"^\s*#\s*hypothesis:\s*(.*)$", __import__("re").IGNORECASE)
+# A continuation line is any indented comment. The earlier pattern used a
+# negative lookahead for `hypothesis:`, which matched the SECOND and later
+# lines of the same block and truncated the hypothesis to one line -- which
+# is exactly the bug this replaces. So: a comment line at the SAME
+# indentation as the marker continues it; a differently-indented comment, or
+# any code, ends it.
+_HYP_STOP = __import__("re").compile(r"^\s*(?:def |class |@)")
+
+
+def _hypothesis_blocks(text: str) -> list[str]:
+    """Every `# hypothesis:` comment block in one file, in order."""
+    lines = text.splitlines()
+    out: list[str] = []
+    index = 0
+    while index < len(lines):
+        start = _HYP_START.match(lines[index])
+        if not start:
+            index += 1
+            continue
+        block = [start.group(1).strip()]
+        index += 1
+        while index < len(lines):
+            if _HYP_STOP.match(lines[index]):
+                break
+            stripped = lines[index].strip()
+            if stripped.startswith("#"):
+                block.append(stripped.lstrip("#").strip())
+            elif stripped:
+                break  # code, not prose: the hypothesis ended
+            else:
+                break
+            index += 1
+        joined = " ".join(part for part in block if part).strip()
+        if joined:
+            out.append(joined)
+    return out
 
 
 def extract_hypothesis(tree: Path) -> str | None:
@@ -324,7 +354,7 @@ def extract_hypothesis(tree: Path) -> str | None:
     found: list[str] = []
     for path in sorted(tree.rglob("*.py")):
         try:
-            found.extend(m.group(1).strip() for m in _HYP.finditer(path.read_text()))
+            found.extend(_hypothesis_blocks(path.read_text()))
         except (OSError, UnicodeDecodeError):
             continue
     return found[0] if found else None

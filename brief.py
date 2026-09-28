@@ -48,22 +48,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-def _find_repo_root(start: Path) -> Path:
-    """The directory holding experience.md / experiments.md.
-
-    Searched upward rather than assumed, because this module gets run from two
-    places: the repository's `loop/` directory, and a copy dropped at the
-    repository root by CI. `parent.parent` is correct for the first and one
-    level too high for the second, which silently produced a brief with the
-    measured baseline but none of the notes.
-    """
-    for candidate in [start, *start.parents]:
-        if (candidate / "experience.md").is_file() or (candidate / "experiments.md").is_file():
-            return candidate
-    return start.parent
-
-
-REPO_ROOT = _find_repo_root(Path(__file__).resolve().parent)
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # The contract, as the project states it. Reproduced rather than imported so
 # the brief stands alone if the package layout changes.
@@ -115,17 +100,50 @@ HOWTO = """\
 """
 
 
-def _identity_sections(text: str, identity: str) -> list[str]:
-    """Markdown sections that mention this identity.
+#: Sections about the HARNESS rather than the game are excluded from the brief.
+#:
+#: The first run sent 24,630 characters, of which 19,800 were our logs -- and
+#: most of that was about the measurement apparatus: "per-turn tracing is
+#: impossible inside the arena", "can the mutator see our notes?", "one job per
+#: iteration". None of it tells the model anything about how the bot dies. It
+#: is 80% of the reading spent on 0% of the decision, and it is a candidate
+#: explanation for why one iteration cost 19.9 M tokens.
+#:
+#: A heading qualifies when it says the work was about how we measure, or about
+#: the loop itself. Actual gameplay failures, measured baselines and hypotheses
+#: about the bot are all kept.
+_HARNESS_TOPICS = (
+    "tracing", "trace", "infrastructure", "infra", "harness", "operator",
+    "mutator", "concurrency", "provenance", "digest", "publish", "publishing",
+    "artifact", "artifacts", "sign test", "power analysis", "classif",
+    "our own loop", "determinism", "workflow", "runner", "x86", "arm64",
+    "brief", "measurement", "cannot start", "loop",
+)
 
-    Split on headings and keep any block naming the identity. Crude on
-    purpose: over-including context is cheap, under-including it is not.
+
+def _is_harness_section(heading: str) -> bool:
+    low = heading.lower()
+    return any(topic in low for topic in _HARNESS_TOPICS)
+
+
+def _identity_sections(text: str, identity: str) -> list[str]:
+    """Markdown sections about this identity, minus our own apparatus notes.
+
+    Split on headings, keep any block naming the identity, and drop the ones
+    whose heading is about how we measure rather than about the game. Crude on
+    purpose: over-including real gameplay context is cheap, under-including it
+    is not. Over-including *harness* context is not cheap, because it is the
+    majority of the file.
     """
-    return [
-        block.strip()
-        for block in re.split(r"\n(?=#{1,3} )", text)
-        if identity in block
-    ]
+    out: list[str] = []
+    for block in re.split(r"\n(?=#{1,3} )", text):
+        block = block.strip()
+        if not block or identity not in block:
+            continue
+        if _is_harness_section(block.splitlines()[0]):
+            continue
+        out.append(block)
+    return out
 
 
 def _depth_histogram(results: list[dict]) -> str:
