@@ -1,0 +1,198 @@
+name: our-evolve
+
+# Our loop, on our terms.
+#
+# The stock `nethackers evolve` cannot be told anything: build_brief() takes only
+# scores with no free-text parameter, refs.assemble() adds no notes, and the
+# mutator strips every instruction-shaped file (AGENTS.md, CLAUDE.md, .claude/,
+# opencode.json, ...) from anything it hands the agent. So the measurements in
+# this repository cannot reach the operator through it.
+#
+# This workflow runs loop/evolve.py instead, which composes the brief itself --
+# from the measured baseline, our experience.md and experiments.md entries for
+# the identity, the scoring rule that actually decides acceptance, and the
+# contract -- and then hands that string to the project's own mutator. The
+# mutator, the arena, the seeding and the image digests are the project's; only
+# the brief is ours.
+#
+# It runs on a native x86_64 runner because the arena is linux/amd64: under
+# arm64 emulation a bot's startup never completes and every seed returns turns=0.
+#
+# The number to watch is NOT the score. It is the hypothesis comment the
+# operator writes. One that cites a specific seed's cause of death means the
+# model engaged with the brief; one that says "improved combat heuristics" in
+# general terms means it did not.
+
+on:
+  workflow_dispatch:
+    inputs:
+      identity:
+        description: "Identity to evolve"
+        required: true
+        default: "wiz-hum-cha-mal"
+      iterations:
+        description: "How many iterations"
+        required: true
+        default: "1"
+      operator:
+        description: "Coding agent"
+        required: true
+        default: "opencode2"
+      model:
+        description: "Model id"
+        required: true
+        default: "opencode/big-pickle"
+      seed_mode:
+        description: "Where the parent comes from"
+        required: true
+        default: "autoascend"
+        type: choice
+        options: [autoascend, hub, pinned]
+      parent_ref:
+        description: "Exact repo@commit, required when seed_mode=pinned"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  # Per identity, not per branch: two runs on different identities must not
+  # block each other, and two on the same cell must not race the archive.
+  group: our-evolve-${{ inputs.identity }}
+  cancel-in-progress: false
+
+jobs:
+  evolve:
+    name: "our evolve ${{ inputs.identity }} x${{ inputs.iterations }}"
+    runs-on: ubuntu-latest
+    # One iteration is ~30-45 min on this identity. Generous, because a
+    # throttled free model should not be killed mid-write.
+    timeout-minutes: 300
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Runner facts
+        run: |
+          {
+            echo "arch=$(uname -m)"
+            echo "cpus=$(nproc)"
+            echo "mem_gb=$(free -g | awk '/^Mem:/{print $2}')"
+            echo "docker=$(docker version --format '{{.Server.Version}}')"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Install nethackers
+        run: |
+          pip install --quiet nethackers==0.37.3
+          nethackers --version | tee -a "$GITHUB_STEP_SUMMARY"
+          # `nethackers pull` shells out to `gh repo clone`, and the mutator's
+          # credential broker may need it. Not preinstalled on the runner.
+          command -v gh >/dev/null || {
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq gh
+          }
+          gh auth setup-git 2>/dev/null || true
+
+      - name: Fetch our notes
+        run: |
+          set -euo pipefail
+          # experience.md and experiments.md are the brief's substance. If they
+          # are missing the brief silently gets thinner, so assert on them.
+          for f in experience.md experiments.md loop/brief.py loop/evolve.py; do
+            test -s "$f" || { echo "::error::$f missing or empty"; exit 1; }
+            echo "  $f $(wc -c < "$f") bytes"
+          done
+          # Both files are read by brief.py, which resolves them relative to
+          # the repository root, so they must be siblings of loop/.
+          cp loop/brief.py loop/evolve.py . 2>/dev/null || true
+
+      - name: Pull the pinned images
+        run: |
+          docker pull ghcr.io/dunnolab/nethackers-arena@sha256:0d0b0e779ebda4a05b5a22b39cfafcd2d2d9ef739ea60d9aae79052d55c767ae
+          docker pull ghcr.io/dunnolab/nethackers-mutator@sha256:32c9222455b2f62082540a9f7293aa8fafc2bd5cb9ba7f4553fe79593706bee5
+
+      - name: Show the brief we will send
+        run: |
+          python brief.py "${{ inputs.identity }}" \
+            --experience experience.md \
+            --experiments experiments.md \
+            --out preview-brief.md
+          wc -c preview-brief.md
+          # Print enough to confirm the identity's data actually made it in.
+          sed -n '1,40p' preview-brief.md
+
+      - name: Run our loop
+        env:
+          IDENTITY: ${{ inputs.identity }}
+          ITERATIONS: ${{ inputs.iterations }}
+          OPERATOR: ${{ inputs.operator }}
+          MODEL: ${{ inputs.model }}
+          SEED_MODE: ${{ inputs.seed_mode }}
+          PARENT_REF: ${{ inputs.parent_ref }}
+        run: |
+          set -o pipefail
+          python evolve.py "$IDENTITY" \
+            --iterations "$ITERATIONS" \
+            --operator "$OPERATOR" \
+            --model "$MODEL" \
+            --seed-mode "$SEED_MODE" \
+            ${PARENT_REF:+--parent-ref "$PARENT_REF"} \
+            --workdir runs 2>&1 | tee our-evolve.log || true
+          echo "--- verdict ---"
+          cat runs/history.json 2>/dev/null || echo "no history.json"
+
+      - name: Report
+        if: always()
+        run: |
+          {
+            echo "### our loop — ${{ inputs.identity }} — ${{ inputs.operator }}/${{ inputs.model }}"
+            echo
+            echo "#### log"
+            echo '```'
+            cat our-evolve.log 2>/dev/null | tail -60 || echo "no log"
+            echo '```'
+            if [ -f runs/history.json ]; then
+              echo "#### history"
+              echo '```json'
+              cat runs/history.json
+              echo '```'
+            fi
+          } | tee report.md
+          cat report.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+
+      - name: Upload everything
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: our-evolve-${{ inputs.identity }}-${{ github.run_id }}
+          path: |
+            our-evolve.log
+            report.md
+            preview-brief.md
+            runs/baseline.json
+            runs/history.json
+            runs/brief-*.md
+            runs/history.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Commit the run
+        if: always()
+        env:
+          IDENTITY: ${{ inputs.identity }}
+        run: |
+          set +e
+          DEST="our-evolve/$IDENTITY-${{ github.run_id }}"
+          mkdir -p "$DEST"
+          cp -f our-evolve.log report.md preview-brief.md "$DEST/" 2>/dev/null
+          cp -r runs/. "$DEST/" 2>/dev/null
+          git config user.name  "nethackers-our-evolve"
+          git config user.email "nethackers-our-evolve@users.noreply.github.com"
+          git add -A "$DEST" 2>/dev/null
+          git diff --cached --quiet && { echo "nothing to commit"; exit 0; }
+          git commit -q -m "our-evolve: $IDENTITY run ${{ github.run_id }} (${{ inputs.operator }}/${{ inputs.model }})"
+          git push origin HEAD:main || echo "::warning::push failed (concurrent run?)"
