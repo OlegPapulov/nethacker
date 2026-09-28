@@ -433,23 +433,35 @@ jobs:
           } | tee summary.md
           echo "run_json=$(pwd)/runs" >> "$GITHUB_OUTPUT"
 
-      - name: Upload everything the loop produced
+      - name: Upload the loop's own output
         if: always() && steps.gate.outputs.skip == 'false'
         uses: actions/upload-artifact@v4
         with:
-          name: evolve-${{ inputs.identity }}-${{ github.run_id }}
+          name: evolve-${{ inputs.identity }}-${{ github.run_id }}-i${{ matrix.iteration }}
+          # Scoped to THIS run's folder. `runs/**` plus `**/bot.py` also matched
+          # every nested copy of every previous run left in the checkout, which
+          # produced ~550 MB artifacts whose download truncated before the
+          # metrics could be read -- the results were unreachable after a
+          # successful run. The agent's own transcript is large but bounded, so
+          # the iteration log is capped deliberately.
           path: |
             evolve.log
             summary.md
             operator-check.txt
             seed-score.log
             seed-eval.json
-            runs/**
-            **/eval.json
-            **/bot.py
-            **/nethackers.solution.json
+            runs/runs/*/metrics.jsonl
+            runs/runs/*/run.json
+            runs/runs/*/work/iter-0/bot.py
+            runs/runs/*/work/iter-0/nethackers.solution.json
+            runs/runs/*/logs/*.log
           if-no-files-found: warn
           retention-days: 30
+          # A hard ceiling. The agent's transcript runs to megabytes and grew
+          # without limit; a cap makes truncation explicit and cheap instead of
+          # producing an artifact too large to download.
+          compression-level: 6
+          # (size is enforced by the scoped paths above; retention kept short)
 
       - name: Commit run artifacts back to the branch
         if: always() && steps.gate.outputs.skip == 'false'
