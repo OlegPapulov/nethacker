@@ -62,6 +62,12 @@ MATERIAL_GAP = 0.02
 # genuine single change, and would either pass noise or reject everything.
 MIN_SEEDS_MOVED = 3
 
+# A win also needs ENOUGH seeds forward, in absolute terms. "More up than
+# down" is satisfied by 4-3, which under a sign test is p ~ 0.5 -- no evidence.
+# The asymmetry against MIN_SEEDS_MOVED is deliberate: reaching seeds is cheap
+# to demonstrate, beating them is not.
+MIN_SEEDS_FORWARD = 5
+
 
 def paired_verdict(data: dict, stable: set[int] | None = None) -> tuple[str, str] | None:
     """Compare candidate and parent seed-by-seed. None when no parent was scored.
@@ -136,20 +142,41 @@ def paired_verdict(data: dict, stable: set[int] | None = None) -> tuple[str, str
             f"  EXCLUDED as unstable under repeated scoring: {dropped}"
         )
 
-    # Verdict. The primary requirement is REACH -- a mutation that touches one
-    # or two seeds has not demonstrated anything. Direction is then judged on
-    # the count of seeds moving forward, because N3a showed progression is too
-    # coarse to arbitrate on its own: its SE of the mean is 0.0281, larger than
-    # any single change this loop makes, so a small negative mean is not on its
-    # own evidence of harm. `deeper` is reported for context, and is used only
-    # to break a tie between equal forward counts, never to overrule a majority
-    # that moved backwards.
+    # Verdict.
+    #
+    # Reach first: a mutation that touches one or two seeds has demonstrated
+    # nothing. N3a's candidate moved 2 of 15.
+    #
+    # Direction second, and by PAIRED SIGN TEST rather than by the mean. The
+    # mean is not a summary of this distribution: in N4 one seed swung -0.1801
+    # while another gained +0.1754, so the mean reported +0.0013 and the old
+    # rule called it a WIN. Four seeds up against three down is a coin flip --
+    # under a sign test that is p ~ 0.5, i.e. no evidence at all. So a win
+    # requires a clear majority of the moved seeds to have gone forward, and a
+    # floor on the absolute count, because 5-2 is weaker evidence than 9-1.
+    #
+    # The mean is still reported, and still breaks exact ties, because it is the
+    # only summary that uses the magnitude of each change rather than its sign.
     if not changed:
         verdict, why = "NOT-A-WIN", "no seed moved on any signal"
     elif len(changed) < MIN_SEEDS_MOVED:
         verdict, why = "NOT-A-WIN", (
             f"only {len(changed)} seed(s) moved, below the {MIN_SEEDS_MOVED} "
             "needed to show the change reaches more than a fluke"
+        )
+    elif len(improved) < MIN_SEEDS_FORWARD:
+        verdict, why = "NOT-A-WIN", (
+            f"only {len(improved)} seed(s) moved forward, below the "
+            f"{MIN_SEEDS_FORWARD} required -- {len(improved)} up against "
+            f"{len(regressed)} down is not separable from a coin flip"
+        )
+    elif 3 * len(improved) < 2 * len(changed):
+        # two-thirds of the moved seeds must have gone forward. Written as
+        # 3*forward >= 2*total; the earlier form (2*forward >= 3*total) was
+        # unsatisfiable and rejected every candidate including clean ones.
+        verdict, why = "NOT-A-WIN", (
+            f"{len(improved)} of {len(changed)} moved seeds went forward, "
+            f"short of the two-thirds needed ({len(regressed)} went back)"
         )
     elif len(regressed) >= len(improved):
         verdict, why = "NOT-A-WIN", (
@@ -163,8 +190,8 @@ def paired_verdict(data: dict, stable: set[int] | None = None) -> tuple[str, str
     else:
         verdict = "WIN"
         why = (
-            f"{len(changed)} seeds moved ({len(improved)} forward, "
-            f"{len(regressed)} back), mean {delta:+.4f}, {len(deeper)} deeper"
+            f"{len(changed)} seeds moved, {len(improved)} forward against "
+            f"{len(regressed)} back, mean {delta:+.4f}, {len(deeper)} deeper"
         )
 
     return verdict, "\n".join([f"  {why}", *lines])
