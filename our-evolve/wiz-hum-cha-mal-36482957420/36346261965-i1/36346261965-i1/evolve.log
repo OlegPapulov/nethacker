@@ -1,0 +1,63 @@
+evolving hea-gno-neu-mal · operator=opencode2 · 1 iter
+    1.8s  cold-start · scoring prog_ec8 on 1 cell(s) …
+  148.0s  iter 1/1 · mutating cell hea-gno-neu-mal …
+  186.8s  iter 1/1 · operator: 9020 tok (completed); gating…
+cold-start · dev                                                
+╭─────┬─────────────────┬──────────┬───────────┬────────┬──────╮
+│seed │ character       │ progress │ status    │  turns │ depth│
+├─────┼─────────────────┼──────────┼───────────┼────────┼──────┤
+│   3 │ hea-gno-neu-mal │    0.037 │ completed │ 13,048 │     1│
+│   2 │ hea-gno-neu-mal │    0.024 │ completed │ 11,815 │     1│
+│   1 │ hea-gno-neu-mal │    0.051 │ completed │ 17,860 │     1│
+│   5 │ hea-gno-neu-mal │    0.021 │ completed │  2,388 │     1│
+│   6 │ hea-gno-neu-mal │    0.029 │ completed │  5,909 │     1│
+│   0 │ hea-gno-neu-mal │    0.075 │ completed │ 24,883 │     7│
+│   9 │ hea-gno-neu-mal │    0.037 │ completed │  9,746 │     1│
+│   7 │ hea-gno-neu-mal │    0.466 │ completed │ 22,712 │    25│
+│   8 │ hea-gno-neu-mal │    0.554 │ completed │ 21,830 │    27│
+│  12 │ hea-gno-neu-mal │    0.024 │ completed │  4,743 │     1│
+│   4 │ hea-gno-neu-mal │    0.075 │ completed │ 33,190 │     6│
+│  10 │ hea-gno-neu-mal │    0.070 │ completed │ 22,390 │     8│
+│  14 │ hea-gno-neu-mal │    0.021 │ completed │  2,936 │     1│
+│  13 │ hea-gno-neu-mal │    0.037 │ completed │ 13,864 │     1│
+│  11 │ hea-gno-neu-mal │    0.161 │ completed │ 39,844 │    11│
+├─────┼─────────────────┼──────────┼───────────┼────────┼──────┤
+│     │ mean            │    0.112 │           │ 16,477 │      │
+╰─────┴─────────────────┴──────────┴───────────┴────────┴──────╯
+                                                      ✓ complete
+  192.3s  iter 1/1 · gate ok; dev eval (15ep)…
+iter 1/1 · smoke                                               
+╭─────┬─────────────────┬──────────┬───────────┬───────┬──────╮
+│seed │ character       │ progress │ status    │ turns │ depth│
+├─────┼─────────────────┼──────────┼───────────┼───────┼──────┤
+│9000 │ hea-gno-neu-mal │    0.018 │ completed │ 1,866 │     1│
+├─────┼─────────────────┼──────────┼───────────┼───────┼──────┤
+│     │ mean            │    0.018 │           │ 1,866 │      │
+╰─────┴─────────────────┴──────────┴───────────┴───────┴──────╯
+                                                     ✓ complete
+  336.6s  iter 1/1 · ✗ improved no cell: dev=0.112
+iter 1/1 · dev                                                  
+╭─────┬─────────────────┬──────────┬───────────┬────────┬──────╮
+│seed │ character       │ progress │ status    │  turns │ depth│
+├─────┼─────────────────┼──────────┼───────────┼────────┼──────┤
+│   3 │ hea-gno-neu-mal │    0.037 │ completed │ 13,048 │     1│
+│   2 │ hea-gno-neu-mal │    0.024 │ completed │ 11,815 │     1│
+│   1 │ hea-gno-neu-mal │    0.051 │ completed │ 17,860 │     1│
+│   5 │ hea-gno-neu-mal │    0.021 │ completed │  2,388 │     1│
+│   6 │ hea-gno-neu-mal │    0.029 │ completed │  5,909 │     1│
+│   0 │ hea-gno-neu-mal │    0.075 │ completed │ 24,883 │     7│
+│   9 │ hea-gno-neu-mal │    0.037 │ completed │  9,746 │     1│
+│   7 │ hea-gno-neu-mal │    0.466 │ completed │ 22,712 │    25│
+│   8 │ hea-gno-neu-mal │    0.554 │ completed │ 21,830 │    27│
+│  12 │ hea-gno-neu-mal │    0.024 │ completed │  4,743 │     1│
+│   4 │ hea-gno-neu-mal │    0.075 │ completed │ 33,190 │     6│
+│  10 │ hea-gno-neu-mal │    0.070 │ completed │ 22,390 │     8│
+│  14 │ hea-gno-neu-mal │    0.021 │ completed │  2,936 │     1│
+│  13 │ hea-gno-neu-mal │    0.037 │ completed │ 13,864 │     1│
+│  11 │ hea-gno-neu-mal │    0.161 │ completed │ 39,844 │    11│
+├─────┼─────────────────┼──────────┼───────────┼────────┼──────┤
+│     │ mean            │    0.112 │           │ 16,477 │      │
+╰─────┴─────────────────┴──────────┴───────────┴────────┴──────╯
+                                                      ✓ complete
+done · 0/1 iteration(s) registered a new elite
+EXIT 0

@@ -1,0 +1,35 @@
+seed   0  0.0369  turns= 13514  dl=1  killed by an orc zombie
+seed   1  0.0369  turns= 17693  dl=1  killed by a jackal
+seed   3  0.0208  turns=  3052  dl=1  killed by a grid bug
+seed   2  0.0745  turns= 19855  dl=4  killed by Mr. Annootok; the 
+seed   5  0.0508  turns= 14486  dl=1  killed by a bat
+seed   6  0.0369  turns= 11919  dl=1  killed by a kitten
+seed   4  0.1791  turns= 35055  dl=9  killed by a leocrotta
+seed   7  0.0745  turns= 23967  dl=3  killed by an iguana
+seed   8  0.0745  turns= 23306  dl=4  killed by a white unicorn
+seed  10  0.0242  turns=  4014  dl=1  killed by a hobbit
+seed  12  0.0369  turns= 12509  dl=1  killed by a newt
+seed  13  0.0242  turns=  5206  dl=1  died of starvation
+seed  11  0.0745  turns= 24773  dl=5  killed by an arrow
+seed   9  0.1170  turns= 32064  dl=3  killed by a soldier ant
+seed  14  0.0508  turns= 17818  dl=1  killed by a coyote
+
+| seed | turns | deepest | progress | died of |
+| --- | --- | --- | --- | --- |
+| 0 | 13514 | 1 | 0.0369 | killed by an orc zombie |
+| 1 | 17693 | 1 | 0.0369 | killed by a jackal |
+| 2 | 19855 | 4 | 0.0745 | killed by Mr. Annootok; the shopkeeper |
+| 3 | 3052 | 1 | 0.0208 | killed by a grid bug |
+| 4 | 35055 | 9 | 0.1791 | killed by a leocrotta |
+| 5 | 14486 | 1 | 0.0508 | killed by a bat |
+| 6 | 11919 | 1 | 0.0369 | killed by a kitten |
+| 7 | 23967 | 3 | 0.0745 | killed by an iguana |
+| 8 | 23306 | 4 | 0.0745 | killed by a white unicorn |
+| 9 | 32064 | 3 | 0.1170 | killed by a soldier ant |
+| 10 | 4014 | 1 | 0.0242 | killed by a hobbit |
+| 11 | 24773 | 5 | 0.0745 | killed by an arrow |
+| 12 | 12509 | 1 | 0.0369 | killed by a newt |
+| 13 | 5206 | 1 | 0.0242 | died of starvation |
+| 14 | 17818 | 1 | 0.0508 | killed by a coyote |
+
+mean 0.0608 over 15 seeds

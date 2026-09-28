@@ -1,0 +1,35 @@
+seed   1  0.0000  turns=   306  dl=1  None
+seed   0  0.0000  turns=   369  dl=1  None
+seed   3  0.0000  turns=    26  dl=1  None
+seed   2  0.0000  turns=   231  dl=1  None
+seed   4  0.0000  turns=    28  dl=1  None
+seed   5  0.0000  turns=    79  dl=1  None
+seed   7  0.0000  turns=    17  dl=1  killed by a goblin
+seed   6  0.0000  turns=    29  dl=1  None
+seed   8  0.0000  turns=    32  dl=1  None
+seed   9  0.0175  turns=   365  dl=3  None
+seed  10  0.0000  turns=   268  dl=1  None
+seed  11  0.0000  turns=   347  dl=1  None
+seed  12  0.0000  turns=  1311  dl=1  None
+seed  13  0.0000  turns=   382  dl=1  None
+seed  14  0.0000  turns=   578  dl=1  None
+
+| seed | turns | deepest | progress | died of |
+| --- | --- | --- | --- | --- |
+| 0 | 369 | 1 | 0.0000 | None |
+| 1 | 306 | 1 | 0.0000 | None |
+| 2 | 231 | 1 | 0.0000 | None |
+| 3 | 26 | 1 | 0.0000 | None |
+| 4 | 28 | 1 | 0.0000 | None |
+| 5 | 79 | 1 | 0.0000 | None |
+| 6 | 29 | 1 | 0.0000 | None |
+| 7 | 17 | 1 | 0.0000 | killed by a goblin |
+| 8 | 32 | 1 | 0.0000 | None |
+| 9 | 365 | 3 | 0.0175 | None |
+| 10 | 268 | 1 | 0.0000 | None |
+| 11 | 347 | 1 | 0.0000 | None |
+| 12 | 1311 | 1 | 0.0000 | None |
+| 13 | 382 | 1 | 0.0000 | None |
+| 14 | 578 | 1 | 0.0000 | None |
+
+mean 0.0012 over 15 seeds

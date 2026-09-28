@@ -1,0 +1,35 @@
+seed   0  0.0208  turns=  2871  dl=1  killed by a gnome zombie
+seed   2  0.0508  turns= 17509  dl=1  killed by a straw golem
+seed   3  0.0242  turns=  5256  dl=1  killed by a bat
+seed   1  0.0745  turns= 24252  dl=3  died of starvation
+seed   4  0.1170  turns= 24458  dl=3  killed by a hobbit
+seed   5  0.1170  turns= 23861  dl=3  killed by a soldier ant
+seed   7  0.0000  turns=    23  dl=1  killed by a jackal
+seed   6  0.0369  turns= 15218  dl=1  killed by a hobbit
+seed   8  0.0369  turns= 13106  dl=1  died of starvation
+seed  10  0.0242  turns=  3469  dl=1  died of starvation
+seed  11  0.0369  turns=  9411  dl=1  died of starvation
+seed   9  0.1170  turns= 28675  dl=3  killed by a werewolf
+seed  13  0.0242  turns=  5206  dl=1  died of starvation
+seed  12  0.0745  turns= 30435  dl=5  killed by a rothe
+seed  14  0.0508  turns= 15540  dl=1  killed by Yeenoghu
+
+| seed | turns | deepest | progress | died of |
+| --- | --- | --- | --- | --- |
+| 0 | 2871 | 1 | 0.0208 | killed by a gnome zombie |
+| 1 | 24252 | 3 | 0.0745 | died of starvation |
+| 2 | 17509 | 1 | 0.0508 | killed by a straw golem |
+| 3 | 5256 | 1 | 0.0242 | killed by a bat |
+| 4 | 24458 | 3 | 0.1170 | killed by a hobbit |
+| 5 | 23861 | 3 | 0.1170 | killed by a soldier ant |
+| 6 | 15218 | 1 | 0.0369 | killed by a hobbit |
+| 7 | 23 | 1 | 0.0000 | killed by a jackal |
+| 8 | 13106 | 1 | 0.0369 | died of starvation |
+| 9 | 28675 | 3 | 0.1170 | killed by a werewolf |
+| 10 | 3469 | 1 | 0.0242 | died of starvation |
+| 11 | 9411 | 1 | 0.0369 | died of starvation |
+| 12 | 30435 | 5 | 0.0745 | killed by a rothe |
+| 13 | 5206 | 1 | 0.0242 | died of starvation |
+| 14 | 15540 | 1 | 0.0508 | killed by Yeenoghu |
+
+mean 0.0537 over 15 seeds

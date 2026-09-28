@@ -1,0 +1,34 @@
+[
+  {
+    "iteration": 1,
+    "child_mean": 0.06496946002315544,
+    "parent_mean": 0.06241799392553074,
+    "hypothesis": "the hitpoint level at which the bot stops trying to win a fight is an",
+    "verdict": "NOT-A-WIN",
+    "why": "only 2 seed(s) moved forward, below the 5 required (5 went back)",
+    "shared_seeds": 15,
+    "changed": [
+      0,
+      2,
+      4,
+      8,
+      9,
+      11,
+      14
+    ],
+    "forward": [
+      4,
+      9
+    ],
+    "backward": [
+      0,
+      2,
+      8,
+      11,
+      14
+    ],
+    "deeper": [
+      4
+    ]
+  }
+]
