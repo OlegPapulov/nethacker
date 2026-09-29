@@ -7,11 +7,15 @@ scores: identity, per-identity means, an overall, a target, the seeds, and an
 optional wiki path. There is no free-text parameter, so nothing a human or a
 sibling process has measured can reach the operator through it. The mutator
 strips `AGENTS.md`, `CLAUDE.md`, `opencode.json` and friends from every tree it
-hands to the agent, so notes cannot travel as files either.
+hands to the agent, and runs the operator with memory disabled, so neither
+files nor cross-run recall are channels.
 
 That leaves exactly one sanctioned channel, and this file is it: **compose the
 brief ourselves and hand the result to the operator.** `ContainerOperator.run`
 takes `brief: str`, so the mutator does not care where the string came from.
+`experience.md` and `GAME_RULES.md` do survive into the worktree and are worth
+writing, but they are state rather than instruction -- the brief is the only
+place an instruction can live.
 
 What goes in, in order of usefulness to the model:
 
@@ -28,7 +32,10 @@ What goes in, in order of usefulness to the model:
    says "beat the average", which is wrong here: the metric takes ~5 distinct
    values across 15 seeds and one seed can swing 0.18, so the only usable
    statement is per-seed and a majority of seeds must improve.
-5. **The contract**, verbatim from the project, so the model cannot break it.
+5. **The loop itself** -- `HOWTO` states that the agent is one turn of an
+   unsupervised loop, and that closing it (choose an experiment, try it, write
+   the entry) is the job rather than a documentation step at the end.
+6. **The contract**, verbatim from the project, so the model cannot break it.
 
 Deliberately absent: any instruction about *what* to change. We know which
 seeds die and how; we do not know the fix, and a hint that names a fix is a
@@ -37,8 +44,7 @@ and leaves the hypothesis to the operator -- which is the one job we want
 delegated.
 
 Usage: build_brief.py <identity> --diagnosis <diagnosis.json>
-                       [--experience FILE] [--experiments FILE]
-                       [--out FILE]
+                       [--experience FILE] [--out FILE]
 """
 
 from __future__ import annotations
@@ -127,27 +133,93 @@ as if it were the objective.
 """
 
 HOWTO = """\
-## How to make your change
+## You are one turn of a loop
 
-1. Make **one** focused change — a single idea, which may be a large diff.
-2. Mark it with a `# hypothesis: ...` comment saying what you expect it to
-   improve. The loop extracts that comment to attribute the change to you, and
-   a change with no comment is recorded as unattributed.
-3. Keep the contract working, and make sure the code imports cleanly.
-4. **Do not tune to the seeds.** The seeds exist so changes are measured; a
-   change that helps these 15 dungeons and nothing else will not transfer.
-5. You have live Python and NLE. You may run a short foreground evaluation
-   yourself to check the bot still works before you finish.
+You are not given a task and released. You are a single turn in a loop that
+runs without supervision, and the loop closes through what **you** write down.
 
-## Log what you found
+The cycle, which you should hold in mind while you work:
 
-Write your findings into **`/workspace/experience.md`**, appending one entry.
-This is how the loop remembers: your worktree becomes the next iteration's
-parent, so what you write here is what the next run will read before choosing
-a change. An unlogged finding is a finding that will be re-derived from
-scratch, or worse, re-attempted as if it were new.
+```
+  experience.md  ->  an experiment  ->  a rewritten bot  ->  the loop plays it
+   (what is known)   (one testable     (the change)        (15 seeds, measured)
+                      claim)                                |
+      ^                                                          |
+      +------------------ you write this back ------------------+
+```
 
-Use this exact structure:
+Nothing else keeps that loop alive. There is no human reading your work and no
+other process summarising it for you. If you do not write the entry, the next
+turn of this loop starts blind: it will re-derive what you already derived,
+and it may re-try what you already tried and measured as a failure.
+
+So the work is not "edit the bot". It is: **decide what to try, try it, and
+record what happened** — in that order, with the recording treated as part of
+the job rather than as documentation you get to if there is time.
+
+## 1. Read what is already known
+
+`/workspace/experience.md` holds the log. Every entry there is a previous turn
+of this loop that already thought about the bot on this identity. Read it
+**before** choosing anything. An attempt listed as failed has been tried and
+measured; repeating it wastes the iteration and produces a second data point
+for a question that is already answered.
+
+The file may be empty or absent on the first turn. That is the expected
+starting state, not an error.
+
+## 2. Choose ONE experiment
+
+An experiment is a single falsifiable claim about why the bot scores what it
+does, and a single change to test it. Not a list of improvements — one.
+
+Good experiments are the ones that can come back **negative**. "Add a
+danger-checking step before opening a door" is an experiment. "Improve
+combat" is not, because nothing could show it failed.
+
+Two things disqualify an experiment:
+
+- **It cannot be measured.** If you cannot say what result would tell you it
+  failed, it is not an experiment.
+- **It is tuned to the seeds.** A change that helps these 15 dungeons and
+  nothing else will not transfer to the secret dungeons the leaderboard
+  actually scores you on. Prefer a change you believe would help *any* dungeon.
+
+Say what you expect, before you look at the result, in the change itself:
+
+```python
+# hypothesis: <what you expect to improve, and why>
+```
+
+The loop extracts this comment to attribute the change to you. A change with
+no comment is recorded as unattributed, which makes it impossible to learn
+from later.
+
+## 3. Rewrite the bot
+
+Make the change in the `autoascend/` package — that is where the strategy
+lives. `arena_adapter.py` is glue; changing it to compensate for a strategy
+problem hides the problem.
+
+Keep the contract working:
+
+- `make_agent()` returns an object with `reset(observation)` and
+  `act(observation) -> int`, where the int indexes `nle.nethack.ACTIONS`.
+- Each episode is a fresh process, so all state lives on the instance.
+- An exception, a bad action, or a timeout **zeroes that episode**, no retry.
+
+You have live Python and NLE. Run a short foreground evaluation yourself to
+check the bot still works before you finish. A change that crashes on load
+scores zero and is indistinguishable from a bad idea.
+
+## 4. Log what you found — this is not optional
+
+**Append one entry to `/workspace/experience.md`.** Not a summary of the diff;
+a record of the *reasoning*, because the diff is visible in the tree and the
+reasoning is not.
+
+The next turn of this loop reads this file before choosing anything. What you
+write is the entire memory of this project.
 
 ```
 ## <YYYY-MM-DD> — <short title>
@@ -166,14 +238,16 @@ Use this exact structure:
 <the change that helped, and the evidence — or "nothing yet">
 ```
 
+Fill in **Attempts** even when you only got as far as one attempt, and fill in
+**What worked** honestly. A failed attempt with a measured result is worth more
+than a silent one: it is the only thing that stops the next turn from spending
+its iteration on a question you already answered. "Nothing yet" is a valid and
+useful answer. Leaving the section out is not.
+
 Tag the heading with **◆ gameplay** for what is about the game, or
 **⛭ apparatus** for what is about the loop's own machinery. Untagged entries
-are kept, so tagging is optional — but it is how a later run avoids spending
+are kept, so tagging is optional — but it is how a later turn avoids spending
 context on notes that do not describe how the bot dies.
-
-**Write the entry before you finish, even if your change failed.** A failed
-attempt with a measured result is worth more than a silent one: it is the only
-thing that stops the next iteration from trying it again.
 """
 
 
