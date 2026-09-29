@@ -1,0 +1,12 @@
+run: 36422138202
+identity: val-dwa-law-fem
+mean_progress: 0.5006
+tier: self-reported
+registered: prog_8102f8d09e19548e42f6c89556415122
+registered_at: 2026-09-27T18:54:22Z
+registered_commit: 6353379941505013ac90a6a713fae77519003ec0
+solution: jawfish (root: autoascend)
+# The 44 bot files here are byte-identical to the tree at the registered commit
+# above; only nethackers.solution.json differs (named petrify-guard there, with
+# vkurenkov as a parent). Registration is by commit SHA, so this directory is a
+# local copy, not the record of registration -- the record is the SHA.
