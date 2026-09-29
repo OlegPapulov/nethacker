@@ -1,2 +1,22 @@
 __pycache__/
 *.pyc
+
+# Run output. The mutator loop, its notes and the trees it seeds from are the
+# repository; what a run printed is not. `runs/` and `our-evolve/` held 417,829
+# of the 417,978 tracked files -- the per-run copies of autoascend under
+# work-*/, the 1.6 MB transcripts, the winner trees. One cancelled run wrote
+# 13.6 M lines of that back to main on its way out.
+#
+# The per-run record lives in the workflow's own artifacts (30-day retention),
+# and a run's verdict is appended to experiments.md by hand, which is the part
+# the next brief is actually built from.
+runs/
+our-evolve/
+
+# Same shape, from the diagnostic workflows: one throwaway tree per run.
+classify/
+diagnoses/
+reproducibility/
+seed-bot/
+trace-bot/
+tree/

@@ -187,19 +187,20 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Commit the run
+      - name: Commit the verdict
         if: always()
         env:
           IDENTITY: ${{ inputs.identity }}
+          OPERATOR: ${{ inputs.operator }}
+          MODEL: ${{ inputs.model }}
+          CONCLUSION: ${{ job.status }}
         run: |
           set +e
-          DEST="our-evolve/$IDENTITY-${{ github.run_id }}"
-          mkdir -p "$DEST"
-          cp -f our-evolve.log report.md preview-brief.md "$DEST/" 2>/dev/null
-          cp -r runs/. "$DEST/" 2>/dev/null
-          # E8 spent 10.0 M tokens, changed nothing, and left no evidence of
-          # why. If the transcript is missing again, say so at the top of the
-          # summary rather than letting the next reader guess.
+          # A few hundred bytes a run, not 13.6 M lines. `runs/` and the tree
+          # under work-*/ are gitignored now; the transcript and the mutated
+          # tree stay in the artifact above for 30 days.
+          python log_verdict.py || echo "::warning::could not write the verdict"
+          cat log/*.json 2>/dev/null >> "$GITHUB_STEP_SUMMARY"
           if ls runs/transcript-*.log >/dev/null 2>&1; then
             echo "transcript present:" | tee -a "$GITHUB_STEP_SUMMARY"
             ls -la runs/transcript-*.log | tee -a "$GITHUB_STEP_SUMMARY"
@@ -208,7 +209,7 @@ jobs:
           fi
           git config user.name  "nethackers-our-evolve"
           git config user.email "nethackers-our-evolve@users.noreply.github.com"
-          git add -A "$DEST" 2>/dev/null
+          git add log 2>/dev/null
           git diff --cached --quiet && { echo "nothing to commit"; exit 0; }
           git commit -q -m "our-evolve: $IDENTITY run ${{ github.run_id }} (${{ inputs.operator }}/${{ inputs.model }})"
           git push origin HEAD:main || echo "::warning::push failed (concurrent run?)"
