@@ -144,22 +144,28 @@ jobs:
             echo no > .hub-auth
           fi
 
-      - name: Fetch our notes
+      - name: Fetch our sources
         run: |
           set -euo pipefail
-          # experience.md and experiments.md are the brief's substance. If they
-          # are missing the brief silently gets thinner, so assert on them.
-          for f in experience.md experiments.md loop/brief.py loop/evolve.py \
+          # There is no experience.md here on purpose. The agent writes its own
+          # log into the worktree, and the tree carries it forward, so asserting
+          # on a repo-root log would fail a run whose log is exactly where it
+          # belongs. What must be present is the harness.
+          for f in loop/brief.py loop/evolve.py loop/build_game_rules.py \
                    loop/register_evidence.py loop/register_winner.py; do
             test -s "$f" || { echo "::error::$f missing or empty"; exit 1; }
             echo "  $f $(wc -c < "$f") bytes"
           done
-          # brief.py resolves the notes relative to the repository root, and
+          # brief.py resolves GAME_RULES.md relative to the repository root, and
           # evolve.py imports its siblings off sys.path, so all of them have to
           # sit beside it. A stale root copy is worse than none: the loop would
           # import last iteration's register_winner and silently not publish.
           cp loop/brief.py loop/evolve.py \
              loop/register_evidence.py loop/register_winner.py .
+          # The agent reads this one directly: it is not stripped from the
+          # worktree, and it is the only game knowledge that reaches the model
+          # without passing through the brief.
+          test -s GAME_RULES.md && echo "  GAME_RULES.md $(wc -c < GAME_RULES.md) bytes"
 
 
       - name: Pull the pinned images
@@ -169,13 +175,21 @@ jobs:
 
       - name: Show the brief we will send
         run: |
+          # No --experience here: the log belongs to the parent tree, which does
+          # not exist until the loop seeds it. This preview is therefore
+          # iteration 1's brief exactly -- no log section, because iteration 1
+          # has no log yet. Later iterations get one, spliced in from the
+          # worktree, and it is the only section that differs.
           python brief.py "${{ inputs.identity }}" \
-            --experience experience.md \
-            --experiments experiments.md \
             --out preview-brief.md
           wc -c preview-brief.md
           # Print enough to confirm the identity's data actually made it in.
           sed -n '1,40p' preview-brief.md
+          # The log instruction must survive into the brief, or the agent
+          # finishes without writing one and the next iteration starts blind.
+          grep -q "experience.md" preview-brief.md \
+            || { echo "::error::brief lost its experience.md instruction"; exit 1; }
+          echo "  brief instructs the agent to write the log"
 
       - name: Run our loop
         env:

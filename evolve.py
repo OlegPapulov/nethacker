@@ -38,7 +38,7 @@ import sys
 from pathlib import Path
 
 def _find_repo_root(start: Path) -> Path:
-    """The directory holding experience.md / experiments.md.
+    """The directory holding the loop sources.
 
     See the same function in brief.py for why this searches upward and stops
     before the filesystem root. Running from the repository root rather than
@@ -48,7 +48,7 @@ def _find_repo_root(start: Path) -> Path:
     for candidate in [start, *start.parents]:
         if candidate.parent == candidate:
             break
-        if (candidate / "experience.md").is_file() or (candidate / "experiments.md").is_file():
+        if (candidate / "loop" / "evolve.py").is_file():
             return candidate
     return start.parent
 
@@ -282,6 +282,19 @@ def fetch_seed(identity: str, mode: str, reference: str | None) -> Path:
     return target
 
 
+def read_log(tree: Path) -> str:
+    """The parent tree's `experience.md`, or an empty seed if it has none.
+
+    A fresh seed from the hub carries no log, so iteration 1 starts with an
+    empty string and the brief omits the section entirely. Once the agent has
+    written one, every later iteration inherits it through the parent.
+    """
+    path = Path(tree) / "experience.md"
+    if path.is_file():
+        return path.read_text(encoding="utf-8", errors="replace")
+    return ""
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("identity")
@@ -321,21 +334,24 @@ def main() -> int:
     for iteration in range(1, args.iterations + 1):
         print(f"\n--- iteration {iteration} ---", flush=True)
 
-        brief_text = brief_mod.build(
-            args.identity,
-            diagnosis,
-            (REPO_ROOT / "experience.md").read_text(encoding="utf-8", errors="replace")
-            if (REPO_ROOT / "experience.md").is_file() else "",
-            (REPO_ROOT / "experiments.md").read_text(encoding="utf-8", errors="replace")
-            if (REPO_ROOT / "experiments.md").is_file() else "",
-        )
-        (work / f"brief-{iteration}.md").write_text(brief_text)
-        print(f"brief: {len(brief_text)} chars -> {work}/brief-{iteration}.md", flush=True)
-
         worktree = work / f"work-{iteration}"
         if worktree.exists():
             shutil.rmtree(worktree)
         shutil.copytree(best_tree, worktree)
+
+        # The log is read from the PARENT's tree, not the repository. The agent
+        # writes its own entries into /workspace/experience.md, and copytree
+        # carries them forward automatically -- a kept winner brings its written
+        # experience to the next iteration, and so does a discarded mutant (with
+        # it, into the bin). Reading from REPO_ROOT instead would splice in a
+        # log belonging to a different parent, which is the one thing the
+        # copytree already gets right for free.
+        log_text = read_log(best_tree)
+        print(f"experience log: {len(log_text)} chars from {best_tree.name}", flush=True)
+
+        brief_text = brief_mod.build(args.identity, diagnosis, log_text)
+        (work / f"brief-{iteration}.md").write_text(brief_text)
+        print(f"brief: {len(brief_text)} chars -> {work}/brief-{iteration}.md", flush=True)
 
         hypothesis, report = run_operator(
             worktree, brief_text, args, transcript=work / f"transcript-{iteration}.log"

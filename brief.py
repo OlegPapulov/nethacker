@@ -18,10 +18,12 @@ What goes in, in order of usefulness to the model:
 1. **The measured baseline for this identity** -- mean, per-seed rows, and the
    depth histogram, because "dies on dlvl 1 to a goblin" is a fact and "0.06" is
    not.
-2. **Our experience entries for this identity** -- the observed failure modes,
-   with the attempts already ruled out, so the model does not re-derive them.
-3. **The previous attempts and what each scored** -- the stock
-   `attempts.md` table, which the mutator already expects to exist.
+2. **The log the agent itself wrote** -- the `experience.md` entries from the
+   parent tree, with the attempts already ruled out, so the model does not
+   re-derive them. The brief also *tells* the model to write the next entry, so
+   the log is a loop the agent closes itself rather than notes we maintain.
+3. **The game facts** for this identity, from `GAME_RULES.md`, parsed from the
+   NetHack 3.6.6 source the arena runs.
 4. **The scoring rule that actually decides acceptance** -- the stock brief
    says "beat the average", which is wrong here: the metric takes ~5 distinct
    values across 15 seeds and one seed can swing 0.18, so the only usable
@@ -49,7 +51,7 @@ from collections import Counter
 from pathlib import Path
 
 def _find_repo_root(start: Path) -> Path:
-    """The directory holding experience.md / experiments.md / GAME_RULES.md.
+    """The directory holding the loop sources and GAME_RULES.md.
 
     Searched upward, and the FIRST directory containing the script's own
     directory name wins over the filesystem root. This exists because the same
@@ -63,7 +65,7 @@ def _find_repo_root(start: Path) -> Path:
     for candidate in [start, *start.parents]:
         if candidate.parent == candidate:  # reached the filesystem root
             break
-        if (candidate / "experience.md").is_file() or (candidate / "experiments.md").is_file():
+        if (candidate / "loop" / "brief.py").is_file():
             return candidate
     # Fall back to the script's own directory's parent, which is the repo root
     # when the script lives in loop/.
@@ -104,7 +106,24 @@ This is the part that is easy to get wrong, so read it carefully.
   real comparison a candidate gained +0.175 on one seed and lost -0.180 on
   another, and the mean of the two was +0.0013.
 - Judge on **per-seed deltas and on the depth each seed reaches**, which is
-  finer-grained than the progression value and is collected anyway.
+   finer-grained than the progression value and is collected anyway.
+
+### Depth is not progress
+
+This is the mistake that has already been made here, and it is worth stating
+plainly because the failure looks like a success.
+
+Progression rises as the bot **survives and descends**. Those can move in
+opposite directions: a change that reaches dlvl 4 in 4,000 turns instead of
+dlvl 2 in 18,000 may be *worse* on the metric while looking obviously better on
+any depth-ladder you reconstruct yourself. A real run did exactly this —
+depth up, mean progression **down 40%** — and the change was reverted.
+
+So when you reason about what a change will do, reason about **progression**,
+which is what is scored, and treat depth as one input to it rather than as a
+proxy for it. If your reasoning needs a value for progression that you cannot
+observe, say that you are estimating rather than presenting the depth number
+as if it were the objective.
 """
 
 HOWTO = """\
@@ -119,6 +138,42 @@ HOWTO = """\
    change that helps these 15 dungeons and nothing else will not transfer.
 5. You have live Python and NLE. You may run a short foreground evaluation
    yourself to check the bot still works before you finish.
+
+## Log what you found
+
+Write your findings into **`/workspace/experience.md`**, appending one entry.
+This is how the loop remembers: your worktree becomes the next iteration's
+parent, so what you write here is what the next run will read before choosing
+a change. An unlogged finding is a finding that will be re-derived from
+scratch, or worse, re-attempted as if it were new.
+
+Use this exact structure:
+
+```
+## <YYYY-MM-DD> — <short title>
+
+**Problem:**
+<the situation that led to death or suboptimal progress>
+
+**Hypotheses:**
+- <possible cause #1>
+- <possible cause #2>
+
+**Attempts:**
+- <what you tried first> → <result>
+
+**What worked:**
+<the change that helped, and the evidence — or "nothing yet">
+```
+
+Tag the heading with **◆ gameplay** for what is about the game, or
+**⛭ apparatus** for what is about the loop's own machinery. Untagged entries
+are kept, so tagging is optional — but it is how a later run avoids spending
+context on notes that do not describe how the bot dies.
+
+**Write the entry before you finish, even if your change failed.** A failed
+attempt with a measured result is worth more than a silent one: it is the only
+thing that stops the next iteration from trying it again.
 """
 
 
@@ -233,7 +288,6 @@ def build(
     identity: str,
     diagnosis: dict | None,
     experience_text: str = "",
-    experiments_text: str = "",
 ) -> str:
     parts: list[str] = [
         f"# Improving the NetHack bot for `{identity}`",
@@ -267,18 +321,10 @@ def build(
             parts += [
                 "## What has already been observed about this identity",
                 "",
-                "These are measurements from previous runs. Attempts listed as",
-                "failed **have** been tried -- do not repeat them as if new.",
-                "",
-                *sections,
-                "",
-            ]
-
-    if experiments_text:
-        sections = _identity_sections(experiments_text, identity)
-        if sections:
-            parts += [
-                "## Experiments already run on this identity",
+                "These are entries previous runs of this loop wrote into",
+                "`/workspace/experience.md`. Attempts listed as failed **have**",
+                "been tried -- do not repeat them as if new. The file is in your",
+                "workspace: read it before deciding anything.",
                 "",
                 *sections,
                 "",
@@ -299,7 +345,6 @@ def main() -> int:
     parser.add_argument("identity")
     parser.add_argument("--diagnosis")
     parser.add_argument("--experience")
-    parser.add_argument("--experiments")
     parser.add_argument("--out")
     args = parser.parse_args()
 
@@ -319,7 +364,6 @@ def main() -> int:
         args.identity,
         diagnosis,
         read(args.experience),
-        read(args.experiments),
     )
     if args.out:
         Path(args.out).write_text(text)
