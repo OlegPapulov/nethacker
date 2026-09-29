@@ -103,18 +103,64 @@ jobs:
           }
           gh auth setup-git 2>/dev/null || true
 
+      # Registration is opt-in by credential, never by default: a run must not
+      # be able to push under this account unless someone deliberately added the
+      # secrets, and there is nothing to leak when they have not.
+      #
+      # To enable it, add two repository secrets:
+      #   NETHACKERS_TOKEN  a GitHub token. Use a CLASSIC PAT with `public_repo`
+      #     and no expiry -- the hub only checks that the token's login owns the
+      #     referenced repo. Do NOT paste the access_token from
+      #     `nethackers login`: that one expires in ~8h, and
+      #     write_credentials.py records no expiry, so the CLI would treat a dead
+      #     token as permanent and never refresh it.
+      #   NETHACKERS_LOGIN  the login it belongs to, i.e. OlegPapulov
+      - name: Authenticate to the hub
+        env:
+          NETHACKERS_TOKEN: ${{ secrets.NETHACKERS_TOKEN }}
+          NETHACKERS_LOGIN: ${{ secrets.NETHACKERS_LOGIN }}
+        run: |
+          if [ -n "${NETHACKERS_TOKEN:-}" ] && [ -n "${NETHACKERS_LOGIN:-}" ]; then
+            python write_credentials.py
+            # publish_solution shells out to `gh repo clone` then `git push`, so
+            # gh needs its own auth. The built-in GITHUB_TOKEN cannot push to a
+            # different repo, so the PAT does both jobs.
+            if command -v gh >/dev/null 2>&1; then
+              echo "${NETHACKERS_TOKEN}" | gh auth login --hostname github.com \
+                --git-protocol https --with-token >/dev/null 2>&1 || true
+            fi
+            # Prove the credential before betting an iteration on it: a token
+            # that only failed at register time would still have cost a full
+            # agent call and 15 episodes.
+            if nethackers whoami; then
+              echo "::notice::hub credentials accepted, self-registration ENABLED"
+              echo yes > .hub-auth
+            else
+              echo "::warning::token rejected by the hub; running without publishing"
+              echo no > .hub-auth
+            fi
+          else
+            echo "::warning::no hub credentials; the loop will keep trees but publish nothing"
+            echo no > .hub-auth
+          fi
+
       - name: Fetch our notes
         run: |
           set -euo pipefail
           # experience.md and experiments.md are the brief's substance. If they
           # are missing the brief silently gets thinner, so assert on them.
-          for f in experience.md experiments.md loop/brief.py loop/evolve.py; do
+          for f in experience.md experiments.md loop/brief.py loop/evolve.py \
+                   loop/register_evidence.py loop/register_winner.py; do
             test -s "$f" || { echo "::error::$f missing or empty"; exit 1; }
             echo "  $f $(wc -c < "$f") bytes"
           done
-          # Both files are read by brief.py, which resolves them relative to
-          # the repository root, so they must be siblings of loop/.
-          cp loop/brief.py loop/evolve.py . 2>/dev/null || true
+          # brief.py resolves the notes relative to the repository root, and
+          # evolve.py imports its siblings off sys.path, so all of them have to
+          # sit beside it. A stale root copy is worse than none: the loop would
+          # import last iteration's register_winner and silently not publish.
+          cp loop/brief.py loop/evolve.py \
+             loop/register_evidence.py loop/register_winner.py .
+
 
       - name: Pull the pinned images
         run: |

@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import os
 import random
 import re
 import shutil
@@ -56,6 +57,7 @@ REPO_ROOT = _find_repo_root(Path(__file__).resolve().parent)
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import brief as brief_mod  # noqa: E402
+import register_winner as publish_mod  # noqa: E402
 
 ARENA_IMAGE = (
     "ghcr.io/dunnolab/nethackers-arena@sha256:"
@@ -105,6 +107,17 @@ def spec_for(identity: str, seeds: int = PUBLISHED_SEEDS, max_steps: int | None 
 
 
 def score(tree: Path, identity: str, *, seeds: int = PUBLISHED_SEEDS, max_steps=None):
+    """Score `tree` on `identity`'s published batch.
+
+    Returns `(mean, results, raw)`, and the third element is not redundant.
+    `results` is the loop's own narrow projection -- the paired arithmetic in
+    `paired_verdict` reads `seed`/`depth`/`death` and nothing else. `raw` is the
+    untouched `EpisodeResult.__dict__`, which is what `nethackers register`
+    reads: the hub looks up `trajectory_id`, `max_depth`, `cause_of_death` and
+    `ascended` by name, so the projection would hand it episodes it cannot
+    resolve. One evaluation, two shapes; re-scoring to recover `raw` would mean
+    trusting a second sample of a batch with a per-seed SD of 0.033.
+    """
     from nethackers.harness import evaluate as E
 
     mean, evidence = E.evaluate(
@@ -118,7 +131,7 @@ def score(tree: Path, identity: str, *, seeds: int = PUBLISHED_SEEDS, max_steps=
         }
         for r in evidence.results
     ]
-    return mean, results
+    return mean, results, [r.__dict__ for r in evidence.results]
 
 
 def paired_verdict(child: list[dict], parent: list[dict]) -> dict:
@@ -251,7 +264,7 @@ def main() -> int:
     parent = fetch_seed(args.identity, args.seed_mode, args.parent_ref)
     print(f"seed: {parent}", flush=True)
 
-    parent_mean, parent_rows = score(parent, args.identity)
+    parent_mean, parent_rows, _ = score(parent, args.identity)
     print(f"seed baseline: {parent_mean:.4f} over {len(parent_rows)} seeds", flush=True)
     diagnosis = {
         "identity": args.identity, "mean_progress": parent_mean, "results": parent_rows,
@@ -291,12 +304,12 @@ def main() -> int:
             source = "closing-message" if hypothesis else "none"
         print(f"operator done; hypothesis [{source}]: {hypothesis!r}", flush=True)
 
-        smoke_mean, _ = score(
+        smoke_mean, _, _ = score(
             worktree, args.identity, seeds=1, max_steps=SMOKE_STEPS
         )
         print(f"smoke: {smoke_mean:.4f}", flush=True)
 
-        child_mean, child_rows = score(worktree, args.identity)
+        child_mean, child_rows, child_raw = score(worktree, args.identity)
         verdict = paired_verdict(child_rows, best_rows)
         print(
             f"child {child_mean:.4f} vs parent {best_mean:.4f} -> {verdict['verdict']}: "
@@ -325,6 +338,31 @@ def main() -> int:
                    f"  (a {verdict['verdict']}, not a publishable win)"),
                 flush=True,
             )
+
+            # A WIN leaves the machine on its own: the loop is meant to improve
+            # itself without anyone watching, so a cleared result is pushed and
+            # registered here rather than logged for a human to notice later.
+            # KEEP deliberately does not publish -- it is a better place to
+            # search from, not a better bot.
+            if verdict["verdict"] == "WIN":
+                record = publish_mod.register_winner(
+                    kept, args.identity, child_mean, child_raw, ARENA_IMAGE, work,
+                    run_id=os.environ.get("GITHUB_RUN_ID", "local"),
+                )
+                history[-1]["publish"] = record
+                (work / "history.json").write_text(json.dumps(history, indent=2))
+                if record.get("published"):
+                    print(
+                        f"published: branch {record['branch']} commit "
+                        f"{record['commit'][:12]} registered to {record['repo']}",
+                        flush=True,
+                    )
+                else:
+                    print(
+                        f"NOT published ({record.get('error', 'unknown')}); "
+                        f"the tree is still kept at {kept}",
+                        flush=True,
+                    )
 
     print(f"\n=== done · {len(history)} iteration(s) ===")
     for entry in history:
