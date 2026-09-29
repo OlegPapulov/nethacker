@@ -18,10 +18,16 @@ name: our-evolve
 # It runs on a native x86_64 runner because the arena is linux/amd64: under
 # arm64 emulation a bot's startup never completes and every seed returns turns=0.
 #
-# The number to watch is NOT the score. It is the hypothesis comment the
-# operator writes. One that cites a specific seed's cause of death means the
-# model engaged with the brief; one that says "improved combat heuristics" in
-# general terms means it did not.
+# The number to watch is NOT the score. It is the hypothesis the operator
+# states. One that cites a specific seed's cause of death means the model
+# engaged with the brief; one that says "improved combat heuristics" in general
+# terms means it did not.
+#
+# `hypothesis_source` in history.json says where it came from. `tree-comment` is
+# a `# hypothesis:` block the agent left in the code. `closing-message` means it
+# reverted its own change and the line was condensed out of its final report --
+# which used to record `None`, on exactly the runs that had the most to say.
+# `report` holds that message in full.
 
 on:
   workflow_dispatch:

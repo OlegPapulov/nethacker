@@ -29,6 +29,7 @@ import argparse
 import datetime
 import json
 import random
+import re
 import shutil
 import statistics
 import subprocess
@@ -77,6 +78,11 @@ SMOKE_STEPS = 2000
 MIN_SEEDS_FORWARD = 5
 MIN_TWO_THIRDS = True
 
+#: Verdicts that make a mutant the next parent. Only WIN is a result anybody can
+#: register; KEEP is a better starting point to keep searching from, and nothing
+#: more. Keeping the two apart is the point -- see `paired_verdict`.
+KEEPING_VERDICTS = ("WIN", "KEEP")
+
 
 def now() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -116,7 +122,23 @@ def score(tree: Path, identity: str, *, seeds: int = PUBLISHED_SEEDS, max_steps=
 
 
 def paired_verdict(child: list[dict], parent: list[dict]) -> dict:
-    """Judge a mutant against its parent, per seed, on identical seeds."""
+    """Judge a mutant against its parent, per seed, on identical seeds.
+
+    Three verdicts, not two. The loop was losing real progress by collapsing
+    "not good enough to publish" into "discard": the 15-seed batch has a
+    per-seed SD of 0.033, so a single mechanism worth +0.005 cannot clear a
+    five-seed bar however real it is. The agent measuring this identity put it
+    plainly -- 15 seeds gives SE 0.0085, 90 gives 0.0054, and every mechanism
+    it found had an expected effect under 0.01. Under the old rule that work
+    could only ever come back as a dead end.
+
+    So a child that moves seeds forward without being a net regression is
+    KEPT: it becomes the next parent, and the search continues from it. It is
+    not a WIN, it is not publishable, and `history.json` says which it was.
+    Only a child that clears both the absolute and the two-thirds bar is a
+    result, and a child that moves nothing at all is still thrown away -- there
+    is nothing to keep when the tree came back identical.
+    """
     child_by = {r["seed"]: r for r in child}
     parent_by = {r["seed"]: r for r in parent}
     shared = sorted(set(child_by) & set(parent_by))
@@ -144,20 +166,32 @@ def paired_verdict(child: list[dict], parent: list[dict]) -> dict:
     down = [s for s in changed if not forward(s)]
     deeper = [s for s in shared if child_by[s]["depth"] > parent_by[s]["depth"]]
 
+    # Both bars, not either: MIN_SEEDS_FORWARD is the floor in absolute terms
+    # and MIN_TWO_THIRDS is the shape of the split that earned them.
+    confirmed = len(up) >= MIN_SEEDS_FORWARD and (
+        not MIN_TWO_THIRDS or 3 * len(up) >= 2 * len(changed)
+    )
+
     if not changed:
         verdict, why = "NOT-A-WIN", "no seed moved on any signal"
+    elif confirmed:
+        verdict, why = "WIN", f"{len(up)} forward, {len(down)} back, {len(deeper)} deeper"
+    elif len(up) > len(down):
+        verdict, why = "KEEP", (
+            f"not a regression: {len(up)} forward against {len(down)} back, but "
+            f"short of the {MIN_SEEDS_FORWARD}-seed bar -- kept as the parent, "
+            f"not a publishable win"
+        )
     elif len(up) < MIN_SEEDS_FORWARD:
         verdict, why = "NOT-A-WIN", (
             f"only {len(up)} seed(s) moved forward, below the {MIN_SEEDS_FORWARD} "
             f"required ({len(down)} went back)"
         )
-    elif MIN_TWO_THIRDS and 3 * len(up) < 2 * len(changed):
+    else:
         verdict, why = "NOT-A-WIN", (
             f"{len(up)} of {len(changed)} moved seeds went forward, short of "
             f"two-thirds ({len(down)} went back)"
         )
-    else:
-        verdict, why = "WIN", f"{len(up)} forward, {len(down)} back, {len(deeper)} deeper"
 
     return {
         "verdict": verdict, "why": why, "shared_seeds": len(shared),
@@ -248,10 +282,14 @@ def main() -> int:
             shutil.rmtree(worktree)
         shutil.copytree(best_tree, worktree)
 
-        hypothesis = run_operator(
+        hypothesis, report = run_operator(
             worktree, brief_text, args, transcript=work / f"transcript-{iteration}.log"
         )
-        print(f"operator done; hypothesis: {hypothesis!r}", flush=True)
+        source = "tree-comment"
+        if not hypothesis:
+            hypothesis = condense_report(report)
+            source = "closing-message" if hypothesis else "none"
+        print(f"operator done; hypothesis [{source}]: {hypothesis!r}", flush=True)
 
         smoke_mean, _ = score(
             worktree, args.identity, seeds=1, max_steps=SMOKE_STEPS
@@ -268,17 +306,25 @@ def main() -> int:
 
         history.append({
             "iteration": iteration, "child_mean": child_mean,
-            "parent_mean": best_mean, "hypothesis": hypothesis, **verdict,
+            "parent_mean": best_mean, "hypothesis": hypothesis,
+            "hypothesis_source": source,
+            "report": (report or "")[:REPORT_CHARS] or None,
+            **verdict,
         })
         (work / "history.json").write_text(json.dumps(history, indent=2))
 
-        if verdict["verdict"] == "WIN":
+        if verdict["verdict"] in KEEPING_VERDICTS:
             kept = work / f"winner-{iteration}"
             if kept.exists():
                 shutil.rmtree(kept)
             shutil.copytree(worktree, kept)
             best_tree, best_mean, best_rows = kept, child_mean, child_rows
-            print(f"KEPT as the new parent: {kept}", flush=True)
+            print(
+                f"KEPT as the new parent: {kept}"
+                + ("" if verdict["verdict"] == "WIN" else
+                   f"  (a {verdict['verdict']}, not a publishable win)"),
+                flush=True,
+            )
 
     print(f"\n=== done · {len(history)} iteration(s) ===")
     for entry in history:
@@ -286,7 +332,9 @@ def main() -> int:
     return 0
 
 
-def run_operator(worktree: Path, brief_text: str, args, transcript: Path | None = None) -> str | None:
+def run_operator(
+    worktree: Path, brief_text: str, args, transcript: Path | None = None
+) -> tuple[str | None, str | None]:
     """Drive the project's mutator, passing OUR brief.
 
     Reuses `ContainerOperator`, so the sandbox caps, the platform args and the
@@ -301,6 +349,9 @@ def run_operator(worktree: Path, brief_text: str, args, transcript: Path | None 
     "it read everything and decided nothing was worth doing" -- and those need
     three different fixes. The transcript is the only thing that tells them
     apart.
+
+    Returns `(hypothesis_in_the_tree, closing_message)`. The caller decides what
+    to do when the first is None and the second is not.
     """
     from nethackers.harness.container_operator import ContainerOperator
 
@@ -310,6 +361,7 @@ def run_operator(worktree: Path, brief_text: str, args, transcript: Path | None 
 
     handle = None
     written = 0
+    said = ""
     if transcript is not None:
         transcript.parent.mkdir(parents=True, exist_ok=True)
         handle = transcript.open("w", encoding="utf-8")
@@ -317,7 +369,10 @@ def run_operator(worktree: Path, brief_text: str, args, transcript: Path | None 
     def on_line(line: str) -> None:
         # Best-effort and non-fatal: losing transcript lines must never take
         # down the run they were meant to explain.
-        nonlocal written
+        nonlocal written, said
+        utterance = _speech_in(line)
+        if utterance:
+            said = utterance
         if handle is None:
             return
         try:
@@ -361,7 +416,36 @@ def run_operator(worktree: Path, brief_text: str, args, transcript: Path | None 
         f"stop={getattr(result, 'stopped_reason', '?')}",
         flush=True,
     )
-    return extract_hypothesis(worktree)
+    return extract_hypothesis(worktree), said
+
+
+def _speech_in(line: str) -> str | None:
+    """The assistant's prose in one transcript line, if it carries any.
+
+    A hypothesis is a thing the agent SAYS as much as a thing it writes in the
+    tree, and the tree is the wrong place to look for the one case that matters
+    most. An agent that tries a change, measures it, and reverts leaves the tree
+    exactly as it found it -- comment included -- so `extract_hypothesis` reads
+    nothing and the run records `hypothesis: None`. That is precisely the run
+    with the most to say: 17.7 M tokens, a 90-seed paired test, and a
+    deliberately discarded result.
+
+    The agent CLI streams JSONL, one object per line, and its prose arrives as
+    `{"type": "text", "part": {"type": "text", "text": ...}}`. Take the last
+    one: the closing message is the report.
+    """
+    line = line.strip()
+    if not line or not line.startswith("{"):
+        return None
+    try:
+        event = json.loads(line)
+    except ValueError:
+        return None
+    part = event.get("part")
+    if not isinstance(part, dict) or part.get("type") != "text":
+        return None
+    text = part.get("text")
+    return text if isinstance(text, str) and text.strip() else None
 
 
 # A hypothesis is a COMMENT BLOCK, not a line. The regex used to be
@@ -426,6 +510,83 @@ def extract_hypothesis(tree: Path) -> str | None:
         except (OSError, UnicodeDecodeError):
             continue
     return found[0] if found else None
+
+
+#: Markdown headings, so a closing report can be taken apart into sections.
+_HEADING = __import__("re").compile(r"^\s{0,3}#{1,6}\s*(.+?)\s*#*\s*$")
+#: Section names that answer "what did you change and why", which is the whole
+#: question a hypothesis exists to answer.
+_ABOUT_THE_CHANGE = __import__("re").compile(
+    r"hypoth|what i (tried|changed|did|attempted)|the change|summary|tl;?dr|approach",
+    __import__("re").IGNORECASE,
+)
+#: A hypothesis is a line a human skims, not the report it came from.
+HYPOTHESIS_CHARS = 400
+#: The closing message is kept whole-ish, because that is what a human reads.
+REPORT_CHARS = 4000
+
+
+def _prose_lines(block: str) -> list[str]:
+    """The sentences in one markdown section, minus furniture."""
+    out: list[str] = []
+    for line in block.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith(("|", ">", "-", "*", "#")):
+            continue
+        if re.match(r"^`{3,}", stripped):
+            continue
+        out.append(stripped)
+    return out
+
+
+def _sections(text: str) -> list[tuple[str | None, str]]:
+    body: list[str] = []
+    heading: str | None = None
+    blocks: list[tuple[str | None, str]] = []
+    for line in text.splitlines():
+        match = _HEADING.match(line)
+        if match:
+            if body:
+                blocks.append((heading, "\n".join(body)))
+            heading, body = match.group(1), []
+        else:
+            body.append(line)
+    if body:
+        blocks.append((heading, "\n".join(body)))
+    return blocks
+
+
+def condense_report(text: str | None, limit: int = HYPOTHESIS_CHARS) -> str | None:
+    """One skimmable line out of the agent's closing message.
+
+    Prefers the section that names the change, because an agent that reverts
+    usually opens with the verdict ("I reverted the change") and puts the actual
+    mechanism one heading later. Falls back to the first section with prose in
+    it, so a report with unfamiliar headings still yields something.
+    """
+    if not text or not text.strip():
+        return None
+    sections = _sections(text)
+    chosen = None
+    for heading, block in sections:
+        if heading and _ABOUT_THE_CHANGE.search(heading) and _prose_lines(block):
+            chosen = block
+            break
+    if chosen is None:
+        for _heading, block in sections:
+            if _prose_lines(block):
+                chosen = block
+                break
+    if chosen is None:
+        return None
+    joined = " ".join(_prose_lines(chosen))
+    joined = re.sub(r"\s+", " ", joined).strip()
+    if not joined:
+        return None
+    if len(joined) <= limit:
+        return joined
+    cut = joined[:limit].rsplit(" ", 1)[0]
+    return f"{cut.rstrip(',.;:')}..."
 
 
 if __name__ == "__main__":
