@@ -459,3 +459,83 @@ output — every gameplay fact present, every harness sentence absent.
    context window the model reads once. If the next run shows no improvement,
    the question is whether the brief needs *less* game knowledge, better aimed,
    rather than more.
+
+## E8 — Depth is not progress, and the harness said so first ✅ ⛭ verdict
+
+Run `36615769123` · `wiz-hum-cha-mal` · 1 iteration · baseline **0.0624**.
+
+**The first run to produce a real, specific, falsifiable hypothesis.** E1-E7
+ended with the operator either leaving no trace or forming a hypothesis about
+the wrong thing. This one named a function, a line range and a mechanism:
+
+> the first-level milestone is a proxy for "strong enough for the next level",
+> but it is implemented as an experience-level grind (XL8) ... one measured run
+> spent **15,687 of its 26,659 turns on dlvl 1** going XL1 → XL7, then died
+> there anyway. Make the milestone mean what it says: take the stairs down as
+> soon as they have been found.
+
+`hypothesis_source: tree-comment`, not `none`. Whatever fixed that in `c42fac0`
+worked, and it is the first time the loop has known *why* it changed something.
+
+**The operator also caught itself twice, and was right both times.** It wrote
+that descending pays XP, checked the wiki, traced dlvl 1→2 at step 384 with XP
+unchanged at 5, and corrected its own comment. It then measured on a **held-out
+seed set** (100–114) it only touched after finalising the change, so the result
+was not fitted to the seeds it was judged on. And it flagged the exact risk
+that killed the change, unprompted:
+
+> if real progression also rewards *turns survived* rather than just depth, the
+> change trades a lot of survival (17.5k → 3.9k mean turns) for depth.
+
+**It was right.** The harness measured depth going *up* (mean dlvl 2.27 → 3.80,
+never-left-dlvl-1 9 → 0) and `progress` going **down**:
+
+```
+child 0.0374 vs parent 0.0624 -> WIN: 10 forward, 5 back, 10 deeper
+```
+
+`0.0374` against a `0.0624` baseline. **−40%.** The agent's own prediction, in
+its own words, was the reason the change failed.
+
+**And the old verdict rule called it a WIN.** 10 forward clears
+`MIN_SEEDS_FORWARD=5`, and `3×10 = 30 ≥ 2×15 = 30` clears two-thirds *exactly*.
+Ten seeds were deeper, so the shape test passed, and the batch got worse. The
+operator measured depth because that is the quantity it could see; `progress`
+is the quantity the board ranks, and it counts survival the agent had no way to
+read off the source.
+
+This is the whole argument for scoring on the harness's metric rather than on
+any proxy the operator can construct: **the proxy improved and the score fell.**
+
+**Fixed by `mean_gate` (`7aa320d`), shipped three minutes after this run
+started.** A `WIN` must now also raise the batch mean. The same result now
+reads:
+
+```
+KEEP: 10 forward, 5 back, 10 deeper, but the mean did not improve
+      (0.0374 vs 0.0624) -- kept as the parent, not a publishable win
+```
+
+The run was on `c42fac0`, which had neither the gate nor auto-registration, so
+nothing was published. Had the loop been self-registering on the old rule, the
+leaderboard would have gained a row scoring **0.0374** — a 40% regression
+presented as a win. That is the failure mode the whole exercise is about, and
+it is the strongest evidence yet that the gate is the right shape.
+
+**The mutant is still kept as the parent.** Ten of fifteen seeds reached greater
+depth and none stayed on dlvl 1. The mechanism is real; only its sign against
+the scored metric is wrong. A follow-up that descends *and* survives — fight
+once, take the stairs, do not trade 17.5k turns of survival for 3.8k — is the
+next thing to try, and this run is the evidence for why it should be tried.
+
+**Raises.**
+
+1. **The operator optimizes a proxy it can read, not the metric that scores.**
+   The brief should say plainly that `progress` is the scored quantity, and
+   that depth is one input to it. It reconstructed a depth→value ladder because
+   `BALROG`'s scorer is not in the tree — worth handing it the real one.
+2. **Held-out seeds are the operator's own idea and it works.** It reached for
+   100–114 unprompted. The harness should do the same, so a `WIN` is confirmed
+   on seeds it was not selected on before it is ever published.
+3. **Survival is the axis nothing was measuring.** Depth up, turns down 4.5×.
+   `GAME_RULES.md` should carry turns-survived alongside the depth ladder.
