@@ -1,0 +1,90 @@
+### our loop — wiz-hum-cha-mal — opencode2/opencode/big-pickle
+
+#### log
+```
+=== wiz-hum-cha-mal · our loop · 1 iteration(s) ===
+seed: seed-bot
+arena · running 15 episode(s)…
+arena · episode 1/15 (wiz-hum-cha-mal): progress=0.037 completed turns=13697 depth=1
+arena · episode 2/15 (wiz-hum-cha-mal): progress=0.037 completed turns=17693 depth=1
+arena · episode 3/15 (wiz-hum-cha-mal): progress=0.075 completed turns=20700 depth=5
+arena · episode 4/15 (wiz-hum-cha-mal): progress=0.021 completed turns=3052 depth=1
+arena · episode 5/15 (wiz-hum-cha-mal): progress=0.179 completed turns=32346 depth=7
+arena · episode 6/15 (wiz-hum-cha-mal): progress=0.051 completed turns=14486 depth=1
+arena · episode 7/15 (wiz-hum-cha-mal): progress=0.037 completed turns=11919 depth=1
+arena · episode 8/15 (wiz-hum-cha-mal): progress=0.075 completed turns=23971 depth=2
+arena · episode 9/15 (wiz-hum-cha-mal): progress=0.075 completed turns=23604 depth=5
+arena · episode 10/15 (wiz-hum-cha-mal): progress=0.075 completed turns=24295 depth=4
+arena · episode 11/15 (wiz-hum-cha-mal): progress=0.024 completed turns=4014 depth=1
+arena · episode 12/15 (wiz-hum-cha-mal): progress=0.117 completed turns=27094 depth=5
+arena · episode 13/15 (wiz-hum-cha-mal): progress=0.037 completed turns=12509 depth=1
+arena · episode 14/15 (wiz-hum-cha-mal): progress=0.024 completed turns=5206 depth=1
+arena · episode 15/15 (wiz-hum-cha-mal): progress=0.075 completed turns=22485 depth=1
+seed baseline: 0.0624 over 15 seeds
+
+--- iteration 1 ---
+brief: 3626 chars -> /home/runner/work/nethacker/nethacker/runs/brief-1.md
+  backend=opencode2 tokens=16101682 stop=completed
+operator done; hypothesis: 'the old guard (only record a kill when `level.items` already listed a corpse of that monster) silently dropped most kills, leaving `level.corpses_to_eat` nearly empty. Corpses are the only food on Dlvl 1 and are only edible for 50 turns, so the wizard starved: 9/15 seeds die weak, fainting or starving (mean progress 0.038 vs 0.099 for the fed seeds). Record the kill unconditionally; `eat_corpses_from_ground` prunes corpses that turned out to be gone or uneatable when it arrives.'
+arena · running 1 episode(s)…
+arena · episode 1/1 (wiz-hum-cha-mal): progress=0.021 completed turns=1767 depth=1
+smoke: 0.0208
+arena · running 15 episode(s)…
+arena · episode 1/15 (wiz-hum-cha-mal): progress=0.037 completed turns=13697 depth=1
+arena · episode 2/15 (wiz-hum-cha-mal): progress=0.037 completed turns=17693 depth=1
+arena · episode 3/15 (wiz-hum-cha-mal): progress=0.117 completed turns=25308 depth=5
+arena · episode 4/15 (wiz-hum-cha-mal): progress=0.021 completed turns=3052 depth=1
+arena · episode 5/15 (wiz-hum-cha-mal): progress=0.117 completed turns=31896 depth=3
+arena · episode 6/15 (wiz-hum-cha-mal): progress=0.075 completed turns=15973 depth=1
+arena · episode 7/15 (wiz-hum-cha-mal): progress=0.075 completed turns=29645 depth=2
+arena · episode 8/15 (wiz-hum-cha-mal): progress=0.075 completed turns=23971 depth=2
+arena · episode 9/15 (wiz-hum-cha-mal): progress=0.075 completed turns=23909 depth=2
+arena · episode 10/15 (wiz-hum-cha-mal): progress=0.075 completed turns=26075 depth=3
+arena · episode 11/15 (wiz-hum-cha-mal): progress=0.024 completed turns=4014 depth=1
+arena · episode 12/15 (wiz-hum-cha-mal): progress=0.117 completed turns=25577 depth=5
+arena · episode 13/15 (wiz-hum-cha-mal): progress=0.037 completed turns=12509 depth=1
+arena · episode 14/15 (wiz-hum-cha-mal): progress=0.024 completed turns=5206 depth=1
+arena · episode 15/15 (wiz-hum-cha-mal): progress=0.037 completed turns=10883 depth=1
+child 0.0627 vs parent 0.0624 -> NOT-A-WIN: only 3 seed(s) moved forward, below the 5 required (5 went back)
+
+=== done · 1 iteration(s) ===
+  1: NOT-A-WIN   only 3 seed(s) moved forward, below the 5 required (5 went back)
+```
+#### history
+```json
+[
+  {
+    "iteration": 1,
+    "child_mean": 0.06270079529436043,
+    "parent_mean": 0.06241799392553074,
+    "hypothesis": "the old guard (only record a kill when `level.items` already listed a corpse of that monster) silently dropped most kills, leaving `level.corpses_to_eat` nearly empty. Corpses are the only food on Dlvl 1 and are only edible for 50 turns, so the wizard starved: 9/15 seeds die weak, fainting or starving (mean progress 0.038 vs 0.099 for the fed seeds). Record the kill unconditionally; `eat_corpses_from_ground` prunes corpses that turned out to be gone or uneatable when it arrives.",
+    "verdict": "NOT-A-WIN",
+    "why": "only 3 seed(s) moved forward, below the 5 required (5 went back)",
+    "shared_seeds": 15,
+    "changed": [
+      2,
+      4,
+      5,
+      6,
+      8,
+      9,
+      11,
+      14
+    ],
+    "forward": [
+      2,
+      5,
+      6
+    ],
+    "backward": [
+      4,
+      8,
+      9,
+      11,
+      14
+    ],
+    "deeper": [
+      6
+    ]
+  }
+]```
