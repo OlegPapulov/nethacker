@@ -177,6 +177,7 @@ jobs:
             runs/history.json
             runs/brief-*.md
             runs/history.json
+            runs/transcript-*.log
           if-no-files-found: warn
           retention-days: 30
 
@@ -190,6 +191,15 @@ jobs:
           mkdir -p "$DEST"
           cp -f our-evolve.log report.md preview-brief.md "$DEST/" 2>/dev/null
           cp -r runs/. "$DEST/" 2>/dev/null
+          # E8 spent 10.0 M tokens, changed nothing, and left no evidence of
+          # why. If the transcript is missing again, say so at the top of the
+          # summary rather than letting the next reader guess.
+          if ls runs/transcript-*.log >/dev/null 2>&1; then
+            echo "transcript present:" | tee -a "$GITHUB_STEP_SUMMARY"
+            ls -la runs/transcript-*.log | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::no transcript was captured this run" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
           git config user.name  "nethackers-our-evolve"
           git config user.email "nethackers-our-evolve@users.noreply.github.com"
           git add -A "$DEST" 2>/dev/null

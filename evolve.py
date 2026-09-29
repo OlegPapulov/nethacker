@@ -35,7 +35,23 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+def _find_repo_root(start: Path) -> Path:
+    """The directory holding experience.md / experiments.md.
+
+    See the same function in brief.py for why this searches upward and stops
+    before the filesystem root. Running from the repository root rather than
+    from loop/ was the difference between an 8,000-character brief and a
+    3,600-character one that silently contained none of the notes.
+    """
+    for candidate in [start, *start.parents]:
+        if candidate.parent == candidate:
+            break
+        if (candidate / "experience.md").is_file() or (candidate / "experiments.md").is_file():
+            return candidate
+    return start.parent
+
+
+REPO_ROOT = _find_repo_root(Path(__file__).resolve().parent)
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import brief as brief_mod  # noqa: E402
@@ -232,7 +248,9 @@ def main() -> int:
             shutil.rmtree(worktree)
         shutil.copytree(best_tree, worktree)
 
-        hypothesis = run_operator(worktree, brief_text, args)
+        hypothesis = run_operator(
+            worktree, brief_text, args, transcript=work / f"transcript-{iteration}.log"
+        )
         print(f"operator done; hypothesis: {hypothesis!r}", flush=True)
 
         smoke_mean, _ = score(
@@ -268,25 +286,75 @@ def main() -> int:
     return 0
 
 
-def run_operator(worktree: Path, brief_text: str, args) -> str | None:
+def run_operator(worktree: Path, brief_text: str, args, transcript: Path | None = None) -> str | None:
     """Drive the project's mutator, passing OUR brief.
 
     Reuses `ContainerOperator`, so the sandbox caps, the platform args and the
     agent CLI are the project's, not ours. The only thing we change is the
     string handed to the agent.
+
+    Streams the agent's own output to `transcript` while it runs.
+    `run_operator` passes **every line of the agent's stdout** to `on_line`, and
+    E8 showed why that matters: it spent 10.0 M tokens and left the tree
+    byte-identical to its parent, with `hypothesis: None` and no other evidence
+    of what it did. A no-op is indistinguishable from a crash, a refusal, and
+    "it read everything and decided nothing was worth doing" -- and those need
+    three different fixes. The transcript is the only thing that tells them
+    apart.
     """
     from nethackers.harness.container_operator import ContainerOperator
 
     operator = ContainerOperator(
         harness=args.operator, image=MUTATOR_IMAGE, model=args.model,
     )
-    result = operator.run(worktree, brief_text)
+
+    handle = None
+    written = 0
+    if transcript is not None:
+        transcript.parent.mkdir(parents=True, exist_ok=True)
+        handle = transcript.open("w", encoding="utf-8")
+
+    def on_line(line: str) -> None:
+        # Best-effort and non-fatal: losing transcript lines must never take
+        # down the run they were meant to explain.
+        nonlocal written
+        if handle is None:
+            return
+        try:
+            handle.write(line if line.endswith("\n") else line + "\n")
+            written += len(line)
+            # Flush often. A run that dies mid-iteration is exactly the case
+            # where the partial transcript is the only evidence, and buffered
+            # lines are lost with the process.
+            if written > 64_000:
+                handle.flush()
+                written = 0
+        except Exception:
+            pass
+
+    try:
+        result = operator.run(worktree, brief_text, on_line=on_line)
+    finally:
+        if handle is not None:
+            try:
+                handle.flush()
+                handle.close()
+            except Exception:
+                pass
+
     usage = getattr(result, "usage", None)
     total = None
     if usage is not None:
         total = sum(
             int(getattr(usage, field, 0) or 0)
             for field in ("input", "output", "cache_creation", "cache_read")
+        )
+    if transcript is not None:
+        size = transcript.stat().st_size if transcript.is_file() else 0
+        print(
+            f"  transcript: {transcript} ({size} bytes) -- read this before "
+            f"guessing why the mutation was what it was",
+            flush=True,
         )
     print(
         f"  backend={getattr(result, 'backend', '?')} tokens={total} "
