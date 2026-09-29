@@ -35,7 +35,23 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+def _find_repo_root(start: Path) -> Path:
+    """The directory holding experience.md / experiments.md.
+
+    See the same function in brief.py for why this searches upward and stops
+    before the filesystem root. Running from the repository root rather than
+    from loop/ was the difference between an 8,000-character brief and a
+    3,600-character one that silently contained none of the notes.
+    """
+    for candidate in [start, *start.parents]:
+        if candidate.parent == candidate:
+            break
+        if (candidate / "experience.md").is_file() or (candidate / "experiments.md").is_file():
+            return candidate
+    return start.parent
+
+
+REPO_ROOT = _find_repo_root(Path(__file__).resolve().parent)
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import brief as brief_mod  # noqa: E402

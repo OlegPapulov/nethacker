@@ -208,3 +208,52 @@ needing a trace:
 - The lesson generalises: **before building instrumentation, check what the
   system under measurement can actually emit.** The arena emits a summary, not a
   stream, and no amount of clever wrapping changes that.
+
+---
+
+## 2026-09-28 — wiz-hum-cha-mal: an HP threshold helps strong seeds and hurts weak ones
+
+**Identity:** `wiz-hum-cha-mal` (Wizard, Human, Chaotic, Male)
+**Baseline:** packaged AutoAscend, 0.0624 · **Operator:** `opencode/big-pickle`, 19.9 M tokens
+
+**Problem:**
+The bot dies on dlvl 1 in 9 of 15 seeds. A natural reading of that is "it fights
+when it should not". The operator's mutation acted on exactly that: it changed
+**the hitpoint level at which the bot stops trying to win a fight**.
+
+**Result: NOT-A-WIN.** 0.0650 vs 0.0624 on the mean — but per seed:
+
+| direction | seeds |
+|---|---|
+| forward | **4, 9** |
+| backward | **0, 2, 8, 11, 14** |
+| deeper | **4** only |
+| unchanged | 1, 3, 6, 7, 10, 12, 13, 15 (8 seeds) |
+
+**Hypotheses for the next time:**
+1. *It is a depth change, not a survival change.* Seed 4 — the **best** seed in
+   the batch at 0.1791 — is the only one that got deeper (dlvl 7 → 8). If the
+   threshold makes the bot disengage earlier, a strong game survives that and a
+   doomed one just dies further from a fight it should have finished.
+2. *The five backward seeds are all already-lost seeds.* Seeds 0, 2, 8, 11, 14
+   score 0.021–0.075 and die on dlvl 1. Moving them "backward" may be noise on
+   games that were lost either way.
+3. *A single scalar cannot separate "retreat from a winnable fight" from
+   "retreat from an unwinnable one".* The deciding variable is probably the
+   monster, not the bot's own HP.
+
+**Attempts:**
+- Raise/lower the HP floor for engaging a fight → helps seed 4, hurts five seeds.
+  Rejected by the paired test.
+
+**Solution:** _pending — the current change is not kept._
+
+**Notes:**
+- The mean went **up** and the change was still rejected. That is the whole
+  reason our loop judges per-seed: progression's SE over 15 seeds is 0.028, and
+  this "improvement" was 0.0026.
+- **19.9 M tokens / ~95 min** bought one rejected change. On a free tier that is
+  the entire budget, so the brief may need to be shorter, or the instruction to
+  make one change needs to be sharper.
+- The operator **did** engage with our data — it proposed a specific HP threshold
+  rather than "improve combat". The brief works.

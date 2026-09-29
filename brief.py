@@ -48,7 +48,29 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+def _find_repo_root(start: Path) -> Path:
+    """The directory holding experience.md / experiments.md / GAME_RULES.md.
+
+    Searched upward, and the FIRST directory containing the script's own
+    directory name wins over the filesystem root. This exists because the same
+    module is run from two places -- the repository's ``loop/`` and a copy
+    dropped at the repository root by CI -- and ``parent.parent`` is correct for
+    the first and one level too high for the second. Searching upward alone is
+    not enough either: from a copy at the repo root the only thing above it is
+    ``/``, so the walk ran to ``/private`` and found nothing, and the brief
+    silently lost every note in a run that otherwise reported success.
+    """
+    for candidate in [start, *start.parents]:
+        if candidate.parent == candidate:  # reached the filesystem root
+            break
+        if (candidate / "experience.md").is_file() or (candidate / "experiments.md").is_file():
+            return candidate
+    # Fall back to the script's own directory's parent, which is the repo root
+    # when the script lives in loop/.
+    return start.parent
+
+
+REPO_ROOT = _find_repo_root(Path(__file__).resolve().parent)
 
 # The contract, as the project states it. Reproduced rather than imported so
 # the brief stands alone if the package layout changes.
@@ -100,28 +122,36 @@ HOWTO = """\
 """
 
 
-#: Sections about the HARNESS rather than the game are excluded from the brief.
+#: Sections about OUR APPARATUS rather than the game are dropped from the
+#: brief. Measured: including them made the brief 80% harness notes -- "tracing
+#: is impossible inside the arena", "two bugs that emptied the first brief" --
+#: none of which tells the model how the bot dies.
 #:
-#: The first run sent 24,630 characters, of which 19,800 were our logs -- and
-#: most of that was about the measurement apparatus: "per-turn tracing is
-#: impossible inside the arena", "can the mutator see our notes?", "one job per
-#: iteration". None of it tells the model anything about how the bot dies. It
-#: is 80% of the reading spent on 0% of the decision, and it is a candidate
-#: explanation for why one iteration cost 19.9 M tokens.
-#:
-#: A heading qualifies when it says the work was about how we measure, or about
-#: the loop itself. Actual gameplay failures, measured baselines and hypotheses
-#: about the bot are all kept.
+#: Keyword matching cannot separate them, because a harness entry quotes seed
+#: numbers and so looks like a measurement. Tried: an E<digit>-is-harness rule
+#: kept E2 and E6, both of which quote real scores while being entirely about
+#: the apparatus. So the classification is EXPLICIT: an entry is marked
+#: apparatus-only with a trailing "⛭ apparatus" on its heading, and marked
+#: game-relevant with "◆ gameplay". Everything unmarked is kept, which is the
+#: safe default -- a missing fact costs the model a hypothesis it might have
+#: made anyway, while a present-but-irrelevant one costs tokens and dilutes the
+#: facts that matter.
+APPARATUS_MARK = "\u26ed apparatus"
+GAMEPLAY_MARK = "\u25c6 gameplay"
+
 _HARNESS_TOPICS = (
-    "tracing", "trace", "infrastructure", "infra", "harness", "operator",
-    "mutator", "concurrency", "provenance", "digest", "publish", "publishing",
-    "artifact", "artifacts", "sign test", "power analysis", "classif",
-    "our own loop", "determinism", "workflow", "runner", "x86", "arm64",
-    "brief", "measurement", "cannot start", "loop",
+    "tracing", "infrastructure", "harness", "operator", "mutator",
+    "concurrency", "provenance", "digest", "publish", "artifact", "sign test",
+    "power analysis", "classif", "our own loop", "determinism", "workflow",
+    "runner", "x86", "arm64", "brief", "measurement", "cannot start",
 )
 
 
 def _is_harness_section(heading: str) -> bool:
+    if GAMEPLAY_MARK in heading:
+        return False
+    if APPARATUS_MARK in heading:
+        return True
     low = heading.lower()
     return any(topic in low for topic in _HARNESS_TOPICS)
 
@@ -170,6 +200,33 @@ def _death_table(results: list[dict]) -> str:
             f"{float(r.get('progress') or 0):.4f} | {r.get('death') or '-'} |"
         )
     return "\n".join(out)
+
+
+# --- Game rules -----------------------------------------------------------
+#
+# E7: the brief carried measurements and constraints but no knowledge of the
+# game, so the model could reason about the CODE and the DEATHS and still form a
+# wrong hypothesis (E4: a correct-looking change that lost five seeds).
+#
+# GAME_RULES.md is generated from the NetHack 3.6.6 source, scoped to the
+# identity being played and the creatures that actually killed a seed, so it
+# answers "can a level-0 wizard win this fight" rather than "here is a manual".
+# It is a FILE the model reads rather than prose in a prompt, which is the same
+# reasoning that keeps the notes in the brief.
+def game_rules_section(identity: str, repo_root: Path) -> str:
+    path = repo_root / "GAME_RULES.md"
+    if not path.is_file():
+        return ""
+    body = path.read_text(encoding="utf-8", errors="replace")
+    return (
+        "## The game itself\n\n"
+        f"{body}\n\n"
+        "These are the game's own numbers for the build you are playing, not "
+        "approximations. Use them to decide whether a fight is winnable "
+        "*before* you design the heuristic, rather than discovering afterwards "
+        "that the fight was unwinnable."
+    )
+
 
 
 def build(
@@ -227,7 +284,13 @@ def build(
                 "",
             ]
 
-    parts += [SCORING, HOWTO, CONTRACT]
+    rules = game_rules_section(identity, REPO_ROOT)
+    if rules:
+        # Before the scoring rule: what the game IS, then how you are judged.
+        parts += [rules, SCORING, HOWTO, CONTRACT]
+    else:
+        parts += [SCORING, HOWTO, CONTRACT]
+
     return "\n".join(parts)
 
 
