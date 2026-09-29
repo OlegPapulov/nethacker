@@ -80,6 +80,19 @@ SMOKE_STEPS = 2000
 MIN_SEEDS_FORWARD = 5
 MIN_TWO_THIRDS = True
 
+#: ...and the batch mean has to move up as well. The per-seed test asks a
+#: per-seed question, and it can be cleared by a handful of large swings while
+#: the average stays flat or falls. The mean is the number the leaderboard ranks
+#: on, so a result that did not move it is not a result.
+#:
+#: Strictly greater, no significance margin. With 15 seeds the measured SE is
+#: 0.0085, so a mean that improved by 0.001 is inside the noise band; this gate
+#: catches a result that is flat or negative, not one that is small. Asking for
+#: every one of the 15 seeds to improve is not a stricter version of this -- it
+#: is an unreachable one, because a seed is a whole stochastic game and a
+#: one-line change diverges the entire trajectory (per-seed SD is 0.033).
+MEAN_MUST_IMPROVE = True
+
 #: Verdicts that make a mutant the next parent. Only WIN is a result anybody can
 #: register; KEEP is a better starting point to keep searching from, and nothing
 #: more. Keeping the two apart is the point -- see `paired_verdict`.
@@ -132,6 +145,35 @@ def score(tree: Path, identity: str, *, seeds: int = PUBLISHED_SEEDS, max_steps=
         for r in evidence.results
     ]
     return mean, results, [r.__dict__ for r in evidence.results]
+
+
+def mean_gate(child_mean: float, parent_mean: float, verdict: dict) -> dict:
+    """Demote a WIN whose batch mean did not actually improve.
+
+    `paired_verdict` and this answer different questions, and the loop needs
+    both answered. The paired test asks whether the mutation moved most seeds
+    forward; the mean test asks whether the batch as a whole got better. A
+    mutant can clear the first while losing the second -- several seeds jumping
+    far enough to outrun the ones that slipped -- and the result is registered
+    against the board on a number that went down.
+
+    A demotion lands on KEEP, not on a discard. The seeds really did move
+    forward, so the tree is still a better place to search from; it just is not
+    a better bot, and `history.json` records which of the two it was.
+    """
+    if not MEAN_MUST_IMPROVE or verdict["verdict"] != "WIN":
+        return verdict
+    if child_mean > parent_mean + 1e-9:
+        return verdict
+    return {
+        **verdict,
+        "verdict": "KEEP",
+        "why": (
+            f"{verdict['why']}, but the mean did not improve "
+            f"({child_mean:.4f} vs {parent_mean:.4f}) -- kept as the parent, "
+            f"not a publishable win"
+        ),
+    }
 
 
 def paired_verdict(child: list[dict], parent: list[dict]) -> dict:
@@ -310,7 +352,7 @@ def main() -> int:
         print(f"smoke: {smoke_mean:.4f}", flush=True)
 
         child_mean, child_rows, child_raw = score(worktree, args.identity)
-        verdict = paired_verdict(child_rows, best_rows)
+        verdict = mean_gate(child_mean, best_mean, paired_verdict(child_rows, best_rows))
         print(
             f"child {child_mean:.4f} vs parent {best_mean:.4f} -> {verdict['verdict']}: "
             f"{verdict['why']}",
