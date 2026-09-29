@@ -9,8 +9,9 @@ name: our-evolve
 # this repository cannot reach the operator through it.
 #
 # This workflow runs loop/evolve.py instead, which composes the brief itself --
-# from the measured baseline, our experience.md and experiments.md entries for
-# the identity, the scoring rule that actually decides acceptance, and the
+# from the measured baseline, the parent tree's experience.md entries (written
+# by the agent on a previous iteration, so iteration 1 has none), the game facts
+# in GAME_RULES.md, the scoring rule that actually decides acceptance, and the
 # contract -- and then hands that string to the project's own mutator. The
 # mutator, the arena, the seeding and the image digests are the project's; only
 # the brief is ours.
