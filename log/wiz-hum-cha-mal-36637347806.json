@@ -1,0 +1,151 @@
+{
+  "run_id": "36637347806",
+  "identity": "wiz-hum-cha-mal",
+  "operator": "opencode2",
+  "model": "opencode/big-pickle",
+  "conclusion": "success",
+  "transcript": true,
+  "history": [
+    {
+      "iteration": 1,
+      "child_mean": 0.06241799392553074,
+      "parent_mean": 0.06241799392553074,
+      "hypothesis": "Strategy code is back to the exact parent (verified 0.0624, per-seed identical). Summary: 1. **The score is the XP ladder, not depth.** `nethackers/arena/progress.py` scores `max(Dlvl:N, Xp:N, \u2026)`, and on all 15 published seeds the winning term is `Xp:N` \u2014 never `Dlvl:N`. Seed 4 hit dlvl 7 (worth 0.0485) and scored 0.1791 = `Xp:10`. The depth ladder in GAME_RULES.md is the wrong target. 2. **XP...",
+      "hypothesis_source": "closing-message",
+      "report": "Strategy code is back to the exact parent (verified 0.0624, per-seed identical). Summary:\n\n**Change made and measured, then reverted.** I found a real self-contradiction in the bot: `draw_monster_priority_negative` paints a **-10 flee ring** around monsters the character is too hurt to duel, but `melee_monster_priority` returns **+1**, so the attack outranked the escape every turn \u2014 the retreat code is unreachable. The death traces confirm the consequence (seed 0: **36\u21920 of 46 HP over 20+ consecutive turns** against a goblin). I made the attack yield to the flee ring under a *relative* hurt test.\n\n**Result: 0.0624 \u2192 0.0671, but 3 seeds up / 2 down / 10 flat** \u2014 fails the \"most seeds improve\" bar, so I reverted it.\n\n**The negative result is the valuable part:** retreating is structurally capped on this identity. The flee ring is radius 1, and 9 of 13 killers have `mmove 12` (max speed) \u2014 they close the one-square gap every turn, so distance never opens.\n\n**Two findings that redirect the whole problem:**\n\n1. **The score is the XP ladder, not depth.** `nethackers/arena/progress.py` scores `max(Dlvl:N, Xp:N, \u2026)`, and on all 15 published seeds the winning term is `Xp:N` \u2014 never `Dlvl:N`. Seed 4 hit dlvl 7 (worth 0.0485) and scored 0.1791 = `Xp:10`. The depth ladder in GAME_RULES.md is the wrong target.\n2. **XP is 73\u201397% from \"normal\" monsters** (goblins, jackals, gnomes) \u2014 only 1\u20138% from the `WEAK_MONSTERS` the bot currently coddles. So \"never fight\" would delete the XP economy.\n\nI left `devtools/eval_harness.py`, which reproduces the published 15-seed table **bit for bit** (mean 0.0624; seed 3 matches 3052 turns/grid bug/0.0208) in ~90s, plus `experience.md` with four ranked leads \u2014 chiefly that the bot is gated behind `experience_level >= 8`, requiring ~400 dlvl-1 kills before it will touch a staircase.",
+      "verdict": "NOT-A-WIN",
+      "why": "no seed moved on any signal",
+      "shared_seeds": 15,
+      "changed": [],
+      "forward": [],
+      "backward": [],
+      "deeper": []
+    }
+  ],
+  "baseline": {
+    "identity": "wiz-hum-cha-mal",
+    "mean_progress": 0.06241799392553074,
+    "results": [
+      {
+        "seed": 0,
+        "turns": 13697,
+        "depth": 1,
+        "progress": 0.036887590648350246,
+        "death": "killed by a goblin",
+        "status": "completed"
+      },
+      {
+        "seed": 1,
+        "turns": 17693,
+        "depth": 1,
+        "progress": 0.036887590648350246,
+        "death": "killed by a jackal",
+        "status": "completed"
+      },
+      {
+        "seed": 2,
+        "turns": 20700,
+        "depth": 5,
+        "progress": 0.07453595273884014,
+        "death": "killed by a white unicorn",
+        "status": "completed"
+      },
+      {
+        "seed": 3,
+        "turns": 3052,
+        "depth": 1,
+        "progress": 0.02081163581974355,
+        "death": "killed by a grid bug",
+        "status": "completed"
+      },
+      {
+        "seed": 4,
+        "turns": 32346,
+        "depth": 7,
+        "progress": 0.17909953770432294,
+        "death": "killed by a wolf",
+        "status": "completed"
+      },
+      {
+        "seed": 5,
+        "turns": 14486,
+        "depth": 1,
+        "progress": 0.0507583712345433,
+        "death": "killed by a bat",
+        "status": "completed"
+      },
+      {
+        "seed": 6,
+        "turns": 11919,
+        "depth": 1,
+        "progress": 0.036887590648350246,
+        "death": "killed by a kitten",
+        "status": "completed"
+      },
+      {
+        "seed": 7,
+        "turns": 23971,
+        "depth": 2,
+        "progress": 0.07453595273884014,
+        "death": "killed by a rothe",
+        "status": "completed"
+      },
+      {
+        "seed": 8,
+        "turns": 23604,
+        "depth": 5,
+        "progress": 0.07453595273884014,
+        "death": "killed by a soldier ant",
+        "status": "completed"
+      },
+      {
+        "seed": 9,
+        "turns": 24295,
+        "depth": 4,
+        "progress": 0.07453595273884014,
+        "death": "killed by an ape",
+        "status": "completed"
+      },
+      {
+        "seed": 10,
+        "turns": 4014,
+        "depth": 1,
+        "progress": 0.024160136550546978,
+        "death": "killed by a hobbit",
+        "status": "completed"
+      },
+      {
+        "seed": 11,
+        "turns": 27094,
+        "depth": 5,
+        "progress": 0.11704996473565571,
+        "death": "killed by a wolf",
+        "status": "completed"
+      },
+      {
+        "seed": 12,
+        "turns": 12509,
+        "depth": 1,
+        "progress": 0.036887590648350246,
+        "death": "killed by a newt",
+        "status": "completed"
+      },
+      {
+        "seed": 13,
+        "turns": 5206,
+        "depth": 1,
+        "progress": 0.024160136550546978,
+        "death": "died of starvation",
+        "status": "completed"
+      },
+      {
+        "seed": 14,
+        "turns": 22485,
+        "depth": 1,
+        "progress": 0.07453595273884014,
+        "death": "killed by a crossbow bolt",
+        "status": "completed"
+      }
+    ]
+  }
+}
