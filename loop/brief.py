@@ -238,6 +238,15 @@ write is the entire memory of this project.
 <the change that helped, and the evidence — or "nothing yet">
 ```
 
+**Put the identity in the heading, verbatim: `## <date> — <identity> — <title>`.**
+
+This is not a style preference. The next turn's brief keeps only the entries
+that name the identity it is playing, and drops the rest — the log is shared
+across identities in the same tree, so an entry that does not say which one it
+is about cannot be told apart from a note about a different character. A real
+run wrote a complete, valuable entry and had it silently filtered out of the
+following brief for exactly this reason.
+
 Fill in **Attempts** even when you only got as far as one attempt, and fill in
 **What worked** honestly. A failed attempt with a measured result is worth more
 than a silent one: it is the only thing that stops the next turn from spending
@@ -285,6 +294,20 @@ def _is_harness_section(heading: str) -> bool:
     return any(topic in low for topic in _HARNESS_TOPICS)
 
 
+#: An identity as the project spells it: `role-race-align-gender`, four
+#: hyphen-separated lowercase words, e.g. `wiz-hum-cha-mal`. Matched in log text
+#: so a block naming a *different* identity can be told apart from one that
+#: names none.
+#:
+#: Matched structurally rather than against a list of the 73 legal identities,
+#: because a list goes stale the moment the project adds a role ("hea", "kni",
+#: "mon" are not the ones a guess would produce) and a stale list fails open:
+#: an unrecognised identity reads as "names no identity", so the block is
+#: believed on its "this identity" wording alone. Four short words in a row is
+#: not ambiguous with the surrounding prose.
+_IDENTITY_RE = re.compile(r"\b[a-z]{3,4}-[a-z]{2,4}-[a-z]{2,3}-[a-z]{2,3}\b")
+
+
 def _identity_sections(text: str, identity: str) -> list[str]:
     """Markdown sections about this identity, minus our own apparatus notes.
 
@@ -293,11 +316,29 @@ def _identity_sections(text: str, identity: str) -> list[str]:
     purpose: over-including real gameplay context is cheap, under-including it
     is not. Over-including *harness* context is not cheap, because it is the
     majority of the file.
+
+    The identity test is **exclusionary**: a block is dropped only if it names a
+    *different* identity. Requiring it to name the right one was the original
+    design, and it threw away good work twice over on run 36637347806 -- a 7 KB
+    entry of real findings, carried forward correctly, dropped because it said
+    "this identity" rather than "wiz-hum-cha-mal", and an entry naming no
+    identity at all dropped for the same reason in the other direction. An entry
+    that is thrown away silently looks identical to one that was never written,
+    so the filter cannot depend on a model complying with a heading format.
+
+    Inversion is safe because the log is read from the *parent tree*, which was
+    seeded for this identity: a note in it is about this character by
+    construction. A block naming another character is the genuine exception, and
+    that is worth catching -- trees are shared and copied, so a note comparing
+    against val-dwa-law-fem can end up in a wiz tree.
     """
     out: list[str] = []
     for block in re.split(r"\n(?=#{1,3} )", text):
         block = block.strip()
-        if not block or identity not in block:
+        if not block:
+            continue
+        named = set(_IDENTITY_RE.findall(block))
+        if named and identity not in named:
             continue
         if _is_harness_section(block.splitlines()[0]):
             continue

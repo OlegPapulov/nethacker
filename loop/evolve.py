@@ -295,6 +295,44 @@ def read_log(tree: Path) -> str:
     return ""
 
 
+def harvest_log(source: Path, target: Path) -> int:
+    """Copy a discarded mutant's new log entries into the surviving parent.
+
+    The log and the mutant are separate decisions, and the loop was conflating
+    them. A `NOT-A-WIN` reverts the whole worktree, which throws away the
+    agent's strategy code -- correctly, since the change did not help. But it
+    also threw away `experience.md`, which is where the agent recorded *why*,
+    and that is the one part worth keeping: run 36637347806 made and measured a
+    change (0.0624 -> 0.0671, 3 seeds up / 2 down / 10 flat), correctly reverted
+    it, and wrote 7336 bytes of log including the two findings that redirect the
+    whole problem -- the score is the XP ladder and not depth, and 73-97% of XP
+    comes from "normal" monsters. All of it was binned with the diff, so the next
+    iteration would have re-derived it from scratch and possibly re-tried the
+    same retreat change.
+
+    Appending rather than overwriting matters for the same reason: the surviving
+    parent may already hold earlier entries, and an experiment that failed is
+    only worth not repeating if the entry that says so outlives it.
+
+    Returns the number of characters added.
+    """
+    written = Path(source) / "experience.md"
+    if not written.is_file():
+        return 0
+    new = written.read_text(encoding="utf-8", errors="replace").strip()
+    if not new:
+        return 0
+    existing = read_log(target)
+    if new in existing:
+        return 0  # already carried into the parent; do not duplicate
+    if target.exists() and not (Path(target) / "experience.md").is_file():
+        shutil.copytree(source, target, dirs_exist_ok=True)
+        return len(new)
+    body = "\n".join(part for part in (existing.rstrip(), new) if part)
+    (Path(target) / "experience.md").write_text(body + "\n", encoding="utf-8")
+    return len(new)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("identity")
@@ -396,6 +434,20 @@ def main() -> int:
                    f"  (a {verdict['verdict']}, not a publishable win)"),
                 flush=True,
             )
+        else:
+            # The mutant's code is binned, but its log is not. An agent that
+            # measured a change, found it did not work, and wrote down why has
+            # produced the most valuable output of the iteration, and that
+            # output does not depend on the change having worked. Without this,
+            # a failed experiment is invisible to the next iteration and
+            # nothing is learned from it -- see harvest_log.
+            carried = harvest_log(worktree, best_tree)
+            if carried:
+                print(
+                    f"reverted the mutant but carried {carried} chars of its "
+                    f"experience.md into the next parent",
+                    flush=True,
+                )
 
             # A WIN leaves the machine on its own: the loop is meant to improve
             # itself without anyone watching, so a cleared result is pushed and
