@@ -61,8 +61,9 @@ One iteration, from `loop/evolve.py`:
    submission, and the next run does not read it — runs stay independent by
    design.
 
-Then it repeats, or the run ends. One iteration is 30–90 minutes; most of that
-is the agent, not the scoring. Measured on this identity: 85 minutes.
+Then it repeats, or the run ends. One iteration is not a fixed cost — eight
+single-iteration runs took 9 to 153 minutes, median 91 — and most of that is
+the agent, not the scoring. See "Running it" before choosing a count.
 
 ## The two rules that make it work
 
@@ -229,13 +230,25 @@ rather than copying a number forward.
 ## Running it
 
 ```bash
-gh workflow run our-evolve.yml -f identity=wiz-hum-cha-mal -f iterations=1
+gh workflow run our-evolve.yml -f identity=wiz-hum-cha-mal -f iterations=2
 ```
 
-One iteration is ~85 minutes, and the job's `timeout-minutes` is 300. Five
-iterations is about seven hours and will hit that ceiling: a timed-out run
-never reaches `publish_results`, so nothing durable comes out of it. Check
-`runs/history.json` in the artifact for how far it got.
+**Ask for 2 or 3. Do not ask for more, and know why.** One iteration is not a
+fixed cost: eight successful single-iteration runs took 9, 42, 81, 87, 95, 96,
+141 and 153 minutes — median 91, with a tail past 2.5 hours. The job's
+`timeout-minutes` is 360, which is not a tuning choice: it is the hard ceiling
+for a GitHub-hosted job, and Support cannot raise it. Three iterations fit at the
+median, two fit with real headroom, and four do not fit even at the best time
+observed. An earlier version of this file claimed ~30–45 minutes per iteration,
+which is what made a five-iteration request look reasonable; it was wrong by
+about 2×, and the cost of believing it was a run that produced nothing.
+
+That matters because **a job killed by the timeout produces nothing at all.**
+`Upload everything` and `Commit the verdict` are steps *after* `Run our loop`,
+so they never execute. No artifact, no results branch, no committed record —
+the iteration in flight is the unit of loss, and the run is not checkpointed
+anywhere. `runs/history.json` in the artifact is worth reading *when there is
+an artifact*, which a timeout denies you.
 
 Registration is opt-in by credential. Add two repository secrets:
 

@@ -73,9 +73,20 @@ jobs:
   evolve:
     name: "our evolve ${{ inputs.identity }} x${{ inputs.iterations }}"
     runs-on: ubuntu-latest
-    # One iteration is ~30-45 min on this identity. Generous, because a
-    # throttled free model should not be killed mid-write.
-    timeout-minutes: 300
+    # Measured over 8 successful single-iteration runs: 9, 42, 81, 87, 95,
+    # 96, 141, 153 min -- median 91, not the ~30-45 this comment used to claim.
+    # That earlier figure is why a 300-minute budget was set as though five
+    # iterations would fit; they need ~455 at the median.
+    #
+    # 360 is the hard ceiling for a GitHub-hosted job and Support cannot raise
+    # it, so this number is not a tuning choice. It fits 3 iterations at the
+    # median and 2 with real headroom; a 4th iteration does not fit even in the
+    # best case observed.
+    #
+    # A job killed by this timeout does NOT reach "Upload everything" or "Commit
+    # the verdict" below, so it produces no artifact, no results branch and no
+    # committed record. Iterations are the unit of loss, not the run.
+    timeout-minutes: 360
 
     steps:
       - uses: actions/checkout@v4

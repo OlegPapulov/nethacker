@@ -20,8 +20,10 @@ committed in `log/<identity>-<runid>.json` and readable with
       → settle the prediction from the run's committed numbers
       → record the outcome in experiments.md; promote what generalises to here
 
-A brief change costs ~85 minutes of CI to evaluate, so the loop is manual on
-purpose. Automation would generate changes nobody chose to make.
+A brief change costs 9-153 minutes of CI to evaluate (median 91 over eight
+single-iteration runs), so the loop is manual on purpose: automation would
+generate changes nobody chose to make. A hosted job is capped at 360 minutes, so
+one experiment fits 2-3 iterations and not more — see E6 for what that cost.
 
 ## Findings
 

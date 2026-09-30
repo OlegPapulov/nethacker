@@ -7,8 +7,9 @@ thought it, what the run did, and whether the prediction held.
 
 **An experiment here must be able to fail.** A prediction that any outcome
 would satisfy is not a prediction, and an entry whose outcome is "seemed fine"
-has told us nothing. The cost is ~85 minutes of CI, which is the reason this
-loop is manual: automation would generate changes nobody chose to make.
+has told us nothing. The cost is 9-153 minutes of CI per iteration (median 91),
+which is the reason this loop is manual: automation would generate changes
+nobody chose to make.
 
 Verdict vocabulary, deliberately blunt:
 
@@ -110,24 +111,34 @@ it. Unit-tested against a local bare remote: correct tree contents, idempotent
 re-push, and a clean error record when the parent has no log. **Inconclusive**
 until a run lands.
 
-## E6 — does the experience log compose across five turns?
+## E6 — does the experience log compose across iterations?
 
 **Change.** None. This is a test of E1–E5 together, not a new brief.
 
-**Prediction.** Over five iterations the log grows monotonically, later
+**Prediction.** Over several iterations the log grows monotonically, later
 hypotheses do not repeat earlier ones, and at least one iteration ends in a
 `KEEP` — because the loop only learns from a kept tree, and three consecutive
 `NOT-A-WIN`s with no keep would mean the loop is generating findings and no
 progress.
 
-**Result.** Run `36728246238` in flight. Settle it from
-`python meta/summarize.py 36728246238`.
+**Result.** First attempt was abandoned before it could say anything, and the
+reason is worth recording because it was not about the log.
 
-Note before reading it: that job has `timeout-minutes: 300` and five
-iterations need about seven, so it will likely be cut off before
-`publish_results` runs. If it is, the per-iteration history is still in the
-artifact, and the honest verdict is **inconclusive on the `KEEP` prediction**
-rather than "the loop cannot keep anything".
+Run `36728246238` was dispatched with `iterations=5` on the belief that an
+iteration costs ~30-45 minutes. Eight successful single-iteration runs say
+otherwise: 9, 42, 81, 87, 95, 96, 141, 153 minutes, median 91. Five iterations
+need ~455 at the median, and a GitHub-hosted job is capped at 360 minutes with
+no path to an exception. So the run could not have produced five iterations, and
+because `Upload everything` and `Commit the verdict` sit *after* the loop in the
+step order, a timeout would have left no artifact, no results branch and no
+committed record at all. Cancelled at ~25 minutes rather than paying 4.5 hours
+to learn that for certain. **Inconclusive** — and it says nothing about whether
+the log composes.
+
+Retargeted at 2-3 iterations, which is what fits. Note for whoever reads the
+result: the `KEEP` prediction needs at least one kept tree, and two iterations
+is a thin sample for "no hypothesis repeats". A negative here is weak evidence,
+not a refutation.
 
 ## E7 — record the mutator's actual edit, not only its account of it
 
@@ -160,6 +171,16 @@ whether a reported fix matches the recorded diff.
 
 - E6 is the only unsettled experiment, and it is waiting on a run rather than a
   decision.
+- The loop has no checkpoint. A timeout costs every iteration in the job, not
+  the one in flight, because `publish_results` runs only at the end. Calling it
+  per iteration would make the results branch the checkpoint for the cost of one
+  function call, and would leave "iterations" a request about progress rather
+  than a bet on the clock. Deferred: the 360-minute ceiling makes 2-3
+  survivable, not comfortable.
+- CI minutes are the real constraint on this whole loop. At a median 91 minutes
+  an iteration and a 2,000/month free-tier budget, we get roughly 20 iterations a
+  month. That, not the agent's ideas, is what limits how much the brief can be
+  tested.
 - `GAME_RULES.md` still carries a measured killer/death table with seed counts.
   That is empirical, not game-mechanical, and it is the file we told ourselves
   holds no measured bot results. Move it into the brief or accept it
