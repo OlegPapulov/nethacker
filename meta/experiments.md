@@ -167,10 +167,58 @@ This does not make the agent trustworthy — a patch bounds how long an
 unverifiable claim survives, it does not prevent one. A later run should check
 whether a reported fix matches the recorded diff.
 
+## E8 — cost: the brief was silently deleting the harness's own instructions
+
+**Question.** Why did one iteration take 95.4 minutes (run 36710578461) when
+the score it produced needed ~13?
+
+**Answer. Measured, not guessed.** 1.0 min setup, 6.4 min baseline score,
+81.3 min in the agent, 0.1 min smoke, 6.5 min child score. Of the agent's 81.3
+minutes, 56.0 were `sleep` — 25 unique waits including `sleep 600` and
+`sleep 420`. It had written `/tmp/eval.sh`, launched it backgrounded at PAR=4/5,
+and then blocked on it. So each seed was played two or three times per
+iteration: the agent's own batch, our parent baseline, our child score.
+
+Three separate causes, which is why the fix is three commits' worth:
+
+1. **We removed the measurement instructions.** `build_brief` has no free-text
+   parameter, so `ContainerOperator.run(brief=...)` *replaces* the harness
+   brief rather than extending it. Upstream ends with `HOWTO, MEASURE`; every
+   brief this loop composed therefore silently lost `MEASURE`, and with it the
+   canonical `arena.run` invocation, the `--evaluation-id` namespace, and the
+   "one foreground command, do not background or sleep" rule. The agent was
+   not misbehaving — it had never been told.
+2. **Serial scoring was free to fix.** `score()` pinned
+   `max_parallel_evals=1`: ~6.4 min per score, ~13 min per iteration. It bought
+   nothing. `run_prepared` keys results by spec index after `as_completed` and
+   returns them in `specs` order, so the worker count cannot reach the result.
+3. **No bound on a turn.** One confused agent could spend a 360-minute job.
+
+**Fixed** in `2cb0dd1`: import `MEASURE` from the package rather than retyping
+it (it cannot drift the way ours did), cap the agent's own check at 5 seeds
+because the harness re-scores all 15 anyway, parallelise scoring 4-wide, and
+bound a turn at 40 minutes through the operator's own `stop` event.
+
+**What this says about the brief generally.** The brief is the mutator's only
+instruction channel, so a missing section is not a smaller prompt, it is a
+wrong one. The three bugs that cost this loop the most — no `MEASURE`, and
+earlier an empty first brief — were all omissions, not bad wording. When a
+custom brief replaces a curated one, the first question is not "is mine
+better?" but "what did theirs say that mine does not?"
+
+**Not claimed.** No timing is updated from an estimate. The fix lands as
+`2cb0dd1` and the first run on it is the measurement; if the agent still
+sleeps, E8 has located the cost without having removed it.
+
 ## Open
 
 - E6 is the only unsettled experiment, and it is waiting on a run rather than a
   decision.
+- E8 is implemented but unmeasured. The expected saving is ~13 min of scoring
+  plus most of the agent's 56 min of sleeping, which would put an iteration
+  near 30 min and make five fit the ceiling — but that is arithmetic, not
+  evidence, and it must not be written down as a result until a run on
+  `2cb0dd1` reports it.
 - The loop has no checkpoint. A timeout costs every iteration in the job, not
   the one in flight, because `publish_results` runs only at the end. Calling it
   per iteration would make the results branch the checkpoint for the cost of one
