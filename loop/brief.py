@@ -93,44 +93,96 @@ CONTRACT = """\
 - An exception, a bad action, or a timeout **zeroes that episode**, with no retry.
 """
 
+GOAL = """\
+## What you are working toward
+
+**Ascend.** Win the game: descend the dungeon, take the Amulet of Yendor, and
+escape through the five planes. No program on the leaderboard has done it yet,
+so nothing here is a solved problem, and a score is a stand-in for progress
+rather than the destination.
+
+**The real objective is to get better at the game, and the score is only how
+progress is counted.** Say so if a change makes the bot play better without
+moving the number — that is worth more than it looks, and it is worth saying so
+in your log, because a later turn cannot see it.
+
+Two levels of objective, and it is worth being explicit about which you are
+working on:
+
+- **This turn: raise the score.** The loop measures progression and keeps what
+  improves it. That is the thing you are judged on.
+- **The project: ascend.** Every real win comes from a bot that understands the
+  game better than the one before it — knowing what a monster is, what an item
+  does, when a fight is winnable. A change that teaches the bot something true
+  and general is worth more than one that squeezes a seed, even when only the
+  second one moves the number this turn.
+
+So aim at the mechanism, not the metric. "The bot now refuses to step on a
+grid bug, because it is unkillable and deals ELEC" generalises; "the bot takes
+the eastern corridor on seed 4" does not, and the leaderboard scores secret
+dungeons rather than these fifteen.
+"""
+
 SCORING = """\
 ## How a change is judged
 
-This is the part that is easy to get wrong, so read it carefully.
+- `progress` is BALROG progression in [0, 1]: higher is better.
+- A seed is a **complete, deterministic game**, so candidate and parent are
+  compared per seed on the same seeds.
+- **The metric is coarse.** It takes only about five distinct values across
+  15 seeds, because progression pins to milestone plateaus. One seed can swing
+  the mean by 0.18. Judge on per-seed deltas, not on the average alone.
+- **The loop keeps anything that improves the mean**, however small, and keeps
+  it as the parent for the next iteration. A kept tree is not published, so
+  there is nothing to lose by keeping a real but modest gain. Only a mean that
+  went *down* discards the change.
+- A `WIN` — the only thing that gets published to the leaderboard — additionally
+  needs a clean per-seed majority, so that a result cannot be registered on a
+  number that a single lucky seed carried.
 
-- `progress` is BALROG progression in [0, 1]: higher is better, and it rises as
-  the bot survives, descends and advances.
-- **The metric is coarse.** Across the 15 published seeds of a strong bot it
-  takes only about **five distinct values**, because progression pins to
-  milestone plateaus. Its standard error over 15 seeds is about **0.028**.
-- Therefore a difference of means **cannot resolve a change of 0.01**, and any
-  argument of the form "the average went up" is not evidence.
-- A seed is a **complete, deterministic game**. So a change is judged **per
-  seed**, candidate against parent, on the same seeds.
-- **One seed can swing the score by 0.18.** So a change counts as an
-  improvement only if **most seeds improve**, not if the average moved. In one
-  real comparison a candidate gained +0.175 on one seed and lost -0.180 on
-  another, and the mean of the two was +0.0013.
-- Judge on **per-seed deltas and on the depth each seed reaches**, which is
-   finer-grained than the progression value and is collected anyway.
+### The ladder is XP, and depth is only one rung of it
 
-### Depth is not progress
+This is the most important thing to know about the metric, and it is the
+opposite of what the depth framing suggests.
 
-This is the mistake that has already been made here, and it is worth stating
-plainly because the failure looks like a success.
+Progression is `max(...)` over several milestone families — depth, **XP
+level**, and others. On this identity's own 15 seeds, the family that decides
+the score is **XP, on every single seed** — a seed that reached dlvl 8 still
+scored its `Xp:11`, not its depth. A seed's depth and its score are therefore
+not the same quantity, and optimising depth optimises a term that is often
+*not* the maximum.
 
-Progression rises as the bot **survives and descends**. Those can move in
-opposite directions: a change that reaches dlvl 4 in 4,000 turns instead of
-dlvl 2 in 18,000 may be *worse* on the metric while looking obviously better on
-any depth-ladder you reconstruct yourself. A real run did exactly this —
-depth up, mean progression **down 40%** — and the change was reverted.
+The consequence for your experiments: **the fastest route to score is XP
+level**, and XP comes almost entirely from kills, not from items. The bot
+currently spends its time avoiding fights, and the measured result is that the
+monsters it coddles contribute only 1–8% of the XP while ordinary ones
+(goblins, jackals, gnomes) contribute 73–97%. So "fight less" and "score more"
+pull in opposite directions on this identity, and the resolve is not to stop
+fighting — it is to fight things that are *winnable* and to survive the ones
+that are not.
 
-So when you reason about what a change will do, reason about **progression**,
-which is what is scored, and treat depth as one input to it rather than as a
-proxy for it. If your reasoning needs a value for progression that you cannot
-observe, say that you are estimating rather than presenting the depth number
-as if it were the objective.
+Which fights are winnable depends on the creature's `mov`, its movement points
+per turn. Ordinary dungeon animals run 6 or 9; a wolf, jackal or grid bug is
+12, a bat 22, a white unicorn 24. **Nothing on that list can be walked away
+from** — a high value closes the gap you opened before your next turn. So
+retreat is not a general answer here, and a strategy built on it is bounded by
+how fast the killer is.
+
+Two warnings, both learned the hard way here:
+
+- **Depth is not progress.** A real run reached dlvl 3.80 instead of 2.27 and
+  scored 0.0374 against a 0.0624 parent — a 40% regression while every depth
+  number improved. Never present a depth number as if it were the objective.
+- **The bot is gated.** Its descent rule requires `experience_level >= 8`
+  before it will touch a staircase, so on dlvl 1 it must first grind kills up to
+  that level. That gate is a deliberate design point to test, not a fact of the
+  game — treat it as a hypothesis, and measure what changing it does to
+  progression per seed rather than to depth.
+
+If your reasoning needs a progression value you cannot observe, say you are
+estimating. Do not present a depth number as the objective.
 """
+
 
 HOWTO = """\
 ## You are one turn of a loop
@@ -177,13 +229,21 @@ Good experiments are the ones that can come back **negative**. "Add a
 danger-checking step before opening a door" is an experiment. "Improve
 combat" is not, because nothing could show it failed.
 
-Two things disqualify an experiment:
+Three things disqualify an experiment:
 
 - **It cannot be measured.** If you cannot say what result would tell you it
   failed, it is not an experiment.
 - **It is tuned to the seeds.** A change that helps these 15 dungeons and
   nothing else will not transfer to the secret dungeons the leaderboard
   actually scores you on. Prefer a change you believe would help *any* dungeon.
+- **It chases depth.** See the ladder section: on this identity XP level
+  decides the score and depth often does not. An experiment whose expected
+  effect is "reaches dlvl N+1" is aimed at the wrong term.
+
+Choose the experiment that attacks **the objective**, which is the score, via
+**the mechanism**, which is something true about the game. If you find yourself
+wanting a number to move rather than wanting the bot to understand something
+better, that is the wrong experiment.
 
 Say what you expect, before you look at the result, in the change itself:
 
@@ -257,6 +317,29 @@ Tag the heading with **◆ gameplay** for what is about the game, or
 **⛭ apparatus** for what is about the loop's own machinery. Untagged entries
 are kept, so tagging is optional — but it is how a later turn avoids spending
 context on notes that do not describe how the bot dies.
+
+### Do not revert your own change
+
+**Leave your best measured change in the tree, even if you are unsure of it.**
+
+Run `36637347806` made a real change and measured it at `0.0624 → 0.0671`, then
+reverted it on the grounds that 3 seeds improved against 2 that got worse. The
+loop never saw that measurement: by the time it scored the tree, the change was
+gone, so the child was byte-identical to the parent and the iteration produced
+`no seed moved on any signal` and nothing to learn from. A result you measured
+and then deleted is indistinguishable from never having tried.
+
+**This loop keeps any change that improves the mean**, even one seed's worth,
+and even when the per-seed split is not a clean majority. A mean that went up is
+a better place to search from, and a kept tree is not published — so there is
+no board risk in keeping it. Only the flat mean and the two-thirds split are
+reserved for a `WIN`.
+
+So: measure it, and **keep the tree as it is**. If your own reading is that the
+change is wrong, say so in *Attempts* and in *What worked* and let the harness
+judge. Reverting is your decision only when the change is not runnable at all —
+a crash on load, a broken contract, code that will not import. That is a
+defect, not a judgement about the score.
 """
 
 
@@ -307,6 +390,14 @@ def _is_harness_section(heading: str) -> bool:
 #: not ambiguous with the surrounding prose.
 _IDENTITY_RE = re.compile(r"\b[a-z]{3,4}-[a-z]{2,4}-[a-z]{2,3}-[a-z]{2,3}\b")
 
+#: The unfilled form written into a fresh `experience.md`. It has to be
+#: recognised from the angle brackets rather than from any one field, because an
+#: agent that filled in the problem and the attempts but left the date or the
+#: title blank still produced a block that is not a finding.
+_PLACEHOLDER_RE = re.compile(
+    r"<\.\.\.>|<YYYY-MM-DD>|<identity>|<short title>", re.IGNORECASE
+)
+
 
 def _identity_sections(text: str, identity: str) -> list[str]:
     """Markdown sections about this identity, minus our own apparatus notes.
@@ -331,11 +422,20 @@ def _identity_sections(text: str, identity: str) -> list[str]:
     construction. A block naming another character is the genuine exception, and
     that is worth catching -- trees are shared and copied, so a note comparing
     against val-dwa-law-fem can end up in a wiz tree.
+
+    The seeded placeholder written on the first turn is skipped, along with
+    the file's own `#` title line. Both are the template rather than a finding,
+    and a brief that repeats the form it is already showing spends the model's
+    attention on it.
     """
     out: list[str] = []
     for block in re.split(r"\n(?=#{1,3} )", text):
         block = block.strip()
         if not block:
+            continue
+        if block.lstrip("# ").strip().lower().startswith("experience.md"):
+            continue
+        if _PLACEHOLDER_RE.search(block):
             continue
         named = set(_IDENTITY_RE.findall(block))
         if named and identity not in named:
@@ -410,6 +510,8 @@ def build(
         "You are improving a Python program that plays **NetHack** through the",
         "**NetHack Learning Environment**. Make **one** focused change that",
         "raises its score, and say why in a `# hypothesis:` comment.",
+        "",
+        GOAL,
         "",
     ]
 

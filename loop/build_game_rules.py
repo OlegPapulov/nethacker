@@ -188,6 +188,15 @@ def main() -> int:
     align_src = fetch(FILES["alignment"], cache_dir / "align.h")
     abilities = parse_role_abilities(roles_src)
     races = parse_races(roles_src)
+    # The three alignment values below are the only ones that occur in an
+    # identity string. They are read from the tagged header rather than trusted
+    # from memory, and this asserts the two the current identity actually uses.
+    for token, sign in (("A_CHAOTIC", "-1"), ("A_NEUTRAL", "0"), ("A_LAWFUL", "1")):
+        m = re.search(rf"^#define\s+{token}\s+\(?(-?\d+)\)?", align_src, re.M)
+        if m and m.group(1) != sign:
+            raise SystemExit(
+                f"align.h says {token} = {m.group(1)}, the table says {sign}"
+            )
 
     diagnosis = json.loads(Path(diagnosis_path).read_text())
     results = sorted(diagnosis["results"], key=lambda r: r.get("turns") or 0)
@@ -214,31 +223,14 @@ def main() -> int:
     L.append("actually runs. Everything here is scoped to the deaths this bot")
     L.append("measured, because a general manual would be mostly irrelevant text.")
     L.append("")
+    L.append("This file is **the game only**: monsters, your class, your race, and")
+    L.append("the mechanics a strategy can act on. It contains no objective and no")
+    L.append("scoring — what the loop is trying to achieve lives in the brief, and")
+    L.append("what has already been tried lives in `experience.md`.")
+    L.append("")
     L.append(f"**Source:** NetHack `{TAG}` — `src/monst.c`, `src/role.c`, `include/align.h`.")
     L.append("**Not** the wiki: `nethack.alt.org` is a parked domain and every guide")
     L.append("page 404s. The tagged C source is version-exact and does not change.")
-    L.append("")
-
-    L.append("## The goal")
-    L.append("")
-    L.append("Win NetHack: descend ~50 dungeon levels, take the Amulet of Yendor, and")
-    L.append("escape through five planes. The arena scores *progress*, not a win:")
-    L.append("BALROG progression in [0, 1], which rises as the bot survives, descends")
-    L.append("and advances, pinned to a milestone ladder.")
-    L.append("")
-    L.append("The ladder, measured on this identity's own seeds:")
-    L.append("")
-    L.append("| depth | progression |")
-    L.append("|---|---|")
-    for depth, prog in ((1, "~0.03"), (2, "~0.05"), (5, "~0.075"), (7, "~0.18"),
-                        (11, "~0.16"), (19, "~0.37"), (25, "~0.47"), (28, "~0.60")):
-        L.append(f"| dlvl {depth} | {prog} |")
-    L.append("")
-    L.append("**This is the most important table in this file.** It says where the")
-    L.append("score actually is. On this identity, 9 of 15 seeds never reach dlvl 1's")
-    L.append("staircase, so the entire remaining game is worth about 0.03–0.05 and")
-    L.append("nothing above it is reachable. A change that trades depth for safety")
-    L.append("is the right trade *here* and a bad one in general.")
     L.append("")
 
     L.append(f"## Who you are: {role}, {race}, {align}, {gender}")
@@ -253,11 +245,13 @@ def main() -> int:
         L.append(f"| {str_} | {int_} | {wis} | {dex} | {con} | {cha} |")
         L.append("")
         trait = {
-            "Wizard": "Intelligence is your only strength. You start with almost no "
-                      "melee ability and must win at range or not at all — a point-blank "
-                      "fight with a jackal is one you will lose.",
-            "Valkyrie": "Strength and Dexterity. You can win in melee, which is why the "
-                        "Valkyrie baseline reaches depths the others never touch.",
+            "Wizard": "Intelligence is your only strength: the ability spread gives "
+                      "you almost nothing in Str or Dex, so your damage output and "
+                      "your accuracy in melee both start from the bottom. A "
+                      "level-0 wizard has no melee answer to anything with more "
+                      "than a few hit points, and the class's tools are spells.",
+            "Valkyrie": "Strength and Dexterity, the two scores a melee fight is "
+                        "decided by, and starting skill to use them.",
         }.get(role_name)
         if trait:
             L.append(trait)
@@ -291,8 +285,8 @@ def main() -> int:
         L.append(f"- {align_note}.")
     L.append("- Alignment is a hard *equipment* constraint, not a personality: a")
     L.append("  chaotic character is refused lawful-only items by the game itself.")
-    L.append("- It does not gate ordinary combat, hunger, or movement — so for the")
-    L.append("  early deaths below it is background, not a cause.")
+    L.append("- It does not gate ordinary combat, hunger, or movement, so it does not")
+    L.append("  explain a death on its own.")
     L.append("")
     L.append(f"**Gender** (`{gender}`) — no mechanical effect in NetHack 3.6.6 beyond")
     L.append("dialogue flavour. Ignore it.")
@@ -304,69 +298,110 @@ def main() -> int:
     L.append("statistics for that creature. AC is the number that decides whether you")
     L.append("survive a hit; damage type decides whether armour helps at all.")
     L.append("")
-    L.append("| died to | seeds | lvl | AC | dmg | traits |")
-    L.append("|---|---|---|---|---|---|")
+    L.append("| died to | seeds | lvl | AC | dmg | speed | traits |")
+    L.append("|---|---|---|---|---|---|---|")
     for name, count in sorted(deaths.items(), key=lambda kv: -kv[1]):
         entry = monsters.get(name)
         if not entry:
-            L.append(f"| {name} | {count} | ? | ? | ? | *not parsed* |")
+            L.append(f"| {name} | {count} | ? | ? | ? | ? | *not parsed* |")
             continue
         lvl = entry.get("level", ["?"])[0]
         traits = ", ".join(entry.get("traits1", [])[:3]) or "-"
+        # monst.c's LVL macro is LVL(lvl, mov, ac, mr, aln), so the second
+        # field is movement speed and the third is the permonst AC -- which is
+        # not the same as the AC the table shows, that one being parsed from the
+        # trailing group and adjusted. Reading field[2] as speed printed 18 for
+        # a kitten and 24 for a white unicorn, which are ACs.
+        speed = entry.get("level", [None, "?"])[1]
         L.append(
             f"| {name} | {count} | {lvl} | {entry.get('ac','?')} | "
-            f"{entry.get('damage','?')} | {traits} |"
+            f"{entry.get('damage','?')} | {speed} | {traits} |"
         )
     L.append("")
-
-    L.append("### What this table says about the deaths")
-    L.append("")
-    L.append("- **The killers are low-level but not harmless.** A goblin is level 0")
-    L.append("  with AC 1, but it attacks with a weapon at 1d4. Against a level-0")
-    L.append("  character with no armour that is a real fight, and there is no way to")
-    L.append("  win it by trading blows.")
-    L.append("- **The AC column is why fleeing works.** AC 1 means your hits almost")
-    L.append("  always land; most of these creatures have low AC and hit often. The")
-    L.append("  correct response to a fight you cannot finish is to not be in it.")
-    L.append("- **`killer bee` deals DRST, not PHYS.** Armour does not reduce it. If a")
-    L.append("  bee is the killer, AC is irrelevant and the only answer is distance.")
-    L.append("- **`grid bug` deals ELEC and is level 0, AC 1.** It cannot be killed,")
-    L.append("  cannot be outrun meaningfully, and there is no combat answer. The only")
-    L.append("  correct play is to never step on it, which means detecting it from the")
-    L.append("  glyph before moving.")
-    L.append("- **`brown mold` deals COLD** and is stationary (M2_HOSTILE, level 1).")
-    L.append("  Same lesson: do not touch it.")
-    L.append("- **`soldier ant` is level 3 with AC 6** — the hardest killer in this")
-    L.append("  table by a wide margin. It is also tiny (20 weight), so it is easy to")
-    L.append("  walk into.")
+    L.append("`speed` is the `mov` field of the monster's `LVL(...)` record — its")
+    L.append("movement points per turn. Ordinary dungeon creatures run 6 or 9; the")
+    L.append("fastest in the game are far above that (an air elemental is 36), so a")
+    L.append("high number means the creature closes a one-square gap every turn and")
+    L.append("cannot be walked away from.")
     L.append("")
 
-    L.append("## Rules that decide whether you survive dlvl 1")
+    L.append("### What these statistics mean in the game")
     L.append("")
-    L.append("These follow from the statistics above and from the game's own")
-    L.append("mechanics, and they are the things a strategy change can act on.")
+    L.append("- **AC is what decides whether you survive a hit.** Most of these")
+    L.append("  creatures have AC 1, so your attacks almost always land and theirs")
+    L.append("  land too. AC is the number to compare before starting a fight.")
+    L.append("- **Damage type decides whether armour helps at all.** A PHYS hit is")
+    L.append("  reduced by armour; ELEC, COLD, DRST and FIRE are not. A creature that")
+    L.append("  attacks with a non-PHYS type cannot be answered with a better AC.")
+    L.append("- **`grid bug` is level 0, AC 1, ELEC.** Small, fast, and effectively")
+    L.append("  unkillable for a low-level character. It is the game's clearest")
+    L.append("  example of a monster with no combat answer.")
+    L.append("- **`brown mold` is COLD and stationary** (M2_HOSTILE, level 1): it does")
+    L.append("  not move and does not need to.")
+    L.append("- **`soldier ant` is level 3 with AC 6** — by far the toughest creature in")
+    L.append("  this table, and tiny (20 weight), so easy to walk into by accident.")
+    L.append("- **Level is a poor guide to danger here.** A level-0 goblin and a level-0")
+    L.append("  grid bug both outclass a level-0 wizard; a level-5 wolf has AC 6.")
     L.append("")
-    L.append("1. **You cannot win a melee fight.** A level-0 wizard with no weapon")
-    L.append("   skill loses to a goblin. Your damage output at level 0 is negligible")
-    L.append("   against anything with more than 5 HP. Fight only what is already")
-    L.append("   hurt, or do not fight.")
-    L.append("2. **Disengage early, not at low HP.** The instinct to retreat when")
-    L.append("   hurt is too late: several of these creatures hit for 1d6 or more, and")
-    L.append("   a level-0 wizard has almost no HP to spend. The decision has to be")
-    L.append("   made *before* HP matters, i.e. on the monster's state, not yours.")
-    L.append("3. **Some monsters must never be engaged at all.** Grid bug (ELEC,")
-    L.append("   unkillable), brown mold (COLD, stationary), and anything that")
-    L.append("   attacks with a damage type your protection does not reduce.")
-    L.append("4. **Retreat has to be geometrically possible.** A corridor with a")
-    L.append("   monster behind you is not a retreat. Check the square you would move")
-    L.append("   into before committing.")
-    L.append("5. **Corpses are the only food on dlvl 1, and they rot.** A corpse is")
-    L.append("   edible for roughly 50 turns, so a kill you walk away from is food")
-    L.append("   you will not come back to. If you kill something, eat it then.")
-    L.append("6. **Your own square is hidden.** The cell you stand on is drawn as the")
-    L.append("   player glyph, so you cannot see a monster or item underfoot. A")
-    L.append("   staircase is invisible while you occupy it, and so is a grid bug.")
-    L.append("   You must remember what was there.")
+
+    L.append("## Mechanics of the game that constrain any strategy")
+    L.append("")
+    L.append("These are properties of NetHack, not opinions about how to play. They")
+    L.append("are the facts a strategy has to be built around.")
+    L.append("")
+    L.append("1. **Melee damage depends on Str and weapon skill, and experience levels")
+    L.append("   both.** A character at level 0 does negligible damage to anything with")
+    L.append("   more than a few HP. Killing is slow, and slowness has consequences")
+    L.append("   below.")
+    L.append("2. **A creature's attack resolves once per turn**, so being adjacent to")
+    L.append("   one over many turns means taking many hits. Distance is a real")
+    L.append("   resource, and the square you would retreat into has to be checked")
+    L.append("   before committing to it — a corridor with a monster behind you is")
+    L.append("   not an escape.")
+    L.append("3. **Monsters have a movement speed (`mov`), the game's fastest being")
+    L.append("   far above the ordinary range.** A creature with a high value closes a")
+    L.append("   one-square gap every turn, so retreating one square does not open")
+    L.append("   distance from it. The `speed` column above is that value: a wolf, a")
+    L.append("   jackal and a grid bug are all 12, while a bat is 22 and a white")
+    L.append("   unicorn 24. Those last two cannot be outrun at all.")
+    L.append("4. **Corpses are food and they rot** — edible for roughly 50 turns. A")
+    L.append("   kill walked away from is food that will not be there later.")
+    L.append("5. **Hunger rises every turn** and a character who starves faints, which")
+    L.append("   costs hit points and incapacitates the character while it happens.")
+    L.append("   Eating is not optional, and a fainting character cannot fight.")
+    L.append("6. **The square you stand on is not drawn to you.** It shows the player")
+    L.append("   glyph, so a monster or item underneath you is invisible while you are")
+    L.append("   on it — including a staircase, and including a grid bug. You cannot")
+    L.append("   see what is underfoot and must remember it.")
+    L.append("7. **Experience level comes from kills, and a level-up gives hit points.**")
+    L.append("   So a character's ability to survive a fight rises with the number of")
+    L.append("   fights it has already won — the early game is the hardest, and the")
+    L.append("   thresholds roughly double at each level.")
+    L.append("8. **Wizards are spellcasters first and fighters last.** A level-0 wizard")
+    L.append("   has almost no melee ability. The intended answer to a fight that")
+    L.append("   cannot be won at range is not to be in it. Spell mechanics —")
+    L.append("   casting costs, hunger per spell, and the damage numbers available —")
+    L.append("   are the largest gap in this file, and the most promising place for a")
+    L.append("   real improvement, because a wizard who can actually cast would not")
+    L.append("   need most of the advice above.")
+    L.append("")
+    L.append("## Items")
+    L.append("")
+    L.append("- **A weapon's damage depends on its weight and your Str**, and most")
+    L.append("  early weapons are one-handed and light. A dagger is fast and weak; a")
+    L.append("  heavier weapon hits harder and needs both hands.")
+    L.append("- **Armor trades speed for protection**: a higher AC value means harder")
+    L.append("  to hit, and wearing it makes the character slower to move and act.")
+    L.append("  That trade is worth making against a slow, heavy hitter and usually")
+    L.append("  not against something that already hits reliably.")
+    L.append("- **Alignment gates what you can pick up.** A chaotic character cannot")
+    L.append("  wield a lawful-only weapon; the game refuses the pickup outright.")
+    L.append("- **Shields, rings, amulets and scrolls change one rule each** and are")
+    L.append("  the main source of a large mid-game jump — but they are found, not")
+    L.append("  bought, and the early seeds rarely contain any.")
+    L.append("- **A backpack's weight limit matters**: a level-0 wizard can carry very")
+    L.append("  little before becoming encumbered, and encumbered characters act")
+    L.append("  slower and suffer worse to-hit.")
     L.append("")
 
     L.append("## What this file does not know")
@@ -377,8 +412,10 @@ def main() -> int:
     L.append("- Spell mechanics: casting costs, hunger per spell, and the damage")
     L.append("  numbers a level-0 wizard can actually produce. That is the largest")
     L.append("  gap, and it is the most likely place a real improvement lives —")
-    L.append("  a wizard who can actually cast would not need any of rule 1 above.")
-    L.append("- Anything about the bot's own code. That is in the brief.")
+    L.append("  a wizard who can actually cast would not need most of rule 1 above.")
+    L.append("- Anything about the bot's own code, what the loop is trying to achieve,")
+    L.append("  or what has already been tried. That is in the brief and in")
+    L.append("  `experience.md`.")
     L.append("")
 
     L.append("---")

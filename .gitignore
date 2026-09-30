@@ -20,3 +20,8 @@ reproducibility/
 seed-bot/
 trace-bot/
 tree/
+
+# NetHack source the rules generator downloads to parse. It is a cache of the
+# tagged 3.6.6 release (monst.c, role.c, align.h), reproducible from
+# loop/build_game_rules.py, and it is a megabyte of vendored C.
+.nhsrc-cache/

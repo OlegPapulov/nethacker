@@ -295,6 +295,32 @@ def read_log(tree: Path) -> str:
     return ""
 
 
+def _log_blocks(text: str) -> list[str]:
+    """Split a log into its ``##``-headed entries."""
+    return [
+        b.strip()
+        for b in re.split(r"\n(?=## )", text)
+        if b.strip()
+    ]
+
+
+def _log_key(block: str) -> str:
+    """A block's identity for dedup: its heading, or its whole text if it has
+    none. Two entries from the same experiment share a heading, which is what
+    makes "already tried" detectable without trusting the body."""
+    for line in block.splitlines():
+        if line.startswith("## "):
+            return " ".join(line.lstrip("#").split()).lower()
+    return " ".join(block.split()).lower()
+
+
+def _is_placeholder_block(block: str) -> bool:
+    """True for the unfilled form written into a fresh `experience.md`."""
+    return bool(brief_mod._PLACEHOLDER_RE.search(block)) or block.lstrip(
+        "# "
+    ).strip().lower().startswith("experience.md")
+
+
 def harvest_log(source: Path, target: Path) -> int:
     """Copy a discarded mutant's new log entries into the surviving parent.
 
@@ -322,15 +348,41 @@ def harvest_log(source: Path, target: Path) -> int:
     new = written.read_text(encoding="utf-8", errors="replace").strip()
     if not new:
         return 0
-    existing = read_log(target)
-    if new in existing:
-        return 0  # already carried into the parent; do not duplicate
-    if target.exists() and not (Path(target) / "experience.md").is_file():
-        shutil.copytree(source, target, dirs_exist_ok=True)
-        return len(new)
-    body = "\n".join(part for part in (existing.rstrip(), new) if part)
+    existing = read_log(target).strip()
+
+    if not existing:
+        # No log in the parent yet, so the whole file is new -- but the seeded
+        # placeholder is not. Carrying the form forward would make the next
+        # brief open on a template instead of on a finding.
+        blocks = _log_blocks(new)
+        kept = [b for b in blocks if not _is_placeholder_block(b)]
+        if not kept:
+            return 0
+        (Path(target) / "experience.md").write_text("\n\n".join(kept) + "\n", encoding="utf-8")
+        return len("\n\n".join(kept))
+
+    # A block is the unit. Appending the whole file would re-add every entry the
+    # parent already has, because the mutant was seeded from that parent and its
+    # log necessarily starts with all of it; comparing whole files with `in` did
+    # not catch that, since the longer string is not a substring of the shorter.
+    # An experiment is only worth not repeating if its own entry survives, so
+    # match on the heading and take only what the parent has not seen.
+    seen = _log_blocks(existing)
+    seen_keys = {_log_key(b) for b in seen}
+    added: list[str] = []
+    for block in _log_blocks(new):
+        if _is_placeholder_block(block):
+            continue
+        key = _log_key(block)
+        if key in seen_keys or any(key in k or k in key for k in seen_keys if k):
+            continue
+        seen_keys.add(key)
+        added.append(block)
+    if not added:
+        return 0
+    body = "\n".join(part for part in (existing, "\n\n".join(added)) if part)
     (Path(target) / "experience.md").write_text(body + "\n", encoding="utf-8")
-    return len(new)
+    return len("\n\n".join(added))
 
 
 def main() -> int:
@@ -386,6 +438,33 @@ def main() -> int:
         # copytree already gets right for free.
         log_text = read_log(best_tree)
         print(f"experience log: {len(log_text)} chars from {best_tree.name}", flush=True)
+
+        # Seed the log file if the parent has none, so the first turn reads a
+        # file rather than a missing path. The agent's first action on run
+        # 36637347806 was `read /workspace/experience.md`, which returned
+        # "File not found", and its reaction was "No experience.md yet. This is
+        # the first turn. Let me read the bot code." -- correct, and it went on
+        # to work. But it had to infer the protocol from a failed read, and a
+        # model that reads a missing file as "this project does not use one"
+        # would never write it. A seeded file with the entry template in it
+        # makes the contract a property of the workspace rather than a
+        # convention the agent has to infer.
+        if not (worktree / "experience.md").is_file():
+            (worktree / "experience.md").write_text(
+                f"# experience.md — {args.identity}\n\n"
+                "This log is written by the agent, one entry per iteration. It is\n"
+                "the loop's only memory: the next turn reads it before choosing\n"
+                "what to try, so an attempt recorded as failed is not repeated.\n\n"
+                "Append an entry below, using this structure:\n\n"
+                "## <YYYY-MM-DD> — <identity> — <short title>\n\n"
+                "**Problem:**\n<the situation that led to death or a low score>\n\n"
+                "**Hypotheses:**\n- <possible cause #1>\n\n"
+                "**Attempts:**\n- <what you tried, and the measured result>\n\n"
+                "**What worked:**\n<the change that helped, with evidence, or "
+                '"nothing yet">\n',
+                encoding="utf-8",
+            )
+            print("seeded an empty experience.md in the worktree", flush=True)
 
         brief_text = brief_mod.build(args.identity, diagnosis, log_text)
         (work / f"brief-{iteration}.md").write_text(brief_text)
