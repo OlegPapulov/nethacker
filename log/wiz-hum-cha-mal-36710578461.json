@@ -1,0 +1,151 @@
+{
+  "run_id": "36710578461",
+  "identity": "wiz-hum-cha-mal",
+  "operator": "opencode2",
+  "model": "opencode/big-pickle",
+  "conclusion": "success",
+  "transcript": true,
+  "history": [
+    {
+      "iteration": 1,
+      "child_mean": 0.06241799392553074,
+      "parent_mean": 0.06241799392553074,
+      "hypothesis": "Done. Summary of the iteration: The fix did what it was designed to do (seed 10 `0.0242 \u2192 0.0508`, seed 13 stopped starving), but every seed that used to descend got worse because walking to corpses consumed the turns needed to reach the XP\u20118 gate \u2014 seed 14 collapsed from `0.0745` to `0.0000`, dying at turn 417.",
+      "hypothesis_source": "closing-message",
+      "report": "Done. Summary of the iteration:\n\n**Hypothesis tested:** hunger, not kill rate, was capping the wizard's XP rate.\n\n**Evidence gathered (canonical runs, instrumentation that doesn't perturb):**\n- Seed 13 starved to death at turn 5206 with XP frozen at 89, sitting in FAINTING for ~1150 turns \u2014 while 5\u201310 edible corpses were in `level.corpses_to_eat` and `Inventory.eat` was called **zero** times.\n- Two static causes: stale corpse entries are never removed because the `del` sits behind `if not yielded:` in `autoascend/agent.py:1368`, and the corpse hunt in `autoascend/global_logic.py:629` was throttled to `.every(5)`.\n\n**Change tried:** always drop stale corpse entries + check the hunt every turn.\n\n**Result: mean 0.0430 vs baseline 0.0624 \u2014 regression. Reverted.**\n\nThe fix did what it was designed to do (seed 10 `0.0242 \u2192 0.0508`, seed 13 stopped starving), but every seed that used to descend got worse because walking to corpses consumed the turns needed to reach the XP\u20118 gate \u2014 seed 14 collapsed from `0.0745` to `0.0000`, dying at turn 417.\n\n**Tree state:** byte-exact baseline, verified by re-running seed 13 (`0.0242`/5206/starvation) and seed 4 (`0.1791`/32346/dlvl 7). The negative result, the reverted diff, and the \"don't spend turns on floor management while the XP gate is unmet\" lesson are recorded in `/workspace/experience.md`.",
+      "verdict": "NOT-A-WIN",
+      "why": "no seed moved on any signal",
+      "shared_seeds": 15,
+      "changed": [],
+      "forward": [],
+      "backward": [],
+      "deeper": []
+    }
+  ],
+  "baseline": {
+    "identity": "wiz-hum-cha-mal",
+    "mean_progress": 0.06241799392553074,
+    "results": [
+      {
+        "seed": 0,
+        "turns": 13697,
+        "depth": 1,
+        "progress": 0.036887590648350246,
+        "death": "killed by a goblin",
+        "status": "completed"
+      },
+      {
+        "seed": 1,
+        "turns": 17693,
+        "depth": 1,
+        "progress": 0.036887590648350246,
+        "death": "killed by a jackal",
+        "status": "completed"
+      },
+      {
+        "seed": 2,
+        "turns": 20700,
+        "depth": 5,
+        "progress": 0.07453595273884014,
+        "death": "killed by a white unicorn",
+        "status": "completed"
+      },
+      {
+        "seed": 3,
+        "turns": 3052,
+        "depth": 1,
+        "progress": 0.02081163581974355,
+        "death": "killed by a grid bug",
+        "status": "completed"
+      },
+      {
+        "seed": 4,
+        "turns": 32346,
+        "depth": 7,
+        "progress": 0.17909953770432294,
+        "death": "killed by a wolf",
+        "status": "completed"
+      },
+      {
+        "seed": 5,
+        "turns": 14486,
+        "depth": 1,
+        "progress": 0.0507583712345433,
+        "death": "killed by a bat",
+        "status": "completed"
+      },
+      {
+        "seed": 6,
+        "turns": 11919,
+        "depth": 1,
+        "progress": 0.036887590648350246,
+        "death": "killed by a kitten",
+        "status": "completed"
+      },
+      {
+        "seed": 7,
+        "turns": 23971,
+        "depth": 2,
+        "progress": 0.07453595273884014,
+        "death": "killed by a rothe",
+        "status": "completed"
+      },
+      {
+        "seed": 8,
+        "turns": 23604,
+        "depth": 5,
+        "progress": 0.07453595273884014,
+        "death": "killed by a soldier ant",
+        "status": "completed"
+      },
+      {
+        "seed": 9,
+        "turns": 24295,
+        "depth": 4,
+        "progress": 0.07453595273884014,
+        "death": "killed by an ape",
+        "status": "completed"
+      },
+      {
+        "seed": 10,
+        "turns": 4014,
+        "depth": 1,
+        "progress": 0.024160136550546978,
+        "death": "killed by a hobbit",
+        "status": "completed"
+      },
+      {
+        "seed": 11,
+        "turns": 27094,
+        "depth": 5,
+        "progress": 0.11704996473565571,
+        "death": "killed by a wolf",
+        "status": "completed"
+      },
+      {
+        "seed": 12,
+        "turns": 12509,
+        "depth": 1,
+        "progress": 0.036887590648350246,
+        "death": "killed by a newt",
+        "status": "completed"
+      },
+      {
+        "seed": 13,
+        "turns": 5206,
+        "depth": 1,
+        "progress": 0.024160136550546978,
+        "death": "died of starvation",
+        "status": "completed"
+      },
+      {
+        "seed": 14,
+        "turns": 22485,
+        "depth": 1,
+        "progress": 0.07453595273884014,
+        "death": "killed by a crossbow bolt",
+        "status": "completed"
+      }
+    ]
+  }
+}
