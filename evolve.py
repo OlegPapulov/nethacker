@@ -725,9 +725,14 @@ def main() -> int:
             flush=True,
         )
     else:
+        # Say what the fallback actually is. This line used to read "they are in
+        # the artifact" and was false: the upload list named transcripts and
+        # history.json and nothing else, so run 36731664027 lost the kept tree,
+        # both patches and the run record on the one run whose results branch
+        # failed to push. It is a 30-day artifact, not a ref -- worth naming.
         print(
             f"results NOT published ({published.get('error', 'unknown')}); "
-            f"they are in the artifact",
+            f"the kept tree and its patches are in the 30-day artifact",
             flush=True,
         )
     (work / "history.json").write_text(json.dumps(history, indent=2))

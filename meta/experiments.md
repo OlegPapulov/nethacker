@@ -106,10 +106,35 @@ registered to the hub, and not read by the next run.
 **Prediction.** After any run, the findings and the log are recoverable
 without digging in a 30-day transcript.
 
-**Result.** Untested end to end — no run has completed on a commit containing
-it. Unit-tested against a local bare remote: correct tree contents, idempotent
-re-push, and a clean error record when the parent has no log. **Inconclusive**
-until a run lands.
+**Result.** **Failed in CI, for a reason no local test could have caught.**
+
+`36731664027` (old SHA `1cd8a82`) ran to completion — 2 iterations, 4h 00m 41s —
+and published nothing:
+
+```
+results NOT published (push failed: git push failed (128):
+  fatal: could not read Username for 'https://github.com': No such device or address)
+```
+
+`publish_results` stages into a directory it creates with `git init`.
+`actions/checkout` persists the job's token as an
+`http.https://github.com/.extraheader` entry in the **checkout's** local config,
+and a repository created by `git init` does not inherit another repository's
+config. The staging repo therefore had no credential at all. Note what that
+error is *not*: it is not a 403, and not a permissions problem. It is git
+finding nothing to offer and falling back to an interactive prompt, on a runner
+with no terminal. The unit test against a local bare remote passed because a
+developer's machine has a credential helper in *global* config, which every repo
+does read — the bug is only invisible from a laptop.
+
+Fixed by `_push_auth`, which reads the header out of the repo that has it and
+passes it with `-c` on the push. No second token, and scoped to the repo being
+pushed to. Returns `[]` when there is no header, so local behaviour is unchanged.
+Verified by reproducing the original condition (a fresh repo seeing
+`NOTHING`) and by a full `publish_results` against a local remote.
+
+The deeper lesson is recorded as E10: the artifact fallback was a claim, not a
+fact, and it was false.
 
 ## E6 — does the experience log compose across iterations?
 
@@ -140,6 +165,33 @@ result: the `KEEP` prediction needs at least one kept tree, and two iterations
 is a thin sample for "no hypothesis repeats". A negative here is weak evidence,
 not a refutation.
 
+**Second attempt, `36731664027`: the `KEEP` prediction held, on the first
+measured test of it.**
+
+| it. | verdict | child | parent | forward/back |
+|---|---|---|---|---|
+| 1 | `NOT-A-WIN` | 0.06245 | 0.06242 | 5 / 7 |
+| 2 | **`KEEP`** | **0.06612** | 0.06242 | 8 / 7 |
+
+This is the first kept tree the project has produced, and it is the first time
+the loop has advanced its own parent. Iteration 2 also behaved the way the log
+mechanism is supposed to: it read iteration 1's harvested findings, noticed that
+iteration 1 had repaired `cast()` for diagonal targets, and did not go near
+casting — its hypothesis was about search decay instead. 60 scratch files in its
+own worktree, one real change: `search_count ** 2 * 2` → `* 8`.
+
+The `KEEP` is honest about its own weakness, and so should this record be. 8
+forward against 7 backward clears "not a regression" and misses the two-thirds
+bar; +0.0037 is well inside the 0.0109 SE. The agent validated on 15 held-out
+trajectory ids (0.0407 → 0.0522) and reported a non-monotonic coefficient curve
+(2→.0624, 4→.0548, 8→.0661, 16→.0553, none→.0243), which is what noise looks
+like. **The loop kept a direction, not a proven win.** The kept tree is the best
+bot this project has had and it is not a leaderboard entry.
+
+Still thin on "no hypothesis repeats" — two iterations. And the run cost 120
+minutes per iteration, the slow end of the observed range, so E8's savings
+remain unmeasured on top of this.
+
 ## E7 — record the mutator's actual edit, not only its account of it
 
 **Change.** `tree_diff` diffs each worktree against the parent it was seeded
@@ -166,6 +218,31 @@ dropped.
 This does not make the agent trustworthy — a patch bounds how long an
 unverifiable claim survives, it does not prevent one. A later run should check
 whether a reported fix matches the recorded diff.
+
+**First CI run of `tree_diff`, `36731664027`: it works, and it was very nearly
+useless anyway.**
+
+`history.json` carried both iterations' complete per-file stats, so the stat
+half held up. The patch half did not reach anyone: both `diff-001.patch` and
+`diff-002.patch` were written to `runs/`, and the artifact upload list did not
+include `runs/diff-*.patch`. Neither did the kept tree, nor the run record, nor
+the results staging directory. See E10.
+
+What the surviving `history.json` does show is the failure mode the exclusion
+list was built for, arriving in a form it does not cover. Iteration 2 touched
+**61 files**, 60 of them agent scratch under `.tmpwork/` — instrumented copies
+of `agent.py`, 30 result JSONs, diagnostic scripts. The one real edit,
+`autoascend/exploration_logic.py +11/-1`, was the *last* entry and was 4 lines
+from the truncation cut. Iteration 1 did the same thing at the repository root,
+leaving `direct_run.py` and `local_eval.py` in the tree.
+
+So the recorder is faithful — those files really were added — and the record is
+still close to unreadable, and worse, those scratch files are now *inside the
+kept tree* and will be carried into every future parent and shipped to the hub.
+Excluding `experience.md` and `brief-*.md` did not help because the problem was
+never harness files; it is an agent leaving its workbench in the deliverable.
+That is a brief change (E11), not a `tree_diff` change: the recorder should not
+be taught to hide files, because then it stops being evidence.
 
 ## E8 — cost: the brief was silently deleting the harness's own instructions
 
@@ -269,10 +346,88 @@ table than 14 death-derived rows. That is paid for in prompt length, and it is
 not yet clear it is worth it; the first run to measure it will also be the first
 to show whether the agent uses the wider band.
 
+## E10 — the artifact fallback was a promise, not a fact
+
+**Change.** None to begin with. This is the finding, not a fix.
+
+`36731664027` is the first run where publication failed, which is the only
+condition under which the fallback matters. It was a lie.
+
+`evolve.py` printed, on publication failure:
+
+> results NOT published (…); **they are in the artifact**
+
+The upload list at the time named `our-evolve.log`, `report.md`,
+`preview-brief.md`, `runs/baseline.json`, `runs/history.json`, `runs/brief-*.md`
+and `runs/transcript-*.log`. Nothing else. So on the one run that needed the
+fallback, the artifact contained **no kept tree, no patches, no run record and
+no results staging** — only the transcripts and `history.json`. The sentence was
+written next to the code that writes the patches and did not describe the list
+that uploads them. Two files, same repo, never compared.
+
+The cost was not the log, which survived in `history.json`. It was
+`runs/winner-2/` — iteration 2's kept tree, 0.0661, the best bot this project has
+produced and the first kept tree it ever had. Gone, because the branch push
+failed (E5) and the artifact was the other half of the promise. Also gone:
+`runs/diff-001.patch`, `runs/diff-002.patch`, `runs/work-*/`, and the 22 KB
+`log/wiz-hum-cha-mal-36731664027.json`.
+
+**A second, independent loss, in the same run.** The run's own commit to `main`
+was also rejected:
+
+```
+error: failed to push some refs to 'https://github.com/OlegPapulov/nethacker'
+hint: ... have locally. This is usually caused by another repository pushing to
+##[warning]push failed (concurrent run?)
+```
+
+That diagnosis was wrong. No concurrent run existed. `main` had moved because
+*we* pushed `2cb0dd1` and `5849f59` about three hours into the run, after its
+checkout. A four-hour loop on a moving `main` is routinely stale at the end;
+the step assumed otherwise and swallowed the evidence under a warning that named
+the wrong cause. `log/*.json` was committed locally and then lost with the
+workspace.
+
+**Fixes.** The artifact list now carries `log/*.json`, `runs/diff-*.patch`,
+`runs/winner-*/` and `runs/work-*/`, so the fallback covers the things the
+results branch would have carried. `Commit the verdict` fetches, rebases and
+retries once instead of warning, and never forces. The `evolve.py` line now
+names what the fallback actually is — "the kept tree and its patches are in the
+30-day artifact" — because a fallback with an expiry is a weaker guarantee than
+a ref, and saying so is the difference between a record and a rumour.
+
+**What this says.** Both halves of "the results survive the job" were untested
+against the one condition that matters: failure. E5's local test passed because
+a laptop's credentials are global; E10's list was never read against the code it
+was supposed to describe. Neither is a hard bug. Both are the same bug: a claim
+about a fallback, written near the thing it depends on, verified by nothing.
+
+## E11 — the agent ships its workbench inside the deliverable
+
+**Change.** Proposed, not made. Needs a decision, so it is recorded here rather
+than in a brief.
+
+Iteration 2 of `36731664027` reported **61 changed files** to make a one-line
+edit: `search_count ** 2 * 2` → `* 8`. Sixty were its own scratch —
+`.tmpwork/agent.py.instrumented` (+1661), `.tmpwork/agent.py.orig` (+1560), 30
+result JSONs, four diagnostic scripts. Iteration 1 left `direct_run.py` and
+`local_eval.py` at the tree root. Both trees were kept or carried forward, so
+this junk is now in the parent and will reach the hub.
+
+This is not a `tree_diff` bug. The recorder is right: those files were added,
+and a recorder that hid them would stop being evidence. It is also not really an
+E7 bug — the stat *did* list the real file, fourth from last — though a 61-file
+stat is close to as unreadable as no stat.
+
+It is a brief problem: the agent was never told that `/workspace` is the
+deliverable and not a workbench. The natural fix is one line in `HOWTO` — put
+experiments in `/tmp`, and leave nothing in the tree that is not part of the
+change. Cheap, and it improves the diff, the kept tree, and the hub submission
+at once. Worth doing, but it is a brief change, so it should be dispatched and
+measured like any other rather than landed on the strength of this paragraph.
+
 ## Open
 
-- E6 is the only unsettled experiment, and it is waiting on a run rather than a
-  decision.
 - E8 is implemented but unmeasured. The expected saving is ~13 min of scoring
   plus most of the agent's 56 min of sleeping, which would put an iteration
   near 30 min and make five fit the ceiling — but that is arithmetic, not
@@ -288,5 +443,9 @@ to show whether the agent uses the wider band.
   an iteration and a 2,000/month free-tier budget, we get roughly 20 iterations a
   month. That, not the agent's ideas, is what limits how much the brief can be
   tested.
-- Nothing has ever been kept over five iterations, so the loop has no evidence
-  yet that it can compose improvements rather than only accumulate findings.
+- E11 is a proposed brief change, unmeasured and not yet agreed.
+- The loop has still never been kept over more than **one** iteration.
+  `36731664027` kept its second tree, which is the first time the loop advanced
+  its own parent, and then the job ended — so "can this compose improvements, or
+  only accumulate findings" is still unanswered. It is now a cheaper question
+  than it was, because E5 and E10 mean a kept tree survives the job.

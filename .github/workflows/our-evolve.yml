@@ -252,11 +252,14 @@ jobs:
             our-evolve.log
             report.md
             preview-brief.md
+            log/*.json
             runs/baseline.json
             runs/history.json
             runs/brief-*.md
-            runs/history.json
             runs/transcript-*.log
+            runs/diff-*.patch
+            runs/winner-*/
+            runs/work-*/
           if-no-files-found: warn
           retention-days: 30
 
@@ -270,8 +273,8 @@ jobs:
         run: |
           set +e
           # A few hundred bytes a run, not 13.6 M lines. `runs/` and the tree
-          # under work-*/ are gitignored now; the transcript and the mutated
-          # tree stay in the artifact above for 30 days.
+          # under runs/work-*/ are gitignored, so the artifact is the only copy
+          # of the kept trees and the patches -- which is why it now lists them.
           python log_verdict.py || echo "::warning::could not write the verdict"
           cat log/*.json 2>/dev/null >> "$GITHUB_STEP_SUMMARY"
           if ls runs/transcript-*.log >/dev/null 2>&1; then
@@ -285,4 +288,18 @@ jobs:
           git add log 2>/dev/null
           git diff --cached --quiet && { echo "nothing to commit"; exit 0; }
           git commit -q -m "our-evolve: $IDENTITY run ${{ github.run_id }} (${{ inputs.operator }}/${{ inputs.model }})"
-          git push origin HEAD:main || echo "::warning::push failed (concurrent run?)"
+          # main moves while a run is in flight -- anyone who pushes to this
+          # repo does -- and by the time a four-hour loop finishes, the checkout
+          # is stale, so the first push is routinely a non-fast-forward. Rebase
+          # the single added file onto it and try once more. Never force: if
+          # the rebase conflicts, say so and leave it to a human.
+          if ! git push -q origin HEAD:main; then
+            echo "::notice::main advanced during the run; rebasing the verdict onto it"
+            if git fetch -q origin main \
+              && git rebase FETCH_HEAD \
+              && git push -q origin HEAD:main; then
+              echo "::notice::verdict committed after rebase"
+            else
+              echo "::warning::could not commit the verdict to main; it is in the artifact"
+            fi
+          fi

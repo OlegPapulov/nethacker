@@ -154,6 +154,11 @@ def publish_results(
     each seeds fresh and re-derives what it needs -- so this is a place to put
     the output where it cannot quietly become the next run's assumptions.
 
+    `repo` names the repository *in the returned record only*. The push always
+    goes to this checkout's own `origin`, because that is the remote the token
+    was issued for. Passing `repo=` therefore does not redirect the push -- it
+    will happily label a record with one slug while pushing to another.
+
     Best-effort, like `register_winner`: never raises, returns a record.
     """
     ref = f"{RESULTS_BRANCH_PREFIX}/{identity}-{run_id}"
@@ -190,6 +195,48 @@ def publish_results(
     record["commit"] = commit
     record["published"] = True
     return record
+
+
+def _push_auth(repo_root: Path | None = None) -> list[str]:
+    """`-c` arguments that lend a fresh repo the caller's own credential.
+
+    `actions/checkout` persists the job's token into the *checkout's* local
+    config as an `http.<url>.extraheader` entry. A repository created by
+    `git init` does not inherit another repository's config, so the results
+    staging repo had no credential at all and run 36731664027 ended with
+
+        fatal: could not read Username for 'https://github.com':
+        No such device or address
+
+    That is not a permission error. It is git finding nothing to offer and
+    falling back to a prompt on a runner with no terminal -- which is why the
+    run reported success while publishing nothing at all.
+
+    Reading the header out of the repo that has it and passing it with `-c`
+    costs no second token and stays scoped to the repo being pushed to. The
+    value never reaches a log: it is an argument, not output.
+
+    Returns `[]` when there is nothing to lend, leaving a developer's own
+    credential helper or keychain in charge, which is the behaviour that
+    worked everywhere before this.
+    """
+    root = repo_root or Path.cwd()
+    proc = subprocess.run(
+        ["git", "config", "--local", "--get-regexp", r"^http\..*\.extraheader$"],
+        cwd=root, capture_output=True, text=True, check=False,
+    )
+    # `--get-regexp` exits 1 when nothing matches, which is the normal local
+    # case and not an error worth reporting.
+    if proc.returncode != 0:
+        return []
+    args: list[str] = []
+    for line in proc.stdout.splitlines():
+        # `key value`. A base64 Authorization header contains `=` but no
+        # newline, so splitting once on the first space is enough.
+        key, _, value = line.partition(" ")
+        if key and value:
+            args += ["-c", f"{key}={value.strip()}"]
+    return args
 
 
 def _push_results_branch(
@@ -251,8 +298,11 @@ def _push_results_branch(
         if proc.returncode != 0:
             # git writes the reason to stderr and nothing useful to stdout, and
             # a bare CalledProcessError hides which of the six calls failed.
+            # The verb is the first non-flag argument: the commit and the push
+            # both lead with `-c`, and "git -c failed" names nothing.
+            verb = next((a for a in args if not a.startswith("-")), args[0])
             raise RuntimeError(
-                f"git {args[0]} failed ({proc.returncode}): "
+                f"git {verb} failed ({proc.returncode}): "
                 f"{(proc.stderr or proc.stdout).strip()[:300]}"
             )
         return proc.stdout.strip()
@@ -266,5 +316,8 @@ def _push_results_branch(
         "commit", "-q", "-m", f"{identity}: results for run {ref.rsplit('/', 1)[-1].rsplit('-', 1)[-1]}",
     )
     git("remote", "add", "origin", url)
-    git("push", "--force", "-q", "origin", "HEAD:refs/heads/" + ref)
+    # The credential has to be lent explicitly: `stage` is a repository this
+    # function just created, and a new repository does not read the config of
+    # the checkout it happens to sit inside.
+    git(*_push_auth(), "push", "--force", "-q", "origin", "HEAD:refs/heads/" + ref)
     return git("rev-parse", "HEAD")

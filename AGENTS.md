@@ -200,6 +200,51 @@ of findings (two real defects in the bot's corpse handling) to a workspace that
 died with the job. Neither makes runs depend on each other: each run seeds
 fresh from the hub and re-derives what it needs.
 
+## Nothing that says "the results survive" has been tested against failure
+
+This is the section to read before changing either publication path, because
+both halves were wrong in the same run and neither showed it until it did.
+
+**`publish_results` stages into a repository it creates with `git init`.**
+`actions/checkout` persists the job's token as an
+`http.https://github.com/.extraheader` entry in the *checkout's* local config,
+and a new repository does not read another repository's config. Run
+`36731664027` therefore pushed with no credential at all and died with
+`fatal: could not read Username for 'https://github.com': No such device or
+address` — which is not a 403 and not a permission problem, it is git finding
+nothing to offer and falling back to a prompt on a runner with no terminal. The
+local test passed because a laptop's credential helper lives in *global* config,
+which every repository does read. **A bug in a publication path is invisible
+from a developer machine and only appears in CI.** `_push_auth` now lends the
+checkout's own header to the staging repo with `-c`; it returns `[]` when there
+is none, so local behaviour is unchanged.
+
+**The artifact was described as a fallback and was not one.** `evolve.py`
+printed "they are in the artifact" on a push failure, while the upload list named
+transcripts, briefs and `history.json` and nothing else. So the kept tree
+(`runs/winner-2/`, 0.0661 — the best bot this project produced, and the first
+tree it ever kept), both patches, `runs/work-*/` and the 22 KB run record were
+all lost on the one run that needed the fallback. The list now carries
+`log/*.json`, `runs/diff-*.patch`, `runs/winner-*/` and `runs/work-*/`.
+
+**A four-hour loop on a moving `main` is stale at the end.** The same run had
+its commit to `main` rejected as a non-fast-forward, because we pushed two
+commits about three hours into it — and the warning said "concurrent run?",
+which was wrong and would have sent the next person looking for a phantom. The
+step now fetches, rebases and retries once, and never forces.
+
+Three generalisations, all learned the same way:
+
+- **Test a fallback by making the primary path fail.** Both of these were
+  verified on the happy path and neither was verified on the path they exist
+  for.
+- **A claim about one file, written next to another file, is unverified until
+  someone reads them against each other.** "They are in the artifact" sat nine
+  lines from the code that writes the patches and described a list neither author
+  had open.
+- **Say what the fallback actually is.** It is a 30-day artifact, not a ref.
+  Naming the expiry is the difference between a record and a rumour.
+
 ## `tree_diff` records the edit, because the report is not the edit
 
 The agent's log records what it *says* it changed. Run `36637347806` said it
