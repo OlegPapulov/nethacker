@@ -174,9 +174,10 @@ jobs:
           # import last iteration's register_winner and silently not publish.
           cp loop/brief.py loop/evolve.py \
              loop/register_evidence.py loop/register_winner.py .
-          # The agent reads this one directly: it is not stripped from the
-          # worktree, and it is the only game knowledge that reaches the model
-          # without passing through the brief.
+          # brief.py resolves this by path and INLINES it into the brief, because
+          # it is not in the worktree (that is a copy of the bot tree). So this
+          # check is about the brief having game knowledge to inline, not about
+          # the agent reading a file -- it never sees this path.
           test -s GAME_RULES.md && echo "  GAME_RULES.md $(wc -c < GAME_RULES.md) bytes"
 
 

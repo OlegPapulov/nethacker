@@ -1,13 +1,18 @@
 # Game rules — `wiz-hum-cha-mal`
 
 Facts about the game, extracted from the NetHack source the arena
-actually runs. Everything here is scoped to the deaths this bot
-measured, because a general manual would be mostly irrelevant text.
+actually runs. Everything here is scoped to what a character at this
+starting level actually meets, because a general manual would be mostly
+irrelevant text.
 
 This file is **the game only**: monsters, your class, your race, and
-the mechanics a strategy can act on. It contains no objective and no
-scoring — what the loop is trying to achieve lives in the brief, and
-what has already been tried lives in `experience.md`.
+the mechanics a strategy can act on. It contains no objective, no
+scoring, and **no measurements** — what the loop is trying to achieve
+lives in the brief, and what has already been tried lives in
+`experience.md`. Nothing below says how often anything happened, and
+that is deliberate: the only sample available is 15 published seeds,
+which are not the dungeons this bot is ultimately scored on, so a
+strategy shaped by them is tuned to the wrong game.
 
 **Source:** NetHack `NetHack-3.6.6_Released` — `src/monst.c`, `src/role.c`, `include/align.h`.
 **Not** the wiki: `nethack.alt.org` is a parked domain and every guide
@@ -38,28 +43,66 @@ Intelligence is your only strength: the ability spread gives you almost nothing 
 **Gender** (`mal`) — no mechanical effect in NetHack 3.6.6 beyond
 dialogue flavour. Ignore it.
 
-## What killed this bot, and what each killer actually is
+## The creatures of level 2 and below
 
-Every row is a real death from the measured run, with the game's own
-statistics for that creature. AC is the number that decides whether you
-survive a hit; damage type decides whether armour helps at all.
+Every creature in `src/monst.c` at level 2 or lower — the band a starting character meets on the
+first dungeon levels — with the game's own statistics for each, ordered
+by level and then hardest-first by AC.
 
-| died to | seeds | lvl | AC | dmg | speed | traits |
+| creature | lvl | AC | dmg | speed | wt | traits |
 |---|---|---|---|---|---|---|
-| wolf | 2 | 5 | 6 | PHYS | 12 | ANIMAL, NOHANDS, CARNIVORE |
-| grid bug | 1 | 0 | 1 | ELEC | 12 | ANIMAL |
-| hobbit | 1 | 1 | 2 | PHYS | 9 | HUMANOID, OMNIVORE |
-| starvation | 1 | ? | ? | ? | ? | *not parsed* |
-| kitten | 1 | 2 | 3 | PHYS | 18 | ANIMAL, NOHANDS, CARNIVORE |
-| newt | 1 | 0 | 1 | PHYS | 6 | SWIM, AMPHIBIOUS, ANIMAL |
-| goblin | 1 | 0 | 1 | PHYS | 6 | HUMANOID, OMNIVORE |
-| bat | 1 | 0 | 2 | PHYS | 22 | FLY, ANIMAL, NOHANDS |
-| jackal | 1 | 0 | 1 | PHYS | 12 | ANIMAL, NOHANDS, CARNIVORE |
-| white unicorn | 1 | 4 | 6 | PHYS | 24 | NOHANDS, HERBIVORE |
-| crossbow bolt | 1 | ? | ? | ? | ? | *not parsed* |
-| soldier ant | 1 | 3 | 6 | PHYS | 18 | ANIMAL, NOHANDS, OVIPAROUS |
-| rothe | 1 | 2 | 4 | PHYS | 9 | ANIMAL, NOHANDS, OMNIVORE |
-| ape | 1 | 4 | 6 | PHYS | 12 | ANIMAL, HUMANOID, OMNIVORE |
+| bat | 0 | 2 | PHYS | 22 | 20 | FLY, ANIMAL, NOHANDS |
+| human | 0 | 2 | PHYS | 12 | ? | HUMANOID, OMNIVORE |
+| fox | 0 | 1 | PHYS | 15 | 300 | ANIMAL, NOHANDS, CARNIVORE |
+| goblin | 0 | 1 | PHYS | 6 | 400 | HUMANOID, OMNIVORE |
+| grid bug | 0 | 1 | ELEC | 12 | 15 | ANIMAL |
+| jackal | 0 | 1 | PHYS | 12 | 300 | ANIMAL, NOHANDS, CARNIVORE |
+| kobold | 0 | 1 | PHYS | 6 | 400 | HUMANOID, POIS, OMNIVORE |
+| kobold zombie | 0 | 1 | PHYS | 6 | 400 | BREATHLESS, MINDLESS, HUMANOID |
+| lichen | 0 | 1 | STCK | 1 | 20 | BREATHLESS, NOEYES, NOLIMBS |
+| long worm tail | 0 | 1 | ? | 0 | 0 | - |
+| newt | 0 | 1 | PHYS | 6 | 10 | SWIM, AMPHIBIOUS, ANIMAL |
+| sewer rat | 0 | 1 | PHYS | 12 | 20 | ANIMAL, NOHANDS, CARNIVORE |
+| killer bee | 1 | 5 | DRST | 18 | 1 | ANIMAL, FLY, NOHANDS |
+| Keystone Kop | 1 | 3 | PHYS | 6 | ? | HUMANOID |
+| cave spider | 1 | 3 | PHYS | 12 | 50 | CONCEAL, ANIMAL, NOHANDS |
+| garter snake | 1 | 3 | PHYS | 8 | 50 | SWIM, CONCEAL, NOLIMBS |
+| gnome | 1 | 3 | PHYS | 6 | 650 | HUMANOID, OMNIVORE |
+| hobgoblin | 1 | 3 | PHYS | 9 | 1000 | HUMANOID, OMNIVORE |
+| manes | 1 | 3 | PHYS | 3 | 100 | POIS |
+| orc | 1 | 3 | PHYS | 9 | 850 | HUMANOID, OMNIVORE |
+| acid blob | 1 | 2 | ACID | 3 | 30 | BREATHLESS, AMORPHOUS, NOEYES |
+| brown mold | 1 | 2 | COLD | 0 | 50 | BREATHLESS, NOEYES, NOLIMBS |
+| coyote | 1 | 2 | PHYS | 12 | 300 | ANIMAL, NOHANDS, CARNIVORE |
+| gas spore | 1 | 2 | PHYS | 3 | 10 | FLY, BREATHLESS, NOLIMBS |
+| gecko | 1 | 2 | PHYS | 6 | 10 | ANIMAL, NOHANDS, CARNIVORE |
+| giant rat | 1 | 2 | PHYS | 10 | 30 | ANIMAL, NOHANDS, CARNIVORE |
+| gnome zombie | 1 | 2 | PHYS | 6 | 650 | BREATHLESS, MINDLESS, HUMANOID |
+| green mold | 1 | 2 | ACID | 0 | 50 | BREATHLESS, NOEYES, NOLIMBS |
+| hobbit | 1 | 2 | PHYS | 9 | 500 | HUMANOID, OMNIVORE |
+| large kobold | 1 | 2 | PHYS | 6 | 450 | HUMANOID, POIS, OMNIVORE |
+| red mold | 1 | 2 | FIRE | 0 | 50 | BREATHLESS, NOEYES, NOLIMBS |
+| yellow mold | 1 | 2 | STUN | 0 | 50 | BREATHLESS, NOEYES, NOLIMBS |
+| Kop Sergeant | 2 | 4 | PHYS | 8 | ? | HUMANOID |
+| centipede | 2 | 4 | DRST | 4 | 50 | CONCEAL, ANIMAL, NOHANDS |
+| dwarf | 2 | 4 | PHYS | 6 | 900 | TUNNEL, NEEDPICK, HUMANOID |
+| giant ant | 2 | 4 | PHYS | 18 | 10 | ANIMAL, NOHANDS, OVIPAROUS |
+| hill orc | 2 | 4 | PHYS | 9 | 1000 | HUMANOID, OMNIVORE |
+| kobold shaman | 2 | 4 | SPEL | 6 | 450 | HUMANOID, POIS, OMNIVORE |
+| monkey | 2 | 4 | SITM | 12 | 100 | ANIMAL, HUMANOID, OMNIVORE |
+| rabid rat | 2 | 4 | DRCO | 12 | 30 | ANIMAL, NOHANDS, POIS |
+| rothe | 2 | 4 | PHYS | 9 | 400 | ANIMAL, NOHANDS, OMNIVORE |
+| dwarf zombie | 2 | 3 | PHYS | 6 | 900 | BREATHLESS, MINDLESS, HUMANOID |
+| floating eye | 2 | 3 | PLYS | 1 | 10 | FLY, AMPHIBIOUS, NOLIMBS |
+| giant bat | 2 | 3 | PHYS | 22 | 30 | FLY, ANIMAL, NOHANDS |
+| homunculus | 2 | 3 | SLEE | 12 | 60 | FLY, POIS |
+| iguana | 2 | 3 | PHYS | 6 | 30 | ANIMAL, NOHANDS, CARNIVORE |
+| kitten | 2 | 3 | PHYS | 18 | 150 | ANIMAL, NOHANDS, CARNIVORE |
+| kobold lord | 2 | 3 | PHYS | 6 | 500 | HUMANOID, POIS, OMNIVORE |
+| little dog | 2 | 3 | PHYS | 18 | 150 | ANIMAL, NOHANDS, CARNIVORE |
+| orc zombie | 2 | 3 | PHYS | 6 | 850 | BREATHLESS, MINDLESS, HUMANOID |
+| werejackal | 2 | 3 | PHYS | 12 | ? | HUMANOID, POIS, REGEN |
+| wererat | 2 | 3 | PHYS | 12 | ? | HUMANOID, POIS, REGEN |
 
 `speed` is the `mov` field of the monster's `LVL(...)` record — its
 movement points per turn. Ordinary dungeon creatures run 6 or 9; the
@@ -67,23 +110,55 @@ fastest in the game are far above that (an air elemental is 36), so a
 high number means the creature closes a one-square gap every turn and
 cannot be walked away from.
 
-### What these statistics mean in the game
+### How to read those numbers
 
-- **AC is what decides whether you survive a hit.** Most of these
-  creatures have AC 1, so your attacks almost always land and theirs
-  land too. AC is the number to compare before starting a fight.
+- **AC is what decides whether you survive a hit.** AC 1 means your
+  attacks almost always land and theirs land too, so a fight is decided
+  by turns taken rather than by luck. Compare AC before starting, not
+  after.
 - **Damage type decides whether armour helps at all.** A PHYS hit is
-  reduced by armour; ELEC, COLD, DRST and FIRE are not. A creature that
-  attacks with a non-PHYS type cannot be answered with a better AC.
-- **`grid bug` is level 0, AC 1, ELEC.** Small, fast, and effectively
-  unkillable for a low-level character. It is the game's clearest
-  example of a monster with no combat answer.
-- **`brown mold` is COLD and stationary** (M2_HOSTILE, level 1): it does
-  not move and does not need to.
-- **`soldier ant` is level 3 with AC 6** — by far the toughest creature in
-  this table, and tiny (20 weight), so easy to walk into by accident.
-- **Level is a poor guide to danger here.** A level-0 goblin and a level-0
-  grid bug both outclass a level-0 wizard; a level-5 wolf has AC 6.
+  reduced by armour; ELEC, COLD, DRST, FIRE, ACID and the rest are not.
+  Most of this band attacks PHYS, but not most of it — a grid bug is
+  ELEC and a centipede is DRST, and neither can be answered with a
+  better AC.
+- **`killer bee` is AC 5** and is the hardest creature in the band, at
+  level 1. Nine more sit at AC 4, all level 2: `centipede`, `dwarf`,
+  `giant ant`, `hill orc`, `kobold shaman`, `Kop Sergeant`, `monkey`,
+  `rabid rat` and `rothe`. Nothing in the band is tougher than that.
+- **`grid bug` is level 0, AC 1, ELEC, and speed 12.** It is the
+  clearest example in the game of a monster with no combat answer at
+  this level: fast enough to reach you, and nothing you do to AC or
+  damage output changes that.
+- **`bat` and `giant bat` run at speed 22**, `fox` at 15, and
+  `killer bee`, `giant ant` and `kitten` at 18. Ordinary creatures run
+  6 or 9. Against anything above 12, stepping back one square buys
+  nothing.
+- **The molds never move.** `brown mold`, `green mold`, `red mold` and
+  `yellow mold` have speed 0 and are M2_HOSTILE: they do not need to
+  chase you, and they are COLD, ACID, FIRE and STUN respectively, so
+  armour does nothing for any of them.
+- **Small does not mean harmless, and here it is literal.**
+  `killer bee` weighs 1 and is AC 5 — the hardest creature in the band
+  is also one of the smallest. `giant ant`, `newt`, `gecko` and
+  `floating eye` are 10, `grid bug` 15, and `bat`, `lichen` and
+  `sewer rat` 20. Every one of those is lighter than most pieces of
+  equipment, so the creatures easiest to walk into by accident are the
+  ones least likely to be noticed doing it.
+- **`NOHANDS` creatures cannot wield a weapon**, and the
+  `NOEYES`/`NOLIMBS`/`BREATHLESS` group — the molds, `lichen`,
+  `acid blob`, `gas spore` — has no hands at all and cannot be reasoned
+  about as an armed opponent.
+- **`FLY` means it crosses what you cannot.** `bat`, `giant bat`,
+  `killer bee`, `floating eye`, `gas spore` and `homunculus` pass over
+  water and gaps that stop a walking character.
+- **`werejackal` and `wererat` have REGEN.** Damage you do does not
+  stay done, so an attrition plan that works on an ordinary creature of
+  the same level does not work on a lycanthrope. `kobold shaman` attacks
+  with SPEL rather than a physical blow, for the same reason: some
+  things in this band cannot be answered the ordinary way.
+- **Level is a poor guide to danger here.** A level-0 goblin and a
+  level-0 grid bug both outclass a level-0 wizard, and the toughest
+  creature in the band is a level 1.
 
 ## Mechanics of the game that constrain any strategy
 
@@ -102,9 +177,9 @@ are the facts a strategy has to be built around.
 3. **Monsters have a movement speed (`mov`), the game's fastest being
    far above the ordinary range.** A creature with a high value closes a
    one-square gap every turn, so retreating one square does not open
-   distance from it. The `speed` column above is that value: a wolf, a
-   jackal and a grid bug are all 12, while a bat is 22 and a white
-   unicorn 24. Those last two cannot be outrun at all.
+   distance from it. The `speed` column above is that value: a goblin and
+   a kobold run 6, a jackal and a grid bug run 12, and a bat runs 22.
+   Anything past 12 cannot be outrun at all.
 4. **Corpses are food and they rot** — edible for roughly 50 turns. A
    kill walked away from is food that will not be there later.
 5. **Hunger rises every turn** and a character who starves faints, which
@@ -138,8 +213,9 @@ are the facts a strategy has to be built around.
 - **Alignment gates what you can pick up.** A chaotic character cannot
   wield a lawful-only weapon; the game refuses the pickup outright.
 - **Shields, rings, amulets and scrolls change one rule each** and are
-  the main source of a large mid-game jump — but they are found, not
-  bought, and the early seeds rarely contain any.
+  the main source of a large mid-game jump — but they are found, never
+  bought, and nothing on the first dungeon levels is guaranteed, so a
+  character that has not found one has no way to acquire it.
 - **A backpack's weight limit matters**: a level-0 wizard can carry very
   little before becoming encumbered, and encumbered characters act
   slower and suffer worse to-hit.
@@ -147,18 +223,19 @@ are the facts a strategy has to be built around.
 ## What this file does not know
 
 - Behaviour of the 68 identities not being played.
-- Monster statistics for creatures this bot has not died to, though
-  `src/monst.c` has all 393 and the generator can add them.
+- Creatures above level 2, though `src/monst.c` has all
+  390 and raising `LEVEL_BAND` in the generator will add them.
 - Spell mechanics: casting costs, hunger per spell, and the damage
   numbers a level-0 wizard can actually produce. That is the largest
   gap, and it is the most likely place a real improvement lives —
   a wizard who can actually cast would not need most of rule 1 above.
 - Anything about the bot's own code, what the loop is trying to achieve,
-  or what has already been tried. That is in the brief and in
-  `experience.md`.
+  what has already been tried, or how anything has performed. That is
+  in the brief and in `experience.md`.
 
 ---
 
-Generated by `loop/build_game_rules.py` from NetHack `NetHack-3.6.6_Released`. Every
-number above is parsed from that tag's source, not recalled. Regenerate
-with `python loop/build_game_rules.py <identity> <diagnosis.json> GAME_RULES.md`.
+Every number above is parsed from the tagged NetHack `NetHack-3.6.6_Released` source
+(`src/monst.c`, `src/role.c`, `include/align.h`), not recalled. This file
+is generated, and it contains game data only — no results, no
+measurements, and no recommendations.

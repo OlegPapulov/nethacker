@@ -210,6 +210,65 @@ better?" but "what did theirs say that mine does not?"
 `2cb0dd1` and the first run on it is the measurement; if the agent still
 sleeps, E8 has located the cost without having removed it.
 
+## E9 — GAME_RULES.md was carrying measurements while claiming not to
+
+**Question.** The open list said `GAME_RULES.md` "still carries a measured
+killer/death table with seed counts. That is empirical, not game-mechanical."
+What is the right scope for a file that is inlined into the agent's prompt?
+
+**Answer. The file should be a pure function of the identity and the source
+tag.** It was taking a `diagnosis.json` and listing the creatures that had
+actually killed a seed, with a per-creature seed count, under a heading that
+read "What killed this bot". Two things were wrong, and the second is why this
+was not just tidied up:
+
+1. It contradicted its own header, which says the file "contains no objective
+   and no scoring" and is "the game only".
+2. Those counts are 15 published seeds — **not the seeds the leaderboard scores
+   on**. Telling the agent "wolf killed 2 of your seeds, go and handle wolves"
+   is exactly the overfit the rest of the loop is built to prevent, delivered
+   through the one channel the agent trusts. It is the same failure as the
+   `9 of 13 killers have mmove 12` line that run `36637347806` propagated from a
+   discarded tree: an unverifiable number that reads like documentation.
+
+**Change.** The generator now takes `(identity, out.md)` — no measurement input
+at all — and scope is chosen mechanically: every creature in `monst.c` at level
+≤ `LEVEL_BAND` (2), i.e. 52 creatures, the band a starting character meets.
+"Because it contains no results" is now structural rather than a promise; there
+is nothing to leak in. The seed counts, the "died to" column and the
+death-framed heading are gone, replaced by source-derived facts the agent can
+use without having seen a single seed.
+
+The rewrite is also a better file. `killer bee` is AC 5 at weight 1 — the
+hardest creature in the band is also one of the smallest, which is a fact about
+the game and a far more useful thing to reason about than which creature
+happened to be common. REGEN on the lycanthropes, FLY on the six fliers, speed 0
+on the four molds, and the damage types that armour does not stop are all now
+stated as mechanics rather than as things that happened.
+
+**The dangling footer, separately.** The file ended by telling the agent to
+"regenerate with `python loop/build_game_rules.py <identity>
+<diagnosis.json> GAME_RULES.md`". The agent cannot do this: `GAME_RULES.md` is
+inlined into the brief by `game_rules_section()`, and the worktree is a copy of
+the bot tree containing only `bot.py` and `autoascend/`. There is no `loop/`
+directory in that container. This is the same class of defect as the `/refs/`
+reference that `MEASURE` used to carry, and it arrived by a different route —
+through *generated* text, which nobody reviewed as prompt. Generated files that
+get inlined are prompt, and have to be held to the same rule as hand-written
+ones. The instruction now lives in the generator's docstring and `AGENTS.md`.
+
+**What this says.** Two of the three prompt defects this loop has suffered from
+were omissions (no `MEASURE`, an empty first brief) and one was an inclusion
+(measurements in a facts file). All three were invisible because the brief is
+assembled from parts written at different times by different hands — one of them
+a generator. "Is this section still true?" is worth asking of the generated
+pieces too.
+
+**Cost.** The brief grew from 22.3 KB to 26.9 KB, since 52 creatures is more
+table than 14 death-derived rows. That is paid for in prompt length, and it is
+not yet clear it is worth it; the first run to measure it will also be the first
+to show whether the agent uses the wider band.
+
 ## Open
 
 - E6 is the only unsettled experiment, and it is waiting on a run rather than a
@@ -229,9 +288,5 @@ sleeps, E8 has located the cost without having removed it.
   an iteration and a 2,000/month free-tier budget, we get roughly 20 iterations a
   month. That, not the agent's ideas, is what limits how much the brief can be
   tested.
-- `GAME_RULES.md` still carries a measured killer/death table with seed counts.
-  That is empirical, not game-mechanical, and it is the file we told ourselves
-  holds no measured bot results. Move it into the brief or accept it
-  explicitly; do not leave the policy ambiguous.
 - Nothing has ever been kept over five iterations, so the loop has no evidence
   yet that it can compose improvements rather than only accumulate findings.

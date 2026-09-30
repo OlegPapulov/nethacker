@@ -96,7 +96,7 @@ turns is as wrong as chasing depth.
 | `loop/build_game_rules.py` | generates `GAME_RULES.md` from the NetHack 3.6.6 source |
 | `log_verdict.py` | writes `log/<identity>-<runid>.json` — the committed record of a run |
 | `experience.md` | **written by the agent**, inside the worktree, per iteration |
-| `GAME_RULES.md` | game facts parsed from source, scoped to the identity |
+| `GAME_RULES.md` | game facts parsed from source; **generated, never hand-edited** — see below |
 | `.github/workflows/our-evolve.yml` | runs the loop in CI, with the auth gate |
 | `meta/experience.md` | **written by us**: what steering the mutator has taught us |
 | `meta/experiments.md` | **written by us**: one entry per brief change, with its outcome |
@@ -140,9 +140,41 @@ and everything the agent must know travels in that one string. `CONTRACT`,
 instructions, and they are maintained there rather than in a file the agent
 would ignore. The baseline numbers and `GAME_RULES.md` are appended by `build`.
 
-`GAME_RULES.md` and `experience.md` *do* survive into the worktree, and the
-agent can read them. Verified against `_mutator_ignore` — they pass, while
-`AGENTS.md` and `opencode.json` do not.
+`experience.md` *does* survive into the worktree and the agent can read it —
+`evolve.py` seeds it there when the parent has none. Verified against
+`_mutator_ignore`, it passes, while `AGENTS.md` and `opencode.json` do not.
+
+`GAME_RULES.md` is the exception: it is **not** in the worktree, because the
+worktree is a copy of the bot tree. It reaches the agent only because
+`game_rules_section()` inlines it into the brief. Two consequences worth holding
+onto, both learned the hard way:
+
+- **The generated file must contain no commands.** It is prompt text. An
+  earlier footer told the agent to "regenerate with
+  `python loop/build_game_rules.py ...`" — a file that is not in the agent's
+  container and cannot be run. The instruction now lives in the generator's
+  docstring and here, where a human will read it.
+- **It must contain no measurements.** It used to take `diagnosis.json` and list
+  the creatures that had killed a seed, with per-creature seed counts — inside
+  a file whose own header said it held game facts only. Those counts came from
+  the 15 published seeds, which are not the leaderboard's, so they were an
+  overfit wearing the costume of documentation. The generator now takes
+  `(identity, out.md)` and nothing else: scope is mechanical (every creature of
+  level ≤ `LEVEL_BAND`), so "contains no results" is a structural property
+  rather than a promise.
+
+To regenerate it after changing `LEVEL_BAND`:
+
+```bash
+python loop/build_game_rules.py wiz-hum-cha-mal GAME_RULES.md
+```
+
+The numbers are parsed from the tagged `NetHack-3.6.6_Released` source (cached
+in `.nhsrc-cache/`), not recalled — which is also why the prose in that file is
+written against the parsed table and should be checked against it. Three claims
+in the first hand-written draft of the rewrite were wrong (`lich` is level 11 and
+not in the band at all, the 20-weight creature was a level-3 ant, `wolf` is
+level 5), because they were written from memory instead of from the rows.
 
 ## `experience.md` is the memory, and the tree is what carries it
 

@@ -577,11 +577,19 @@ def _death_table(results: list[dict]) -> str:
 # game, so the model could reason about the CODE and the DEATHS and still form a
 # wrong hypothesis (E4: a correct-looking change that lost five seeds).
 #
-# GAME_RULES.md is generated from the NetHack 3.6.6 source, scoped to the
-# identity being played and the creatures that actually killed a seed, so it
-# answers "can a level-0 wizard win this fight" rather than "here is a manual".
-# It is a FILE the model reads rather than prose in a prompt, which is the same
-# reasoning that keeps the notes in the brief.
+# GAME_RULES.md is generated from the NetHack 3.6.6 source and scoped
+# mechanically -- the identity being played, and every creature of level <= 2 --
+# so it answers "can a level-0 wizard win this fight" rather than "here is a
+# manual". It used to be scoped to the creatures that had actually killed a
+# seed, which put the loop's own measurements inside a file that claims to hold
+# game facts only; the generator now takes no measurement input at all, so that
+# cannot come back.
+#
+# Note it is INLINED here, not handed over as a file. `game_rules_section()`
+# reads it from the repository root and splices it into this string, because the
+# agent's worktree is a copy of the bot tree and does not contain GAME_RULES.md.
+# That is also why the generated file carries no commands: anything in it would
+# be an instruction the agent cannot follow.
 def game_rules_section(identity: str, repo_root: Path) -> str:
     path = repo_root / "GAME_RULES.md"
     if not path.is_file():

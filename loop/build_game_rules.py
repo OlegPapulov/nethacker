@@ -11,23 +11,42 @@ of this file is that the model can trust it.
 
 Why scoped rather than general
 -------------------------------
-A full manual is the wrong shape. The failure this exists to address is specific:
-**9 of 15 seeds die on dungeon level 1**, most of them to monsters that are
-dangerous *specifically to a level-1 wizard*. So the file covers the goal, the
-identity being played, and the creatures in the measured deaths -- and says
-nothing about the other 68 identities or the monsters nobody died to.
+A full manual is the wrong shape, but the way this was scoped before was worse:
+it used to take a ``diagnosis.json`` and list the creatures that had *actually
+killed a seed*, with a per-creature seed count. That made a file which claims to
+be "the game only" carry the loop's own measurements inside it. Two problems,
+and the second is the one that mattered:
+
+1. It contradicted the file's own stated policy.
+2. Those counts came from 15 published seeds, which are **not** the seeds the
+   leaderboard scores on. A strategy shaped by "wolf killed 2 of my seeds" is a
+   strategy tuned to the wrong dungeons, and it is the same overfit the rest of
+   the loop is built to avoid -- just wearing a costume of game documentation.
+
+So this file is now a pure function of ``(identity, source tag)``. It takes no
+measurement input at all, which makes "contains no results" a structural
+property rather than a promise. Scope is chosen mechanically instead: the
+identity being played, and every creature in ``monst.c`` of level <= ``LEVEL_BAND``
+-- the band a starting character actually meets. Nothing in the output says how
+often anything happened, because nothing in the input knows.
 
 Provenance is recorded per section, because a wiki page can change under you and
 a C source file at a tag cannot. (The NetHack wiki at nethack.alt.org is, as of
 this writing, a parked domain: every guide page 404s. The tagged source is the
 only version-exact reference reachable.)
 
-Usage: build_game_rules.py <identity> <diagnosis.json> <out.md>
+The generated file deliberately carries **no commands**, because it is inlined
+into the brief and the agent cannot run anything in this repository -- an
+earlier footer told it to "regenerate with
+``python loop/build_game_rules.py ...``", a file that does not exist in its
+container. That instruction now lives here, in the generator's docstring, and
+in AGENTS.md, where a human will read it.
+
+Usage: build_game_rules.py <identity> <out.md>
 """
 
 from __future__ import annotations
 
-import json
 import re
 import subprocess
 import sys
@@ -49,6 +68,13 @@ ROLE_ORDER = [
     "Archeologist", "Barbarian", "Caveman", "Healer", "Knight", "Monk",
     "Priest", "Rogue", "Ranger", "Samurai", "Tourist", "Valkyrie", "Wizard",
 ]
+
+#: Highest monster level included in the table. Chosen mechanically, not from
+#: any run: a character starts at level 0 and dungeon levels 1-3 are populated
+#: from roughly this band, so it is the range whose statistics a starting
+#: strategy is actually reasoning about. Raising it costs brief length; at 2 the
+#: table is 52 creatures.
+LEVEL_BAND = 2
 
 #: Identity codes ("wiz-hum-cha-mal") to the table's names ("Wizard"). The stat
 #: table is keyed by full name, so looking up the code silently found nothing --
@@ -178,7 +204,17 @@ def parse_races(src: str) -> dict[str, dict]:
 
 
 def main() -> int:
-    identity, diagnosis_path, out_path = sys.argv[1], sys.argv[2], sys.argv[3]
+    # Two arguments, not three: there is no diagnosis any more, and taking one
+    # would invite putting measurements back in. An extra argument is an ERROR
+    # rather than something to ignore: the old three-argument call
+    # (`<identity> <diagnosis.json> GAME_RULES.md`) would otherwise silently
+    # write GAME_RULES content into the diagnosis file and report success,
+    # which is the sort of quiet wrongness this rewrite exists to remove.
+    if len(sys.argv) != 3:
+        print(__doc__.strip().splitlines()[-1], file=sys.stderr)
+        print(f"error: expected 2 arguments, got {len(sys.argv) - 1}", file=sys.stderr)
+        return 2
+    identity, out_path = sys.argv[1], sys.argv[2]
     role, race, align, gender = identity.split("-")
 
     cache_dir = Path(".nhsrc-cache")
@@ -198,35 +234,43 @@ def main() -> int:
                 f"align.h says {token} = {m.group(1)}, the table says {sign}"
             )
 
-    diagnosis = json.loads(Path(diagnosis_path).read_text())
-    results = sorted(diagnosis["results"], key=lambda r: r.get("turns") or 0)
-
-    # The creatures that actually killed a seed, most frequent first.
-    deaths: dict[str, int] = {}
-    for row in results:
-        name = (row.get("death") or "").replace("killed by ", "").replace("died of ", "").strip()
-        if name:
-            # The arena writes "killed by a wolf" and "killed by an ape" -- the
-            # article is part of the sentence, not of the monster's name, so it
-            # has to come off before the lookup in monst.c ("wolf", "ape").
-            for article in ("a ", "an ", "the "):
-                if name.startswith(article):
-                    name = name[len(article):]
-                    break
-        if name:
-            deaths[name] = deaths.get(name, 0) + 1
+    # Every creature in the band, chosen from the source alone. Sorted by level
+    # and then hardest-first by AC, so the creatures a starting character most
+    # needs an opinion about are the ones near the top of each level group.
+    band: list[tuple] = []
+    for name, entry in monsters.items():
+        fields = entry.get("level")
+        if not isinstance(fields, list) or not fields:
+            continue
+        try:
+            level = int(fields[0])
+        except (TypeError, ValueError):
+            continue
+        if level > LEVEL_BAND:
+            continue
+        try:
+            ac = int(entry.get("ac"))
+        except (TypeError, ValueError):
+            ac = 0
+        band.append((level, -ac, name))
+    band.sort()
 
     L: list[str] = []
     L.append(f"# Game rules — `{identity}`")
     L.append("")
     L.append("Facts about the game, extracted from the NetHack source the arena")
-    L.append("actually runs. Everything here is scoped to the deaths this bot")
-    L.append("measured, because a general manual would be mostly irrelevant text.")
+    L.append("actually runs. Everything here is scoped to what a character at this")
+    L.append("starting level actually meets, because a general manual would be mostly")
+    L.append("irrelevant text.")
     L.append("")
     L.append("This file is **the game only**: monsters, your class, your race, and")
-    L.append("the mechanics a strategy can act on. It contains no objective and no")
-    L.append("scoring — what the loop is trying to achieve lives in the brief, and")
-    L.append("what has already been tried lives in `experience.md`.")
+    L.append("the mechanics a strategy can act on. It contains no objective, no")
+    L.append("scoring, and **no measurements** — what the loop is trying to achieve")
+    L.append("lives in the brief, and what has already been tried lives in")
+    L.append("`experience.md`. Nothing below says how often anything happened, and")
+    L.append("that is deliberate: the only sample available is 15 published seeds,")
+    L.append("which are not the dungeons this bot is ultimately scored on, so a")
+    L.append("strategy shaped by them is tuned to the wrong game.")
     L.append("")
     L.append(f"**Source:** NetHack `{TAG}` — `src/monst.c`, `src/role.c`, `include/align.h`.")
     L.append("**Not** the wiki: `nethack.alt.org` is a parked domain and every guide")
@@ -292,30 +336,29 @@ def main() -> int:
     L.append("dialogue flavour. Ignore it.")
     L.append("")
 
-    L.append("## What killed this bot, and what each killer actually is")
+    L.append(f"## The creatures of level {LEVEL_BAND} and below")
     L.append("")
-    L.append("Every row is a real death from the measured run, with the game's own")
-    L.append("statistics for that creature. AC is the number that decides whether you")
-    L.append("survive a hit; damage type decides whether armour helps at all.")
+    L.append("Every creature in `src/monst.c` at level "
+             f"{LEVEL_BAND} or lower — the band a starting character meets on the")
+    L.append("first dungeon levels — with the game's own statistics for each, ordered")
+    L.append("by level and then hardest-first by AC.")
     L.append("")
-    L.append("| died to | seeds | lvl | AC | dmg | speed | traits |")
+    L.append("| creature | lvl | AC | dmg | speed | wt | traits |")
     L.append("|---|---|---|---|---|---|---|")
-    for name, count in sorted(deaths.items(), key=lambda kv: -kv[1]):
-        entry = monsters.get(name)
-        if not entry:
-            L.append(f"| {name} | {count} | ? | ? | ? | ? | *not parsed* |")
-            continue
-        lvl = entry.get("level", ["?"])[0]
+    for _lvl, _negac, name in band:
+        entry = monsters[name]
+        fields = entry.get("level") or ["?", "?"]
         traits = ", ".join(entry.get("traits1", [])[:3]) or "-"
         # monst.c's LVL macro is LVL(lvl, mov, ac, mr, aln), so the second
         # field is movement speed and the third is the permonst AC -- which is
         # not the same as the AC the table shows, that one being parsed from the
         # trailing group and adjusted. Reading field[2] as speed printed 18 for
         # a kitten and 24 for a white unicorn, which are ACs.
-        speed = entry.get("level", [None, "?"])[1]
+        speed = fields[1] if len(fields) > 1 else "?"
         L.append(
-            f"| {name} | {count} | {lvl} | {entry.get('ac','?')} | "
-            f"{entry.get('damage','?')} | {speed} | {traits} |"
+            f"| {name} | {fields[0]} | {entry.get('ac','?')} | "
+            f"{entry.get('damage','?')} | {speed} | {entry.get('weight','?')} | "
+            f"{traits} |"
         )
     L.append("")
     L.append("`speed` is the `mov` field of the monster's `LVL(...)` record — its")
@@ -325,23 +368,55 @@ def main() -> int:
     L.append("cannot be walked away from.")
     L.append("")
 
-    L.append("### What these statistics mean in the game")
+    L.append("### How to read those numbers")
     L.append("")
-    L.append("- **AC is what decides whether you survive a hit.** Most of these")
-    L.append("  creatures have AC 1, so your attacks almost always land and theirs")
-    L.append("  land too. AC is the number to compare before starting a fight.")
+    L.append("- **AC is what decides whether you survive a hit.** AC 1 means your")
+    L.append("  attacks almost always land and theirs land too, so a fight is decided")
+    L.append("  by turns taken rather than by luck. Compare AC before starting, not")
+    L.append("  after.")
     L.append("- **Damage type decides whether armour helps at all.** A PHYS hit is")
-    L.append("  reduced by armour; ELEC, COLD, DRST and FIRE are not. A creature that")
-    L.append("  attacks with a non-PHYS type cannot be answered with a better AC.")
-    L.append("- **`grid bug` is level 0, AC 1, ELEC.** Small, fast, and effectively")
-    L.append("  unkillable for a low-level character. It is the game's clearest")
-    L.append("  example of a monster with no combat answer.")
-    L.append("- **`brown mold` is COLD and stationary** (M2_HOSTILE, level 1): it does")
-    L.append("  not move and does not need to.")
-    L.append("- **`soldier ant` is level 3 with AC 6** — by far the toughest creature in")
-    L.append("  this table, and tiny (20 weight), so easy to walk into by accident.")
-    L.append("- **Level is a poor guide to danger here.** A level-0 goblin and a level-0")
-    L.append("  grid bug both outclass a level-0 wizard; a level-5 wolf has AC 6.")
+    L.append("  reduced by armour; ELEC, COLD, DRST, FIRE, ACID and the rest are not.")
+    L.append("  Most of this band attacks PHYS, but not most of it — a grid bug is")
+    L.append("  ELEC and a centipede is DRST, and neither can be answered with a")
+    L.append("  better AC.")
+    L.append("- **`killer bee` is AC 5** and is the hardest creature in the band, at")
+    L.append("  level 1. Nine more sit at AC 4, all level 2: `centipede`, `dwarf`,")
+    L.append("  `giant ant`, `hill orc`, `kobold shaman`, `Kop Sergeant`, `monkey`,")
+    L.append("  `rabid rat` and `rothe`. Nothing in the band is tougher than that.")
+    L.append("- **`grid bug` is level 0, AC 1, ELEC, and speed 12.** It is the")
+    L.append("  clearest example in the game of a monster with no combat answer at")
+    L.append("  this level: fast enough to reach you, and nothing you do to AC or")
+    L.append("  damage output changes that.")
+    L.append("- **`bat` and `giant bat` run at speed 22**, `fox` at 15, and")
+    L.append("  `killer bee`, `giant ant` and `kitten` at 18. Ordinary creatures run")
+    L.append("  6 or 9. Against anything above 12, stepping back one square buys")
+    L.append("  nothing.")
+    L.append("- **The molds never move.** `brown mold`, `green mold`, `red mold` and")
+    L.append("  `yellow mold` have speed 0 and are M2_HOSTILE: they do not need to")
+    L.append("  chase you, and they are COLD, ACID, FIRE and STUN respectively, so")
+    L.append("  armour does nothing for any of them.")
+    L.append("- **Small does not mean harmless, and here it is literal.**")
+    L.append("  `killer bee` weighs 1 and is AC 5 — the hardest creature in the band")
+    L.append("  is also one of the smallest. `giant ant`, `newt`, `gecko` and")
+    L.append("  `floating eye` are 10, `grid bug` 15, and `bat`, `lichen` and")
+    L.append("  `sewer rat` 20. Every one of those is lighter than most pieces of")
+    L.append("  equipment, so the creatures easiest to walk into by accident are the")
+    L.append("  ones least likely to be noticed doing it.")
+    L.append("- **`NOHANDS` creatures cannot wield a weapon**, and the")
+    L.append("  `NOEYES`/`NOLIMBS`/`BREATHLESS` group — the molds, `lichen`,")
+    L.append("  `acid blob`, `gas spore` — has no hands at all and cannot be reasoned")
+    L.append("  about as an armed opponent.")
+    L.append("- **`FLY` means it crosses what you cannot.** `bat`, `giant bat`,")
+    L.append("  `killer bee`, `floating eye`, `gas spore` and `homunculus` pass over")
+    L.append("  water and gaps that stop a walking character.")
+    L.append("- **`werejackal` and `wererat` have REGEN.** Damage you do does not")
+    L.append("  stay done, so an attrition plan that works on an ordinary creature of")
+    L.append("  the same level does not work on a lycanthrope. `kobold shaman` attacks")
+    L.append("  with SPEL rather than a physical blow, for the same reason: some")
+    L.append("  things in this band cannot be answered the ordinary way.")
+    L.append("- **Level is a poor guide to danger here.** A level-0 goblin and a")
+    L.append("  level-0 grid bug both outclass a level-0 wizard, and the toughest")
+    L.append("  creature in the band is a level 1.")
     L.append("")
 
     L.append("## Mechanics of the game that constrain any strategy")
@@ -361,9 +436,9 @@ def main() -> int:
     L.append("3. **Monsters have a movement speed (`mov`), the game's fastest being")
     L.append("   far above the ordinary range.** A creature with a high value closes a")
     L.append("   one-square gap every turn, so retreating one square does not open")
-    L.append("   distance from it. The `speed` column above is that value: a wolf, a")
-    L.append("   jackal and a grid bug are all 12, while a bat is 22 and a white")
-    L.append("   unicorn 24. Those last two cannot be outrun at all.")
+    L.append("   distance from it. The `speed` column above is that value: a goblin and")
+    L.append("   a kobold run 6, a jackal and a grid bug run 12, and a bat runs 22.")
+    L.append("   Anything past 12 cannot be outrun at all.")
     L.append("4. **Corpses are food and they rot** — edible for roughly 50 turns. A")
     L.append("   kill walked away from is food that will not be there later.")
     L.append("5. **Hunger rises every turn** and a character who starves faints, which")
@@ -397,8 +472,9 @@ def main() -> int:
     L.append("- **Alignment gates what you can pick up.** A chaotic character cannot")
     L.append("  wield a lawful-only weapon; the game refuses the pickup outright.")
     L.append("- **Shields, rings, amulets and scrolls change one rule each** and are")
-    L.append("  the main source of a large mid-game jump — but they are found, not")
-    L.append("  bought, and the early seeds rarely contain any.")
+    L.append("  the main source of a large mid-game jump — but they are found, never")
+    L.append("  bought, and nothing on the first dungeon levels is guaranteed, so a")
+    L.append("  character that has not found one has no way to acquire it.")
     L.append("- **A backpack's weight limit matters**: a level-0 wizard can carry very")
     L.append("  little before becoming encumbered, and encumbered characters act")
     L.append("  slower and suffer worse to-hit.")
@@ -407,29 +483,30 @@ def main() -> int:
     L.append("## What this file does not know")
     L.append("")
     L.append("- Behaviour of the 68 identities not being played.")
-    L.append("- Monster statistics for creatures this bot has not died to, though")
-    L.append("  `src/monst.c` has all 393 and the generator can add them.")
+    L.append(f"- Creatures above level {LEVEL_BAND}, though `src/monst.c` has all")
+    L.append("  390 and raising `LEVEL_BAND` in the generator will add them.")
     L.append("- Spell mechanics: casting costs, hunger per spell, and the damage")
     L.append("  numbers a level-0 wizard can actually produce. That is the largest")
     L.append("  gap, and it is the most likely place a real improvement lives —")
     L.append("  a wizard who can actually cast would not need most of rule 1 above.")
     L.append("- Anything about the bot's own code, what the loop is trying to achieve,")
-    L.append("  or what has already been tried. That is in the brief and in")
-    L.append("  `experience.md`.")
+    L.append("  what has already been tried, or how anything has performed. That is")
+    L.append("  in the brief and in `experience.md`.")
     L.append("")
 
     L.append("---")
     L.append("")
-    L.append(f"Generated by `loop/build_game_rules.py` from NetHack `{TAG}`. Every")
-    L.append("number above is parsed from that tag's source, not recalled. Regenerate")
-    L.append("with `python loop/build_game_rules.py <identity> <diagnosis.json> GAME_RULES.md`.")
+    L.append(f"Every number above is parsed from the tagged NetHack `{TAG}` source")
+    L.append("(`src/monst.c`, `src/role.c`, `include/align.h`), not recalled. This file")
+    L.append("is generated, and it contains game data only — no results, no")
+    L.append("measurements, and no recommendations.")
 
     Path(out_path).write_text("\n".join(L))
     print(f"wrote {out_path}: {len('\n'.join(L))} chars")
     print(f"  monsters parsed: {len(monsters)}")
     print(f"  roles parsed:    {len(abilities)}")
     print(f"  races parsed:    {len(races)}")
-    print(f"  killers covered: {len(deaths)}")
+    print(f"  creatures in band (level <= {LEVEL_BAND}): {len(band)}")
     return 0
 
 
