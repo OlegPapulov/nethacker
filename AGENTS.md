@@ -4,6 +4,31 @@ This is the harness for an agent that improves a NetHack bot without human
 supervision. It is not documentation of a finished design; it is the design,
 written down so the next person changing it knows what they are changing.
 
+## What this project is
+
+[NetHackers](https://nethackers.dunnolab.ai) is an open effort to build the
+first program that reliably **wins NetHack 3.6.6** — ascends, not merely
+survives. That is the objective; everything else here is machinery pointed at
+it.
+
+Two things about the arena are easy to get wrong, because they invert what a
+normal optimization loop assumes:
+
+- **The score is a stand-in, not the goal.** Programs are ranked by BALROG
+  *progression* on [0, 1], and no program on the board has ascended. A rising
+  number is evidence of progress toward a win; it is not a win. A change that
+  teaches the bot something true and general is worth more than one that
+  squeezes a seed, even when only the second moves the number.
+- **The seeds you tune against are not the seeds you are scored on.** The 15
+  published seeds are self-reported; the leaderboard re-runs submitted programs
+  on secret dungeons. So a change that only moves the fifteen is not a change,
+  it is an overfit, and the harness can only partly tell the difference. This is
+  the single biggest reason to keep the loop honest about mechanisms.
+
+Scores are also coarse and noisy in a specific way: 15 seeds, one of which can
+swing the mean by 0.18, and a measured standard error around 0.011 on this
+identity. See "What the metric will not tell you" below.
+
 ## The cycle
 
 One iteration, from `loop/evolve.py`:
@@ -20,12 +45,21 @@ One iteration, from `loop/evolve.py`:
 5. **Smoke test**, then **score the child** on the same 15 seeds.
 6. **Judge** — `paired_verdict`, then `mean_gate`.
 7. **Keep or discard.** A kept tree becomes the next parent, so the run carries
-   its own progress forward.
+   its own progress forward. A discarded tree is binned — but its `experience.md`
+   is harvested into the surviving parent, so a failed experiment still stops
+   the next iteration from repeating it.
 8. **Publish a win.** A `WIN` is pushed to its own branch and registered with
-   the leaderboard. Nothing else is published.
+   the leaderboard. **Only a `WIN` is registered.** A `KEEP` is a better place
+   to search from, not a better bot, and registering a 0.06 beside real entries
+   would misrepresent the work.
+9. **Publish the run's results.** Whatever the verdicts, the run pushes the
+   surviving parent's `experience.md`, its `history.json`, and any kept winner
+   tree to a per-run `evolve-result/<identity>-<run_id>` branch. This is a
+   record, not a submission, and the next run does not read it — runs stay
+   independent by design.
 
 Then it repeats, or the run ends. One iteration is 30–90 minutes; most of that
-is the agent, not the scoring.
+is the agent, not the scoring. Measured on this identity: 85 minutes.
 
 ## The two rules that make it work
 
@@ -36,12 +70,16 @@ apparatus exists to catch. Run `36615769123` produced 10 seeds forward, cleared
 two-thirds *exactly* (`3×10 = 30 ≥ 2×15 = 30`), and scored 0.0374 against a
 0.0624 parent. Depth went up; progress went down 40%. The old rule published it.
 
-**Depth is not progress.** `progress` is BALROG progression in [0, 1], and it
-rises as the bot survives *and* descends. The mutator agent cannot see the
-scorer, so it reconstructs a proxy — usually depth — and optimizes that. In
-`36615769123` it flagged the risk itself ("if progression also rewards turns
-survived, the change trades 17.5k turns for depth") and was right: the
-regression came from survival, exactly as predicted.
+**Depth is not progress, and the reason is sharper than "it also rewards
+survival."** `progress` is BALROG progression in [0, 1], scored as a `max(...)`
+over milestone families — depth, XP level, and others. The mutator cannot see
+the scorer, so it reconstructs a proxy and optimizes that. In `36615769123` it
+chose depth, and depth was a *plausible* proxy: the run did climb, and scored
+0.0374 against 0.0624. Run `36637347806` then read the scoring code and found
+the family that actually decides the number on this identity is **XP, on every
+one of the 15 seeds** — a seed that reached dlvl 8 still scored on its XP.
+Both facts matter: depth is not the metric, and *neither is surviving*. Chasing
+turns is as wrong as chasing depth.
 
 ## The files
 
@@ -50,22 +88,38 @@ regression came from survival, exactly as predicted.
 | `loop/evolve.py` | the loop: seed → brief → agent → score → judge → keep |
 | `loop/brief.py` | composes the operator's brief; the only channel to the agent |
 | `loop/register_evidence.py` | builds the evidence payload `nethackers register` requires |
-| `loop/register_winner.py` | pushes a `WIN` and registers it; never raises |
+| `loop/register_winner.py` | pushes a `WIN` and registers it; also pushes per-run results branches; never raises |
 | `loop/build_game_rules.py` | generates `GAME_RULES.md` from the NetHack 3.6.6 source |
+| `log_verdict.py` | writes `log/<identity>-<runid>.json` — the committed record of a run |
 | `experience.md` | **written by the agent**, inside the worktree, per iteration |
 | `GAME_RULES.md` | game facts parsed from source, scoped to the identity |
 | `.github/workflows/our-evolve.yml` | runs the loop in CI, with the auth gate |
+| `meta/experience.md` | **written by us**: what steering the mutator has taught us |
+| `meta/experiments.md` | **written by us**: one entry per brief change, with its outcome |
+| `meta/summarize.py` | read-only; prints the run table from `log/*.json` |
+
+`meta/` is the *human* half of the loop and is deliberately not a
+`experience.md`. The agent's log lives in the tree, because the tree is what
+carries it. Ours records a different subject — what we have learned about
+steering the mutator, by changing the brief and watching what happened — and it
+is **never** spliced into a brief or read by the agent. `1056dd4` removed the
+repo-root `experience.md` and `experiments.md` precisely because a log the
+harness maintains and the agent merely reads is the wrong division of labour;
+reusing those two names at the root would invite putting them back into the
+brief.
+
 
 Root copies of the `loop/` modules exist and are byte-identical. The workflow
 copies them beside `evolve.py` because the agent's imports resolve from there.
 **If you edit one, copy it to the other** — a stale root copy imports last
 iteration's code and silently does the old thing.
 
-## Why there is no `AGENTS.md` in this repository
+## Why `AGENTS.md` cannot instruct the mutator
 
 `AGENTS.md` looks like the obvious way to instruct the mutator agent, and it is
-not. The mutator **strips it**: `harness/refs.py` lists `CLAUDE.md`,
-`AGENTS.md`, `.mcp.json`, `opencode.json` and friends in
+not — even though this file exists and is read by every person and agent
+working *on* the loop. The mutator **strips it**: `harness/refs.py` lists
+`CLAUDE.md`, `AGENTS.md`, `.mcp.json`, `opencode.json` and friends in
 `_AGENT_CONFIG_NAMES` and passes them to `shutil.ignore_patterns`, so they are
 removed from the copy of the tree the agent receives — not hidden, deleted.
 
@@ -77,9 +131,10 @@ alike, so there is no supported way around it.
 
 **The brief is the channel.** `ContainerOperator.run(brief=...)` takes a string
 and the mutator does not care where it came from, so `loop/brief.py` composes it
-and everything the agent must know travels in that one string. `SCORING`,
-`HOWTO` and `CONTRACT` in `brief.py` are the agent's standing instructions,
-and they are maintained there rather than in a file the agent would ignore.
+and everything the agent must know travels in that one string. `CONTRACT`,
+`GOAL`, `SCORING` and `HOWTO` in `brief.py` are the agent's standing
+instructions, and they are maintained there rather than in a file the agent
+would ignore. The baseline numbers and `GAME_RULES.md` are appended by `build`.
 
 `GAME_RULES.md` and `experience.md` *do* survive into the worktree, and the
 agent can read them. Verified against `_mutator_ignore` — they pass, while
@@ -91,18 +146,60 @@ The agent writes its own entries, following the template in the brief, into
 `/workspace/experience.md` during the iteration. Because the parent is
 `shutil.copytree`'d into the next worktree, and a kept winner becomes the next
 parent, **the log travels with the bot automatically**. A `KEEP` carries its
-written experience forward; a discarded mutant takes its log with it.
+written experience forward; a `NOT-A-WIN` tree does not — it is binned — so
+`harvest_log` copies that mutant's *new* entries into the surviving parent
+instead. It matches on entry headings and takes only blocks the parent has not
+seen, because the mutant was seeded from that parent and its log necessarily
+begins with all of it.
 
 This is why the log lives in the worktree and not in the repository root: the
 repository holds the harness, the worktree holds the state. Keeping the log in
 the repo would require a separate mechanism to decide which iteration's log
 belongs to which parent, and the copytree already answers that.
 
+Two boundaries are worth stating because they are easy to assume otherwise.
+`harvest_log` covers iteration to iteration, and `publish_results` covers the
+end of the *run* — without the second, run `36710578461` lost 4186 characters
+of findings (two real defects in the bot's corpse handling) to a workspace that
+died with the job. Neither makes runs depend on each other: each run seeds
+fresh from the hub and re-derives what it needs.
+
+## Updating the brief
+
+`loop/brief.py` is the only channel to the mutator, so it is also the only
+place a standing instruction can live. Two rules follow, and the second is the
+one that is easy to get wrong.
+
+**1. When a brief change reflects a design decision, record the decision here
+as well as in `meta/experiments.md`.** This file is the drift guard: it is
+written for the next person, and a brief edit with no recorded reason is a
+brief edit nobody can evaluate later. The loop is
+experience → experiment → rewrite, and the rewrite is to `brief.py`; what the
+rewrite *taught* is what belongs in `meta/experience.md`.
+
+**2. The brief must never point the agent at `AGENTS.md`, at `meta/`, or at
+any other file here.** All of them are absent from the tree the mutator
+receives — `AGENTS.md` and the agent-config files by `_AGENT_CONFIG_NAMES`, and
+`meta/` because it is simply not in the tree. An instruction to "see
+`AGENTS.md`" is an instruction to a file that does not exist, and the agent
+will either ignore it or invent its contents. The brief is self-contained by
+construction; keep it that way.
+
+Statistics quoted in the brief and here are measured, and they go stale. Both
+"about five distinct values across 15 seeds" and the SE figure were wrong at
+the time of writing. Re-derive them from `log/*.json` with `meta/summarize.py`
+rather than copying a number forward.
+
 ## Running it
 
 ```bash
 gh workflow run our-evolve.yml -f identity=wiz-hum-cha-mal -f iterations=1
 ```
+
+One iteration is ~85 minutes, and the job's `timeout-minutes` is 300. Five
+iterations is about seven hours and will hit that ceiling: a timed-out run
+never reaches `publish_results`, so nothing durable comes out of it. Check
+`runs/history.json` in the artifact for how far it got.
 
 Registration is opt-in by credential. Add two repository secrets:
 
@@ -117,10 +214,11 @@ so the CLI would treat a dead token as permanent and never refresh it.
 
 ## What the metric will not tell you
 
-Fifteen seeds is a noise floor, not a sample. Measured SE is 0.0085 on this
-identity, and one seed can swing 0.18. A change of 0.01 is not resolvable at
-this batch size, which is why a `WIN` needs the per-seed shape *and* a moved
-mean *and* is easy to lose by a mechanism that is real but small. The mutator
-agent's own response to this — measuring on held-out seeds it did not tune
-against — is the right instinct, and the harness does not yet do it
-automatically.
+Fifteen seeds is a noise floor, not a sample. On `wiz-hum-cha-mal`'s baseline
+the measured SE is **0.0109** (`sd 0.0420 / √15`), progression takes **7**
+distinct values across the 15 seeds, and one seed can swing the mean by 0.18.
+A change of 0.01 is not resolvable at this batch size, which is why a `WIN`
+needs the per-seed shape *and* a moved mean *and* is easy to lose by a mechanism
+that is real but small. The mutator agent's own response to this — measuring on
+held-out seeds it did not tune against — is the right instinct, and the harness
+does not yet do it automatically.

@@ -129,7 +129,7 @@ SCORING = """\
 - `progress` is BALROG progression in [0, 1]: higher is better.
 - A seed is a **complete, deterministic game**, so candidate and parent are
   compared per seed on the same seeds.
-- **The metric is coarse.** It takes only about five distinct values across
+- **The metric is coarse.** It takes only about seven distinct values across
   15 seeds, because progression pins to milestone plateaus. One seed can swing
   the mean by 0.18. Judge on per-seed deltas, not on the average alone.
 - **The loop keeps anything that improves the mean**, however small, and keeps
