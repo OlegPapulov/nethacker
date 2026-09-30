@@ -128,3 +128,41 @@ iterations need about seven, so it will likely be cut off before
 `publish_results` runs. If it is, the per-iteration history is still in the
 artifact, and the honest verdict is **inconclusive on the `KEEP` prediction**
 rather than "the loop cannot keep anything".
+
+## E7 — record the mutator's actual edit, not only its account of it
+
+**Change.** `tree_diff` diffs each worktree against the parent it was seeded
+from and writes `diff-<n>.patch`, plus a complete per-file stat in
+`history.json`. The patch reaches the results branch under `diffs/`. Harness
+files and binaries are excluded. The brief no longer says a kept tree "is not
+published", which stopped being true when E5 landed — it now says *not
+registered with the leaderboard*, which is the distinction the sentence was
+actually for.
+
+**Prediction.** For any future rejected mutant, the code it wrote is readable
+without the artifact transcript. No effect on verdicts.
+
+**Result.** Confirmed locally, and the motivation is a defect rather than a
+preference: the brief repeated "9 of 13 killers have mmove 12 (max speed)" —
+false, and taken from the discarded tree of run `36637347806`. The agent said
+it had fixed starvation and it could not be checked, because a binned tree left
+only the agent's prose. The stat/patch split keeps the complete file list even
+when the patch is capped, so a truncated record degrades to "read less", not
+"cannot tell what was touched". Verified end to end against a local remote: two
+rejected iterations' patches both present, a zero-byte patch correctly
+dropped.
+
+This does not make the agent trustworthy — a patch bounds how long an
+unverifiable claim survives, it does not prevent one. A later run should check
+whether a reported fix matches the recorded diff.
+
+## Open
+
+- E6 is the only unsettled experiment, and it is waiting on a run rather than a
+  decision.
+- `GAME_RULES.md` still carries a measured killer/death table with seed counts.
+  That is empirical, not game-mechanical, and it is the file we told ourselves
+  holds no measured bot results. Move it into the brief or accept it
+  explicitly; do not leave the policy ambiguous.
+- Nothing has ever been kept over five iterations, so the loop has no evidence
+  yet that it can compose improvements rather than only accumulate findings.

@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import difflib
 import json
 import os
 import random
@@ -385,6 +386,110 @@ def harvest_log(source: Path, target: Path) -> int:
     return len("\n\n".join(added))
 
 
+#: Files the loop itself drops into the worktree. They are not the mutator's
+#: edit, so a diff that reported them would bury the one that matters -- the
+#: agent rewrites its experience log every turn, which is the expected case
+#: rather than a change worth recording.
+HARNESS_FILES = ("experience.md", "history.json", ".origin")
+
+#: A patch is a record, not a copy. Enough to reconstruct what was tried and
+#: why it scored the way it did; not enough to rebuild the tree from the log.
+DIFF_CHARS = 8000
+
+
+def _is_harness_artifact(rel: str) -> bool:
+    name = rel.rsplit("/", 1)[-1]
+    return (
+        name in HARNESS_FILES
+        or name.startswith("brief-")
+        or name.startswith("transcript-")
+        or name.endswith(".pyc")
+        or "__pycache__" in rel
+    )
+
+
+def _read_text(path: Path) -> str | None:
+    """File contents, or None if it is not text we should diff."""
+    try:
+        if path.stat().st_size > 2_000_000:
+            return None
+        data = path.read_bytes()
+    except OSError:
+        return None
+    if b"\x00" in data[:8192]:
+        return None
+    return data.decode("utf-8", errors="replace")
+
+
+def tree_diff(parent: Path, worktree: Path) -> dict:
+    """What the mutator actually changed, as a stat and a patch.
+
+    A run records the agent's *account* of its change -- `hypothesis` and
+    `report`, a few thousand characters of its own prose -- and the *verdict*.
+    It never recorded the edit itself. For a kept tree that is fine, the tree is
+    the next parent. For a discarded one the code is binned, so after the
+    transcript's 30 days the change exists only as a paragraph describing it,
+    written by the party that has an interest in it reading as thorough. That is
+    the weakest possible record of a failed experiment: an unverifiable claim
+    about code nobody can see.
+
+    The trees are plain directories (47 files, no `.git`), so this is a
+    `difflib` walk rather than `git diff`, and it compares the worktree against
+    the parent it was seeded from -- which is what "what did the mutator do this
+    iteration" means.
+
+    Returns `{"changed": [...], "patch": str, "truncated": bool}`. `changed` is
+    always complete even when the patch is cut, because a stat that can itself
+    be truncated is no use for deciding what to look at.
+    """
+    parent, worktree = Path(parent), Path(worktree)
+    old: dict[str, str] = {}
+    new: dict[str, str] = {}
+    for base, store in ((parent, old), (worktree, new)):
+        for path in base.rglob("*"):
+            if not path.is_file():
+                continue
+            rel = path.relative_to(base).as_posix()
+            if _is_harness_artifact(rel):
+                continue
+            text = _read_text(path)
+            if text is not None:
+                store[rel] = text
+
+    changed: list[dict] = []
+    chunks: list[str] = []
+    for rel in sorted(set(old) | set(new)):
+        before, after = old.get(rel), new.get(rel)
+        if before == after:
+            continue
+        if before is None:
+            kind = "added"
+        elif after is None:
+            kind = "removed"
+        else:
+            kind = "modified"
+        body = list(
+            difflib.unified_diff(
+                (before or "").splitlines(keepends=True),
+                (after or "").splitlines(keepends=True),
+                fromfile=f"a/{rel}" if before is not None else "/dev/null",
+                tofile=f"b/{rel}" if after is not None else "/dev/null",
+                n=3,
+            )
+        )
+        added = sum(1 for line in body if line.startswith("+") and not line.startswith("+++"))
+        removed = sum(1 for line in body if line.startswith("-") and not line.startswith("---"))
+        changed.append({"file": rel, "change": kind, "+": added, "-": removed})
+        chunks.append(f"diff --git a/{rel} b/{rel} ({kind})\n")
+        chunks.extend(body)
+
+    patch = "".join(chunks)
+    truncated = len(patch) > DIFF_CHARS
+    if truncated:
+        patch = patch[:DIFF_CHARS] + f"\n... patch truncated at {DIFF_CHARS} chars\n"
+    return {"changed": changed, "patch": patch, "truncated": truncated}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("identity")
@@ -479,6 +584,22 @@ def main() -> int:
             source = "closing-message" if hypothesis else "none"
         print(f"operator done; hypothesis [{source}]: {hypothesis!r}", flush=True)
 
+        # What it actually changed, recorded before the verdict. Order matters
+        # only in that the diff is of the tree as the agent left it, so it has
+        # to be taken before anything rewrites the worktree -- and nothing here
+        # does, but the harvest below does.
+        edit = tree_diff(best_tree, worktree)
+        if edit["changed"]:
+            summary = ", ".join(
+                f"{c['file']} ({c['change']} +{c['+']}/-{c['-']})"
+                for c in edit["changed"][:4]
+            )
+            more = f" +{len(edit['changed']) - 4} more" if len(edit["changed"]) > 4 else ""
+            print(f"edit: {len(edit['changed'])} file(s): {summary}{more}", flush=True)
+        else:
+            print("edit: none — the tree came back unchanged", flush=True)
+        (work / f"diff-{iteration:03d}.patch").write_text(edit["patch"], encoding="utf-8")
+
         smoke_mean, _, _ = score(
             worktree, args.identity, seeds=1, max_steps=SMOKE_STEPS
         )
@@ -497,6 +618,11 @@ def main() -> int:
             "parent_mean": best_mean, "hypothesis": hypothesis,
             "hypothesis_source": source,
             "report": (report or "")[:REPORT_CHARS] or None,
+            # The stat, not the patch. history.json is the file that gets
+            # summarised and read by eye, and the patch already lives in
+            # diff-<n>.patch next to it -- duplicating up to DIFF_CHARS per
+            # iteration here would double the record for no gain.
+            "edit": {"changed": edit["changed"], "truncated": edit["truncated"]},
             **verdict,
         })
         (work / "history.json").write_text(json.dumps(history, indent=2))

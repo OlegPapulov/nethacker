@@ -133,9 +133,9 @@ SCORING = """\
   15 seeds, because progression pins to milestone plateaus. One seed can swing
   the mean by 0.18. Judge on per-seed deltas, not on the average alone.
 - **The loop keeps anything that improves the mean**, however small, and keeps
-  it as the parent for the next iteration. A kept tree is not published, so
-  there is nothing to lose by keeping a real but modest gain. Only a mean that
-  went *down* discards the change.
+  it as the parent for the next iteration. A kept tree is not registered with
+  the leaderboard, so there is nothing to lose by keeping a real but modest
+  gain. Only a mean that went *down* discards the change.
 - A `WIN` — the only thing that gets published to the leaderboard — additionally
   needs a clean per-seed majority, so that a result cannot be registered on a
   number that a single lucky seed carried.
@@ -331,9 +331,9 @@ and then deleted is indistinguishable from never having tried.
 
 **This loop keeps any change that improves the mean**, even one seed's worth,
 and even when the per-seed split is not a clean majority. A mean that went up is
-a better place to search from, and a kept tree is not published — so there is
-no board risk in keeping it. Only the flat mean and the two-thirds split are
-reserved for a `WIN`.
+a better place to search from, and a kept tree is not registered with the
+leaderboard — so there is no board risk in keeping it. Only the flat mean and
+the two-thirds split are reserved for a `WIN`.
 
 So: measure it, and **keep the tree as it is**. If your own reading is that the
 change is wrong, say so in *Attempts* and in *What worked* and let the harness

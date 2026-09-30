@@ -47,16 +47,19 @@ One iteration, from `loop/evolve.py`:
 7. **Keep or discard.** A kept tree becomes the next parent, so the run carries
    its own progress forward. A discarded tree is binned — but its `experience.md`
    is harvested into the surviving parent, so a failed experiment still stops
-   the next iteration from repeating it.
+   the next iteration from repeating it. Either way the edit itself is
+   recorded as a patch (`diffs/<n>.patch`), which for a *discarded* mutant is
+   the only surviving copy of the code it wrote.
 8. **Publish a win.** A `WIN` is pushed to its own branch and registered with
    the leaderboard. **Only a `WIN` is registered.** A `KEEP` is a better place
    to search from, not a better bot, and registering a 0.06 beside real entries
    would misrepresent the work.
 9. **Publish the run's results.** Whatever the verdicts, the run pushes the
-   surviving parent's `experience.md`, its `history.json`, and any kept winner
-   tree to a per-run `evolve-result/<identity>-<run_id>` branch. This is a
-   record, not a submission, and the next run does not read it — runs stay
-   independent by design.
+   surviving parent's `experience.md`, its `history.json`, every kept winner
+   tree, and `diffs/*.patch` to a per-run
+   `evolve-result/<identity>-<run_id>` branch. This is a record, not a
+   submission, and the next run does not read it — runs stay independent by
+   design.
 
 Then it repeats, or the run ends. One iteration is 30–90 minutes; most of that
 is the agent, not the scoring. Measured on this identity: 85 minutes.
@@ -85,7 +88,7 @@ turns is as wrong as chasing depth.
 
 | file | role |
 |---|---|
-| `loop/evolve.py` | the loop: seed → brief → agent → score → judge → keep |
+| `loop/evolve.py` | the loop: seed → brief → agent → score → judge → keep; also `harvest_log` and `tree_diff` |
 | `loop/brief.py` | composes the operator's brief; the only channel to the agent |
 | `loop/register_evidence.py` | builds the evidence payload `nethackers register` requires |
 | `loop/register_winner.py` | pushes a `WIN` and registers it; also pushes per-run results branches; never raises |
@@ -163,6 +166,39 @@ end of the *run* — without the second, run `36710578461` lost 4186 characters
 of findings (two real defects in the bot's corpse handling) to a workspace that
 died with the job. Neither makes runs depend on each other: each run seeds
 fresh from the hub and re-derives what it needs.
+
+## `tree_diff` records the edit, because the report is not the edit
+
+The agent's log records what it *says* it changed. Run `36637347806` said it
+fixed starvation; `36710578461` said the same about corpses, with file and line
+numbers. Neither claim was checkable afterwards, because the mutant's tree is
+binned on `NOT-A-WIN` and only the kept tree survives. What was left was a
+paragraph of the mutator's own prose describing code that no longer existed
+anywhere — the weakest possible record of a failed experiment, because it is
+unfalsifiable and its author has an interest in it reading as thorough. It is
+also how the loop ended up repeating "9 of 13 killers have mmove 12 (max
+speed)" in the brief: a number from a discarded tree, repeated because it was
+in writing and nobody could check it against the source.
+
+So each iteration diffs the worktree against the parent it was seeded from
+(`tree_diff`), prints a per-file stat, and writes `diff-<n>.patch`. The trees
+are plain directories — no `.git` — so it is a `difflib` walk, not `git diff`.
+Three details matter:
+
+- **The stat is never truncated; the patch may be.** `changed` decides what to
+  look at, so it has to be complete. The patch is a record, not a copy, so it is
+  capped at `DIFF_CHARS` and flagged when it is.
+- **Harness files are excluded.** `experience.md`, `brief-*.md`,
+  `transcript-*`, `history.json` and `__pycache__` are not the mutator's edit.
+  The agent rewrites its log every turn, so including them would bury the one
+  change worth reading — a diff full of prose is a diff nobody reads.
+- **Binary files are skipped, not mangled.** A file with NUL bytes or over 2 MB
+  is reported as unchanged rather than diffed as text.
+
+Both artifacts reach the results branch, so a run's record contains the code, not
+just the claim about it. This does not make the mutator trustworthy — an agent
+can still describe an edit it did not make, and the patch only bounds how long
+that gap survives.
 
 ## Updating the brief
 

@@ -181,7 +181,7 @@ def publish_results(
     history = work / "history.json"
     try:
         commit = _push_results_branch(
-            work / f"results-{identity}", url, ref, parent, log, history, identity
+            work / f"results-{identity}", url, ref, parent, log, history, identity, work
         )
     except (OSError, RuntimeError, subprocess.CalledProcessError) as exc:
         record["error"] = f"push failed: {exc}"
@@ -200,6 +200,7 @@ def _push_results_branch(
     log: Path,
     history: Path | None,
     identity: str,
+    work: Path | None = None,
 ) -> str:
     """Stage the results and push them as an orphan branch.
 
@@ -216,8 +217,29 @@ def _push_results_branch(
     (stage / "experience.md").write_text(
         log.read_text(encoding="utf-8", errors="replace"), encoding="utf-8"
     )
-    if history.is_file():
+    if history is not None and history.is_file():
         shutil.copy2(history, stage / "history.json")
+    # The per-iteration patches. A discarded mutant's tree is binned, so this is
+    # the only copy of the change the agent actually made -- the run record
+    # carries its `report`, which is the agent's own account of an edit nobody
+    # else can see. A kept mutant has its tree here already, but the patch is
+    # the cheap way to see what changed inside it.
+    #
+    # `work` is optional because this is also callable without a run directory,
+    # and an AttributeError here would escape the "never raises" contract that
+    # publish_results is built on.
+    if work is not None:
+        # Plain sorted() is enough: filenames are zero-padded (diff-007.patch),
+        # so lexicographic order is iteration order. Ordering the copy would not
+        # matter anyway -- git sorts its own tree entries.
+        patches = sorted(work.glob("diff-*.patch"))
+        if patches:
+            (stage / "diffs").mkdir()
+            for patch in patches:
+                # A zero-byte patch means the tree came back unchanged; it is
+                # noise in the record, not evidence.
+                if patch.stat().st_size:
+                    shutil.copy2(patch, stage / "diffs" / patch.name)
     for kept in sorted(parent.parent.glob("winner-*")):
         if kept.is_dir():
             shutil.copytree(kept, stage / kept.name)
