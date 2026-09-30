@@ -85,12 +85,32 @@ PUBLISHED_SEEDS = 15
 EVAL_PARALLELISM = 4
 
 #: Hard wall-clock ceiling on one agent turn. The agent gets a budget, not a
-#: blank cheque: run 36710578461 spent 81.3 min in the agent (56.0 of it asleep
-#: in `sleep`), and under a 360-minute job cap a single runaway turn can push
-#: the rest of the iteration out of existence. Capping the turn means a
-#: confused agent costs one iteration rather than the run. The brief now also
-#: says how to measure cheaply, so this is a backstop, not the normal path.
-AGENT_TIMEOUT_SECONDS = 40 * 60
+#: blank cheque: a single runaway turn can push the rest of the iteration out of
+#: existence under a 360-minute job cap.
+#:
+#: It is a *backstop*, and the first value chosen for it was a backstop in the
+#: wrong place. 40 minutes looked generous against the one measurement then
+#: available (81.3 min in the agent, 56.0 of it asleep in `sleep`) and it was
+#: not: run 36764071814 lost iteration 1 to it, killed at 40 minutes and 3.9M
+#: tokens while still working -- its closing line was "let me get one decisive
+#: measurement of where the turns actually go". The two agent phases that ran to
+#: completion in run 36731664027 took ~102 and ~126 minutes. A ceiling below
+#: normal work does not protect the run, it truncates it and charges the
+#: truncation to the science.
+#:
+#: So: comfortably above the slowest observed phase, and low enough that two
+#: runaway turns still leave room inside the job. Sizing the *iteration count*
+#: to the ceiling is the loop's job, not this constant's -- see AGENTS.md.
+AGENT_TIMEOUT_SECONDS = 150 * 60
+
+#: A turn stopped by the ceiling above is not a failed experiment, and recording
+#: it as one corrupts the run in two ways at once: the seed measurements are
+#: thrown away, and `history.json` -- which is what `meta/experiments.md` is
+#: written from -- gains a NOT-A-WIN that no hypothesis earned. Run
+#: 36764071814 iteration 1 is the case: `stop=killed`, a 0-byte patch, and a
+#: verdict reading "no seed moved on any signal", which is a true statement
+#: about a tree nobody edited.
+TIMED_OUT = "TIMED-OUT"
 
 #: One cheap episode on a reserved seed, to reject a mutant that does not run.
 SMOKE_SEED = 9000
@@ -107,12 +127,21 @@ MIN_TWO_THIRDS = True
 #: on, so a result that did not move it is not a result.
 #:
 #: Strictly greater, no significance margin. With 15 seeds the measured SE is
-#: 0.0085, so a mean that improved by 0.001 is inside the noise band; this gate
-#: catches a result that is flat or negative, not one that is small. Asking for
-#: every one of the 15 seeds to improve is not a stricter version of this -- it
-#: is an unreachable one, because a seed is a whole stochastic game and a
-#: one-line change diverges the entire trajectory (per-seed SD is 0.033).
+#: 0.0109 (per-seed SD 0.0420), so a mean that improved by 0.001 is inside the
+#: noise band; this gate catches a result that is flat or negative, not one that
+#: is small. Asking for every one of the 15 seeds to improve is not a stricter
+#: version of this -- it is an unreachable one, because a seed is a whole
+#: stochastic game and a one-line change diverges the entire trajectory.
 MEAN_MUST_IMPROVE = True
+
+#: ...and below this fraction of the parent mean, a paired "win" is a discard
+#: rather than a KEEP. One SE on this identity is 0.0109 against a mean of
+#: 0.0624, i.e. about 17% of the mean, so a 10% dip is inside the noise and a
+#: KEEP is defensible; run 36764071814 lost 39% and was not. Set from the noise
+#: band rather than from the one bad run: at 0.9 the floor sits just under one SE,
+#: so it discards regressions the seeds can distinguish from noise and tolerates
+#: the ones they cannot. See `mean_gate`.
+MEAN_KEEP_FLOOR = 0.9
 
 #: Verdicts that make a mutant the next parent. Only WIN is a result anybody can
 #: register; KEEP is a better starting point to keep searching from, and nothing
@@ -179,30 +208,57 @@ def score(tree: Path, identity: str, *, seeds: int = PUBLISHED_SEEDS, max_steps=
 
 
 def mean_gate(child_mean: float, parent_mean: float, verdict: dict) -> dict:
-    """Demote a WIN whose batch mean did not actually improve.
+    """Second opinion on a paired win, from the batch average.
 
     `paired_verdict` and this answer different questions, and the loop needs
     both answered. The paired test asks whether the mutation moved most seeds
     forward; the mean test asks whether the batch as a whole got better. A
     mutant can clear the first while losing the second -- several seeds jumping
-    far enough to outrun the ones that slipped -- and the result is registered
-    against the board on a number that went down.
+    far enough to outrun the ones that slipped -- and the result would be
+    registered against the board on a number that went down.
 
-    A demotion lands on KEEP, not on a discard. The seeds really did move
-    forward, so the tree is still a better place to search from; it just is not
-    a better bot, and `history.json` records which of the two it was.
+    What happens next used to depend on how well the mutant had done at the
+    thing it was being demoted for. Both branches landed on KEEP, because the
+    reasoning was "the seeds really did move forward, so the tree is still a
+    better place to search from". That is true of a tree that held its mean and
+    false of one that lost 40% of it, and run 36764071814 iteration 2 is the
+    counterexample: mean 0.0624 -> 0.0378, verdict KEEP, and the `why` string
+    asserting "not a regression" in the same sentence that reported the
+    regression. Nothing was published -- the gate held -- but the tree became
+    the parent, so an iteration 3 would have been measured against 0.0378 and
+    the whole run would have drifted down while every verdict said it was
+    keeping the line.
+
+    So there are two demotions, not one. A mean that held (within
+    `MEAN_KEEP_FLOOR` of the parent) is a KEEP: a better place to search from
+    that is still not a better bot. A mean that fell below that floor is a
+    discard -- the tree is reverted, and its findings are harvested on the way
+    out like any other failed experiment. The floor is not zero because a
+    little drift is noise at 15 seeds, and refusing to keep anything that does
+    not strictly improve would make the loop unable to move at all.
     """
-    if not MEAN_MUST_IMPROVE or verdict["verdict"] != "WIN":
+    if not MEAN_MUST_IMPROVE or verdict["verdict"] not in ("WIN", "KEEP"):
         return verdict
     if child_mean > parent_mean + 1e-9:
         return verdict
+    floor = parent_mean * MEAN_KEEP_FLOOR
+    if child_mean >= floor:
+        return {
+            **verdict,
+            "verdict": "KEEP",
+            "why": (
+                f"{verdict['why']}, but the mean did not improve "
+                f"({child_mean:.4f} vs {parent_mean:.4f}) -- kept as the parent, "
+                f"not a publishable win"
+            ),
+        }
     return {
         **verdict,
-        "verdict": "KEEP",
+        "verdict": "NOT-A-WIN",
         "why": (
-            f"{verdict['why']}, but the mean did not improve "
-            f"({child_mean:.4f} vs {parent_mean:.4f}) -- kept as the parent, "
-            f"not a publishable win"
+            f"{verdict['why']}, and the mean fell to {child_mean:.4f} from "
+            f"{parent_mean:.4f} -- below the {MEAN_KEEP_FLOOR:.0%} keep floor, "
+            f"so the tree is reverted rather than carried forward as the parent"
         ),
     }
 
@@ -240,12 +296,29 @@ def paired_verdict(child: list[dict], parent: list[dict]) -> dict:
         )
 
     def forward(s):
+        """Did this seed's *score* go up. Nothing else counts.
+
+        This used to accept a depth increase, or more turns at equal depth, as
+        a seed moving forward. Both are proxies, and this repository has already
+        established that they are the wrong ones: run 36615769123 climbed and
+        scored 0.0374 against a 0.0624 parent, and run 36637347806 found the
+        family that decides the number on this identity to be XP, on all 15
+        seeds -- a seed that reached dlvl 8 still scored on its XP. So depth
+        going up is not evidence about the metric, and neither is surviving
+        longer.
+
+        Leaving them in is not a rounding error. In run 36764071814 they are
+        what kept a 40% regression: iteration 2 reported 10 seeds "forward" and
+        10 "deeper" while the mean fell 0.0624 -> 0.0378, because `forward`
+        counted the depth as progress and `mean_gate` then declined to discard
+        a tree that had already lost. A proxy is only safe if it cannot
+        overrule the thing it is a proxy for.
+
+        `deeper` is still counted and still reported below. It is a fact about
+        the run and worth having; it is just not a vote.
+        """
         a, b = child_by[s], parent_by[s]
-        return (
-            a["progress"] > b["progress"] + 1e-9
-            or a["depth"] > b["depth"]
-            or (a["depth"] == b["depth"] and a["turns"] > b["turns"])
-        )
+        return a["progress"] > b["progress"] + 1e-9
 
     changed = [s for s in shared if moved(s)]
     up = [s for s in changed if forward(s)]
@@ -263,10 +336,24 @@ def paired_verdict(child: list[dict], parent: list[dict]) -> dict:
     elif confirmed:
         verdict, why = "WIN", f"{len(up)} forward, {len(down)} back, {len(deeper)} deeper"
     elif len(up) > len(down):
+        # Name the bar that actually failed. These are two different bars and
+        # the message used to blame the wrong one: a 9-forward-6-back split
+        # clears MIN_SEEDS_FORWARD outright and fails only the two-thirds shape,
+        # and "short of the 5-seed bar" is false about it.
+        #
+        # No disposition here. What happens to the tree is not this function's
+        # to say -- `mean_gate` can still turn this KEEP into a discard, and a
+        # message that already said "kept as the parent" would then contradict
+        # itself in the same sentence.
+        if len(up) >= MIN_SEEDS_FORWARD:
+            missed = (
+                f"{len(up)} of {len(changed)} moved seeds went forward, short of "
+                f"two-thirds"
+            )
+        else:
+            missed = f"short of the {MIN_SEEDS_FORWARD}-seed bar"
         verdict, why = "KEEP", (
-            f"not a regression: {len(up)} forward against {len(down)} back, but "
-            f"short of the {MIN_SEEDS_FORWARD}-seed bar -- kept as the parent, "
-            f"not a publishable win"
+            f"{len(up)} forward against {len(down)} back, but {missed}"
         )
     elif len(up) < MIN_SEEDS_FORWARD:
         verdict, why = "NOT-A-WIN", (
@@ -605,7 +692,7 @@ def main() -> int:
         (work / f"brief-{iteration}.md").write_text(brief_text)
         print(f"brief: {len(brief_text)} chars -> {work}/brief-{iteration}.md", flush=True)
 
-        hypothesis, report = run_operator(
+        hypothesis, report, agent_cancelled = run_operator(
             worktree, brief_text, args, transcript=work / f"transcript-{iteration}.log"
         )
         source = "tree-comment"
@@ -637,11 +724,34 @@ def main() -> int:
 
         child_mean, child_rows, child_raw = score(worktree, args.identity)
         verdict = mean_gate(child_mean, best_mean, paired_verdict(child_rows, best_rows))
-        print(
-            f"child {child_mean:.4f} vs parent {best_mean:.4f} -> {verdict['verdict']}: "
-            f"{verdict['why']}",
-            flush=True,
-        )
+
+        # A turn the ceiling cut short gets its own verdict, whatever the seeds
+        # say. The numbers are still recorded -- they cost 16 episodes and they
+        # are the only evidence of where the tree stood -- but they are filed as
+        # what they are, so that neither `history.json` nor the next brief
+        # inherits a NOT-A-WIN that no hypothesis earned. The mutant's findings
+        # are still harvested, because a truncated turn can have measured
+        # something real before it ran out of clock.
+        if agent_cancelled:
+            verdict = {
+                "verdict": TIMED_OUT,
+                "why": (
+                    f"agent hit the {AGENT_TIMEOUT_SECONDS // 60}-minute ceiling "
+                    f"after {len(edit['changed'])} file(s) changed; not a "
+                    f"measurement of the hypothesis"
+                ),
+            }
+            print(
+                f"child {child_mean:.4f} vs parent {best_mean:.4f} -> "
+                f"{verdict['verdict']}: {verdict['why']}",
+                flush=True,
+            )
+        else:
+            print(
+                f"child {child_mean:.4f} vs parent {best_mean:.4f} -> "
+                f"{verdict['verdict']}: {verdict['why']}",
+                flush=True,
+            )
 
         history.append({
             "iteration": iteration, "child_mean": child_mean,
@@ -806,6 +916,7 @@ def run_operator(
     # agent's own decision to finish.
     stop = threading.Event()
     cancelled = threading.Event()
+    was_cancelled = False
     timer = threading.Timer(
         AGENT_TIMEOUT_SECONDS,
         lambda: (cancelled.set(), stop.set()),
@@ -832,6 +943,9 @@ def run_operator(
             f"transcript is still the evidence of what it was doing.",
             flush=True,
         )
+        # Remembered, not just printed: the caller needs to know this turn was
+        # cut short so it does not file the result as a failed experiment.
+        was_cancelled = True
 
     usage = getattr(result, "usage", None)
     total = None
@@ -852,7 +966,7 @@ def run_operator(
         f"stop={getattr(result, 'stopped_reason', '?')}",
         flush=True,
     )
-    return extract_hypothesis(worktree), said
+    return extract_hypothesis(worktree), said, was_cancelled
 
 
 def _speech_in(line: str) -> str | None:

@@ -276,6 +276,30 @@ it (it cannot drift the way ours did), cap the agent's own check at 5 seeds
 because the harness re-scores all 15 anyway, parallelise scoring 4-wide, and
 bound a turn at 40 minutes through the operator's own `stop` event.
 
+**Measured.** Run `36764071814` was the first on `2cb0dd1`, and its two
+iterations disagree in a way that settles both open questions at once.
+
+*Iteration 2 finished inside the 40-minute cap.* It took 3.9M tokens in
+iteration 1 but completed here, and the 56 minutes of `sleep` that E8 measured
+are gone. That confirms the diagnosis: the agent was not dawdling, it had never
+been told how to run a batch (`MEASURE`), and importing the harness's own text
+fixed it. **The sleeping was real and it is fixed.**
+
+*Iteration 1 was killed by the 40-minute cap* (`stop=killed`, no edit, 0-byte
+patch). So the remedy for cause 3 was wrong even though the diagnosis was right.
+The cap was set from the arithmetic above — "near 30 min" per iteration — and
+that arithmetic is dead: it came from removing the sleeps, and the run on which
+it was based also happened to be a fast one. Against the eight historical
+single-iteration runs (9, 42, 81, 87, 95, 96, 141, 153 min, median 91), a
+40-minute agent ceiling truncates **more than half of all runs**, and the
+truncation is silent: it produces a `NOT-A-WIN` for a tree the agent never got
+to finish. A cap below the median is not a safety limit, it is a coin flip on
+which runs produce evidence.
+
+`AGENT_TIMEOUT_SECONDS` is now 150 minutes, which is not derived from anything
+and is justified only by the job ceiling: at the 91-minute median, 2 × 150 +
+scoring fits inside 360, and 3 × 150 does not.
+
 **What this says about the brief generally.** The brief is the mutator's only
 instruction channel, so a missing section is not a smaller prompt, it is a
 wrong one. The three bugs that cost this loop the most — no `MEASURE`, and
@@ -283,9 +307,13 @@ earlier an empty first brief — were all omissions, not bad wording. When a
 custom brief replaces a curated one, the first question is not "is mine
 better?" but "what did theirs say that mine does not?"
 
-**Not claimed.** No timing is updated from an estimate. The fix lands as
-`2cb0dd1` and the first run on it is the measurement; if the agent still
-sleeps, E8 has located the cost without having removed it.
+**Not claimed.** 150 minutes is a guess that fits the ceiling, not a
+measurement of what an iteration needs. If two iterations no longer fit in 360
+minutes, the honest response is one iteration or checkpointing, not raising the
+cap again — the first version of this cap was set from arithmetic that did not
+survive contact with a run, and repeating that would be the same mistake twice.
+The number of agent phases observed across successful runs is the thing to
+derive the next cap from, and it has not been collected systematically.
 
 ## E9 — GAME_RULES.md was carrying measurements while claiming not to
 
@@ -428,13 +456,73 @@ change. Cheap, and it improves the diff, the kept tree, and the hub submission
 at once. Worth doing, but it is a brief change, so it should be dispatched and
 measured like any other rather than landed on the strength of this paragraph.
 
+## E12 — the loop could keep a tree that had lost 40% of its score
+
+**Change.** Made. Three defects, one run, all in the judging path rather than the
+brief, so nothing here is dispatched.
+
+Run `36764071814` iteration 2 changed one file (`global_logic.py`, +23/-1) and
+scored **0.0378 against a 0.0624 parent — a 39% regression.** It was kept. The
+tree became the parent, and iteration 3 would have been measured against
+0.0378, so the run would have drifted downward while every verdict said it was
+holding the line. Nothing was published — `mean_gate` held — but the gate held
+by accident, not by design, and the mechanism that let a 40% loss become the
+parent was a documented policy in `paired_verdict`.
+
+**1. Depth counted as progress.** `forward()` returned true if a seed's
+`progress` rose *or* its `depth` rose *or* it survived longer at equal depth.
+Iteration 2 reported **10 seeds "forward" and 10 "deeper"** — those 10 forwards
+were depth, not score. `AGENTS.md` already records that depth is the wrong proxy
+on this identity (`36615769123` climbed and lost 40%; `36637347806` found the
+deciding family is XP on all 15 seeds), and `forward()` was still counting it.
+`forward()` is now progress-only, and `deeper` is still counted and reported —
+it is a fact about the run, just not a vote.
+
+**2. `mean_gate` had one demotion, not two.** It demoted `WIN` → `KEEP` when
+the mean did not improve, and that was the only branch that added "kept as the
+parent". A tree that lost 39% therefore cleared the paired bar on fake forwards
+and arrived at the keep branch. Reconstructed and verified against the run's own
+seed rows: the shape now returns `NOT-A-WIN`, `fwd=0 back=14`.
+
+**3. A capped turn was recorded as a failed hypothesis.** When
+`AGENT_TIMEOUT_SECONDS` fired, `run_operator` caught the cancellation, logged
+it, and returned the tree unchanged — which the loop then scored and filed as a
+`NOT-A-WIN` it would "not repeat". Iteration 1 of that run is a run record
+claiming the agent disproved something, when in fact the agent ran out of clock.
+That is the wrong lesson in the one place the next iteration reads from. It is
+now `TIMED-OUT`: not in `KEEPING_VERDICTS`, so the tree is reverted, with the
+child's numbers and findings still recorded, because 16 episodes and 3.9M tokens
+of observation are evidence even when the turn is truncated.
+
+**The keep floor.** A material regression is now a **discard**, not a keep, with
+`MEAN_KEEP_FLOOR = 0.9`. The threshold is taken from the noise, not from the one
+bad run: one SE on this identity is 0.0109 against a mean of 0.0624, about 17% of
+the mean, so a 10% dip is not resolvable at 15 seeds and `KEEP` is defensible,
+while 39% is about 3.7 SE. Verified boundaries — 9 seeds forward with the mean
+−7.5% returns `KEEP`; −11.3% and below returns `NOT-A-WIN`. The loop can still
+hold a slightly-worse, more promising tree, which is the only reason `KEEP`
+exists.
+
+**A fifth thing, found by the tests.** The `KEEP` message blamed
+`MIN_SEEDS_FORWARD` for splits that had cleared it: a 9-forward-6-back run is
+`9 ≥ 5`, and it fails only the two-thirds shape, but the text said "short of the
+5-seed bar". And `mean_gate` composed its verdict on top of a `why` that already
+said "kept as the parent", so a discard read *"kept as the parent … so the tree
+is reverted rather than carried forward as the parent"* — one sentence
+asserting both dispositions. `paired_verdict` now reports only the paired facts
+and `mean_gate` owns the disposition, so the two cannot contradict.
+
+**Not claimed.** No timing is derived from this entry, and the floor has not been
+tested against a real regression — it is calibrated against the noise band and
+checked against the run's own seed rows, which is not the same as a run that
+regresses on purpose. `MEAN_KEEP_FLOOR` is one constant if it proves wrong.
+
 ## Open
 
-- E8 is implemented but unmeasured. The expected saving is ~13 min of scoring
-  plus most of the agent's 56 min of sleeping, which would put an iteration
-  near 30 min and make five fit the ceiling — but that is arithmetic, not
-  evidence, and it must not be written down as a result until a run on
-  `2cb0dd1` reports it.
+- E8 is now measured (see its entry): the sleeping is fixed by the `MEASURE`
+  import, and the 40-minute cap that replaced it was truncating more than half
+  of all runs. What is still missing is a systematic distribution of agent-phase
+  durations, which is what the next cap should be derived from.
 - The loop has no checkpoint. A timeout costs every iteration in the job, not
   the one in flight, because `publish_results` runs only at the end. Calling it
   per iteration would make the results branch the checkpoint for the cost of one

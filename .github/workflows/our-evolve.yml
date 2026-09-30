@@ -243,6 +243,17 @@ jobs:
           } | tee report.md
           cat report.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
 
+      # Before the upload, not after it. `Upload everything` copies a file list,
+      # and a file written after the list is read is not on it: run
+      # 36764071814 added `log/*.json` to the upload list and the run's own
+      # record still was not in the artifact, because `log_verdict.py` had not
+      # run yet. Only the older records committed to the repository were there.
+      # This step is `always()` for the same reason as the others -- a run that
+      # timed out still has seeds measured and a story to tell.
+      - name: Write the verdict
+        if: always()
+        run: python log_verdict.py || echo "::warning::could not write the verdict"
+
       - name: Upload everything
         if: always()
         uses: actions/upload-artifact@v4
@@ -273,9 +284,9 @@ jobs:
         run: |
           set +e
           # A few hundred bytes a run, not 13.6 M lines. `runs/` and the tree
-          # under runs/work-*/ are gitignored, so the artifact is the only copy
-          # of the kept trees and the patches -- which is why it now lists them.
-          python log_verdict.py || echo "::warning::could not write the verdict"
+          # under runs/work-*/ are gitignored, so the artifact is one copy of
+          # the kept trees and the patches, and this commit is the other. It is
+          # written in the step above, not here, so the artifact cannot miss it.
           cat log/*.json 2>/dev/null >> "$GITHUB_STEP_SUMMARY"
           if ls runs/transcript-*.log >/dev/null 2>&1; then
             echo "transcript present:" | tee -a "$GITHUB_STEP_SUMMARY"

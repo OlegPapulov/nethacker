@@ -67,12 +67,12 @@ the agent, not the scoring. See "Running it" before choosing a count.
 
 ## The two rules that make it work
 
-**A result is only a result if the mean moved.** `paired_verdict` asks whether
-most seeds moved forward; `mean_gate` asks whether the batch average improved.
-Both must hold for a `WIN`. This is not belt-and-braces — it is the case the
-apparatus exists to catch. Run `36615769123` produced 10 seeds forward, cleared
-two-thirds *exactly* (`3×10 = 30 ≥ 2×15 = 30`), and scored 0.0374 against a
-0.0624 parent. Depth went up; progress went down 40%. The old rule published it.
+**A seed counts as forward only if its score rose.** `forward()` is
+progress-only — depth and turn count are counted and reported as `deeper`, and
+neither votes. This is not belt-and-braces, it is the case the apparatus exists
+to catch. Run `36615769123` produced 10 seeds forward, cleared two-thirds
+*exactly* (`3×10 = 30 ≥ 2×15 = 30`), and scored 0.0374 against a 0.0624 parent:
+depth went up, progress went down 40%, and the old rule published it.
 
 **Depth is not progress, and the reason is sharper than "it also rewards
 survival."** `progress` is BALROG progression in [0, 1], scored as a `max(...)`
@@ -83,7 +83,22 @@ chose depth, and depth was a *plausible* proxy: the run did climb, and scored
 the family that actually decides the number on this identity is **XP, on every
 one of the 15 seeds** — a seed that reached dlvl 8 still scored on its XP.
 Both facts matter: depth is not the metric, and *neither is surviving*. Chasing
-turns is as wrong as chasing depth.
+turns is as wrong as chasing depth. These two paragraphs had been here since
+`36637347806` while `forward()` still counted depth, so the rule existed and
+the code contradicted it — a 9-forward-6-back split was being described as
+"short of the 5-seed bar" when it had cleared it and failed only the two-thirds
+shape. A rule that only exists in prose is not enforced.
+
+**And a KEEP has to survive the mean too.** `paired_verdict` asks whether most
+seeds moved forward; `mean_gate` asks whether the batch average held. Both must
+hold for a `WIN`, and there are **two** demotions, not one: a mean that held
+within `MEAN_KEEP_FLOOR` (0.9) is a `KEEP` — a better place to search from that
+is not a better bot — while a mean below that floor is a **discard**. Run
+`36764071814` iteration 2 is why the second demotion exists: 39% down, kept as
+the parent, with the run's own `why` string asserting "not a regression" in the
+sentence that reported the regression. The floor is set from the noise rather
+than from that run — one SE is ~17% of the mean here, so a 10% dip is not
+resolvable at 15 seeds but 39% is ~3.7 SE.
 
 ## The files
 
@@ -241,7 +256,11 @@ Three generalisations, all learned the same way:
 - **A claim about one file, written next to another file, is unverified until
   someone reads them against each other.** "They are in the artifact" sat nine
   lines from the code that writes the patches and described a list neither author
-  had open.
+  had open. The same shape again: `log/*.json` was added to the upload list and
+  the run's own record was still missing from the artifact, because
+  `Upload everything` copies a *file list* and `log_verdict.py` ran in the step
+  after it. **A file written after the list that names it is not on the list.**
+  `Write the verdict` now precedes the upload for that reason alone.
 - **Say what the fallback actually is.** It is a 30-day artifact, not a ref.
   Naming the expiry is the difference between a record and a rumour.
 
