@@ -36,6 +36,7 @@ import shutil
 import statistics
 import subprocess
 import sys
+import threading
 from pathlib import Path
 
 def _find_repo_root(start: Path) -> Path:
@@ -71,6 +72,25 @@ MUTATOR_IMAGE = (
 
 #: Seeds kept for the paired comparison, from the arena's published batch.
 PUBLISHED_SEEDS = 15
+
+#: Concurrent arena episodes per score(). Sized for the CI runner
+#: (`ubuntu-latest`, 4 vCPU): the agent container has exited by the time either
+#: score runs, so scoring may use the whole machine.
+#:
+#: Not `None`, which the CLI documents as "one per CPU the container runtime
+#: has": `evaluate` threads the value straight through to `run_prepared`, which
+#: computes `max(1, min(max_parallel_evals, n))`, and `min(None, 15)` raises
+#: TypeError. The package's own default is unusable on this path, so the cap is
+#: an explicit int.
+EVAL_PARALLELISM = 4
+
+#: Hard wall-clock ceiling on one agent turn. The agent gets a budget, not a
+#: blank cheque: run 36710578461 spent 81.3 min in the agent (56.0 of it asleep
+#: in `sleep`), and under a 360-minute job cap a single runaway turn can push
+#: the rest of the iteration out of existence. Capping the turn means a
+#: confused agent costs one iteration rather than the run. The brief now also
+#: says how to measure cheaply, so this is a backstop, not the normal path.
+AGENT_TIMEOUT_SECONDS = 40 * 60
 
 #: One cheap episode on a reserved seed, to reject a mutant that does not run.
 SMOKE_SEED = 9000
@@ -131,12 +151,22 @@ def score(tree: Path, identity: str, *, seeds: int = PUBLISHED_SEEDS, max_steps=
     `ascended` by name, so the projection would hand it episodes it cannot
     resolve. One evaluation, two shapes; re-scoring to recover `raw` would mean
     trusting a second sample of a batch with a per-seed SD of 0.033.
+
+    Episodes run `EVAL_PARALLELISM` at a time. This used to be pinned to 1,
+    which cost ~6.4 min per score and therefore ~13 min per iteration for
+    nothing: `run_prepared` keys results by spec index (`results[i] = result`
+    after `as_completed`) and returns them in `specs` order, so the worker
+    count cannot reach the result. Verified by driving `run_prepared` with a
+    stub `run_one` and deliberately uneven episode costs at 1/2/4/8 workers:
+    identical per-seed values and an identical mean every time, still in specs
+    order. The score is a pure function of (tree, identity, seeds); parallelism
+    is schedule-only.
     """
     from nethackers.harness import evaluate as E
 
     mean, evidence = E.evaluate(
         str(tree), spec_for(identity, seeds, max_steps), ARENA_IMAGE,
-        now=now(), runtime="docker", max_parallel_evals=1,
+        now=now(), runtime="docker", max_parallel_evals=EVAL_PARALLELISM,
     )
     results = [
         {
@@ -763,15 +793,40 @@ def run_operator(
         except Exception:
             pass
 
+    # Wall-clock ceiling on the turn, via the operator's own `stop` hook: the
+    # watcher thread sees the event set and kills the container, so this is a
+    # real stop rather than a detached `communicate(timeout=...)` -- the
+    # harness/loop.py pattern. `cancelled` says whether *we* stopped it, because
+    # `OperatorResult.stopped_reason` cannot distinguish our budget from the
+    # agent's own decision to finish.
+    stop = threading.Event()
+    cancelled = threading.Event()
+    timer = threading.Timer(
+        AGENT_TIMEOUT_SECONDS,
+        lambda: (cancelled.set(), stop.set()),
+    )
+    timer.daemon = True
+    timer.start()
     try:
-        result = operator.run(worktree, brief_text, on_line=on_line)
+        result = operator.run(worktree, brief_text, on_line=on_line, stop=stop)
     finally:
+        # Always cancel, or a completed turn leaves a live timer holding the
+        # event (and, under a short AGENT_TIMEOUT_SECONDS, a later iteration's
+        # timer firing into the next one).
+        timer.cancel()
         if handle is not None:
             try:
                 handle.flush()
                 handle.close()
             except Exception:
                 pass
+    if cancelled.is_set():
+        print(
+            f"  agent hit the {AGENT_TIMEOUT_SECONDS // 60}-minute ceiling; "
+            f"container stopped. Whatever it wrote is still scored, and its "
+            f"transcript is still the evidence of what it was doing.",
+            flush=True,
+        )
 
     usage = getattr(result, "usage", None)
     total = None

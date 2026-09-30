@@ -343,6 +343,105 @@ defect, not a judgement about the score.
 """
 
 
+#: Upstream ships measurement instructions, and we were silently dropping them.
+#: Measured: run 36710578461 spent 81.3 min with the agent, and 56.0 of those
+#: minutes were `sleep` -- 25 unique waits, including `sleep 600` and
+#: `sleep 420`. Having never been told the canonical invocation, the agent
+#: wrote its own `/tmp/eval.sh`, ran it backgrounded at PAR=4/5, and blocked on
+#: it. Every seed then got played two or three times per iteration: the agent's
+#: own batch, our parent baseline, and our child score.
+#:
+#: The cause is ours, not the agent's. `ContainerOperator.run(brief=...)`
+#: REPLACES the harness's brief rather than extending it -- there is no
+#: free-text parameter on `build_brief`, which is why this file exists at all.
+#: Upstream's brief ends with `..., HOWTO, MEASURE` (harness/brief.py:198,210),
+#: so every time we composed our own we silently removed `MEASURE`. Ours had no
+#: measurement section whatsoever: no `arena.run`, no `--batch`, no
+#: `--evaluation-id`.
+#:
+#: Imported rather than retyped, so it cannot drift the way ours did. Note what
+#: is NOT imported: upstream's `_references()` points the agent at `/refs/`,
+#: and this loop never passes the operator's `refs=` argument, so that folder is
+#: empty or absent. Quoting it would be an instruction to read a file that does
+#: not exist -- the dangling-reference failure `AGENTS.md` warns about.
+
+#: Fallback seed count, used only when no diagnosis was supplied. `build()`
+#: prefers the real batch size from the diagnosis so this is not a second
+#: source of truth for a number SCORING already states in prose.
+DEFAULT_SEEDS = 15
+
+#: Module-level rather than an `except ... as` target: Python unbinds the
+#: target when the block exits, so the reason would be a NameError by the time
+#: the fallback actually wanted to print it -- i.e. exactly when it is needed.
+_MEASURE_IMPORT_ERROR: Exception | None = None
+try:
+    from nethackers.harness.brief import MEASURE as _UPSTREAM_MEASURE
+except Exception as _exc:  # pragma: no cover - package layout changed
+    # Broad on purpose: ANY failure to import the measurement text must
+    # degrade to the local fallback, never take down a run.
+    _UPSTREAM_MEASURE = None
+    _MEASURE_IMPORT_ERROR = _exc
+
+#: Used only if the import above fails. Degrading to "no measurement
+#: instructions" is precisely the bug this fixes, so the essentials are
+#: reproduced here and a warning goes to the run log rather than to nowhere.
+#: Uses upstream's literal `<identity>` placeholder rather than an f-string, so
+#: the single `.replace()` in `_measure` covers the real and fallback paths and
+#: neither can ship an unsubstituted placeholder to the agent.
+_MEASURE_FALLBACK = """\
+## How to measure (exactly like the judge)
+```
+python -m nethackers.arena.run --solution /workspace \\
+  --batch '[[0,"<identity>"], …]' --evaluation-id local --out /tmp/eval.json
+```
+- `--evaluation-id local` is the judge's seed namespace -- any other id plays
+  different, meaningless games.
+- Read per-seed results from the `--out` file.
+- **Run it as ONE foreground command and wait.** Use a **small** sample of seeds
+  so it finishes inside a long Bash timeout. Do **not** background the eval or
+  `sleep`-wait for it: a backgrounded result is lost when your turn ends, and
+  you would choose your change blind.
+"""
+
+
+def _measure(identity: str, seeds: int = DEFAULT_SEEDS) -> str:
+    """How to measure the change, in the agent's own namespace.
+
+    Upstream's text says "a small sample of seeds" and leaves the number to the
+    model. We pin it, because the run cost is the whole reason this section
+    exists: at ~26 s of wall-clock per episode, 15 seeds is ~6.5 min of waiting
+    and 5 is ~2 min -- comfortably inside one foreground Bash call, so there is
+    nothing to poll for and no reason to background anything.
+
+    The harness scores the whole published batch itself once the agent returns, so
+    this measurement is a sanity check, not the authoritative number. Saying so
+    is the difference between a two-minute check and the 56 minutes of waiting
+    that run 36710578461 spent re-deriving the same measurement by hand.
+    """
+    body = _UPSTREAM_MEASURE
+    if body is None:
+        print(
+            f"brief: WARNING could not import nethackers.harness.brief.MEASURE "
+            f"({_MEASURE_IMPORT_ERROR!r}); using the local fallback, so upstream "
+            f"improvements to the measurement instructions will not reach the agent",
+            file=sys.stderr,
+        )
+        body = _MEASURE_FALLBACK
+    # Upstream writes the identity as a placeholder; the agent needs the real one
+    # or it has to guess which string its own tree is.
+    body = body.replace("<identity>", identity).rstrip("\n") + "\n"
+    return (
+        "**This is a sanity check, not the score you are judged on.** The loop "
+        "scores the tree on all "
+        f"{seeds} published seeds after you finish, and that number "
+        "decides the verdict. Measure **at most 5 seeds** here, to confirm your "
+        "change runs and moves in the direction you predicted. Do not try to "
+        "reproduce a final score: a handful of seeds is inside the noise, and "
+        "the cost of waiting for a number that will be recomputed is most of a "
+        "run.\n\n" + body
+    )
+
+
 #: Sections about OUR APPARATUS rather than the game are dropped from the
 #: brief. Measured: including them made the brief 80% harness notes -- "tracing
 #: is impossible inside the arena", "two bugs that emptied the first brief" --
@@ -547,12 +646,15 @@ def build(
                 "",
             ]
 
+    seeds = len((diagnosis or {}).get("results") or []) or DEFAULT_SEEDS
+    measure = _measure(identity, seeds)
+
     rules = game_rules_section(identity, REPO_ROOT)
     if rules:
         # Before the scoring rule: what the game IS, then how you are judged.
-        parts += [rules, SCORING, HOWTO, CONTRACT]
+        parts += [rules, SCORING, measure, HOWTO, CONTRACT]
     else:
-        parts += [SCORING, HOWTO, CONTRACT]
+        parts += [SCORING, measure, HOWTO, CONTRACT]
 
     return "\n".join(parts)
 
