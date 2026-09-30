@@ -553,6 +553,29 @@ def main() -> int:
                         flush=True,
                     )
 
+    # Whatever happened, the run's output is worth keeping. A run that ends in
+    # NOT-A-WIN has still measured seeds and written down why, and run
+    # 36710578461 lost 4186 characters of exactly that to a workspace that died
+    # with the job. `harvest_log` covers iteration to iteration; this covers the
+    # end of the run. Not registered to the hub -- a lost program is not a
+    # submission -- and not read by the next run, which stays independent.
+    published = publish_mod.publish_results(
+        best_tree, args.identity, work, run_id=os.environ.get("GITHUB_RUN_ID", "local")
+    )
+    if published.get("published"):
+        print(
+            f"results published: branch {published['branch']} "
+            f"commit {published['commit'][:12]}",
+            flush=True,
+        )
+    else:
+        print(
+            f"results NOT published ({published.get('error', 'unknown')}); "
+            f"they are in the artifact",
+            flush=True,
+        )
+    (work / "history.json").write_text(json.dumps(history, indent=2))
+
     print(f"\n=== done · {len(history)} iteration(s) ===")
     for entry in history:
         print(f"  {entry['iteration']}: {entry['verdict']:11} {entry['why']}")
