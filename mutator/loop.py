@@ -56,10 +56,12 @@ def _game_rules(identity: str) -> str:
         f"# This gameplay\n\n"
         f"Identity: `{identity}`\n\n"
         "Play and score this identity only. "
-        "`experience.md` and `experiments.md` are already filled from this bot's "
-        "latest games. Implement the single change in `experiments.md`. "
-        "When you stop, rewrite both files from what you observed. "
-        "Leaving them unchanged discards the edit as a note-less change.\n\n"
+        "`experience.md` already lists every public seed. Do not run the arena, "
+        "do not write a diagnostic harness, and do not re-play those seeds. "
+        "The container is killed after 10 minutes, and the last run died at "
+        "that limit while it was still reading deaths. "
+        "Implement the single change in `experiments.md` in `autoascend/`, "
+        "then rewrite both note files. An unchanged note file discards the edit.\n\n"
     )
     return header + body
 
@@ -122,15 +124,16 @@ def _cause(row: dict) -> str:
     return row.get("cause_of_death") or row.get("milestone") or row.get("status") or "unknown"
 
 
-def _hypothesis(cause: str, shallow: int, total: int) -> str:
-    text = cause.lower()
-    if any(word in text for word in ("starv", "hunger", "faint")):
+def _hypothesis(cause: str, shallow: int, total: int, causes: list[str] | None = None) -> str:
+    blob = " ".join([cause, *(causes or [])]).lower()
+    if any(word in blob for word in ("starv", "hunger", "faint")):
         return (
-            "Eat before exploring. Hunger is ending the game while the wizard "
-            "is still on the early floors. Change food handling in autoascend "
-            "so this character eats when hungry instead of walking on."
+            "Eat before exploring. At least one game ends in starvation or "
+            "fainting from lack of food, and the rest die on the early floors. "
+            "Change food handling in autoascend so this character eats when "
+            "hungry instead of walking on. Do not re-run the seeds."
         )
-    if "poison" in text:
+    if "poison" in blob:
         return (
             "Treat poison as a reason to leave, not a hit to trade. A wizard "
             "dies to it with no hit points in reserve. Change one combat or "
@@ -176,7 +179,7 @@ def write_notes_from_evidence(notes: Path, evidence: dict, identity: str) -> Non
             f"{row.get('turns', '')} | {_cause(row)} |"
         )
     table = "\n".join(lines)
-    hypothesis = _hypothesis(cause, shallow, len(results))
+    hypothesis = _hypothesis(cause, shallow, len(results), list(counts))
     (notes / "experience.md").write_text(
         f"# Playthrough\n\n"
         f"Identity: `{identity}`\n\n"
@@ -199,7 +202,8 @@ def write_notes_from_evidence(notes: Path, evidence: dict, identity: str) -> Non
         f"Mean progress is {mean_text}. The bot is kept only if the next mean "
         f"is strictly higher on `{identity}`.\n\n"
         f"## What might solve it\n\n"
-        f"{hypothesis}\n"
+        f"{hypothesis}\n\n"
+        "Do not run Python against the game. Edit `autoascend/` only.\n"
     )
 
 
@@ -285,7 +289,13 @@ def _metric_rows(workdir: Path) -> list[dict]:
         for line in path.read_text().splitlines():
             if line.strip():
                 rows.append(json.loads(line))
-    return [row for row in rows if row.get("reason") != "baseline"]
+    by_iteration: dict[int, dict] = {}
+    for row in rows:
+        if row.get("reason") == "baseline":
+            continue
+        number = int(row.get("iteration") or 0)
+        by_iteration[number] = row
+    return [by_iteration[number] for number in sorted(by_iteration)]
 
 
 def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
@@ -368,8 +378,11 @@ def record_local(results: list[dict], notes: Path) -> None:
     who = results[0].get("identity", DEFAULT_IDENTITY) if results else DEFAULT_IDENTITY
     lines = ["", f"## Run {who} ({len(results)} iteration(s))"]
     for row in results:
+        reason = str(row.get("reason") or "")
+        if len(reason) > 180:
+            reason = reason[:180] + "…"
         lines.append(
-            f"- iteration {row['iteration']}: reason={row['reason']} "
+            f"- iteration {row['iteration']}: reason={reason} "
             f"dev_fitness={row['dev_fitness']} improved={row['improved']} "
             f"notes_ignored={row.get('notes_ignored')}"
         )
@@ -451,7 +464,19 @@ def self_check() -> None:
         }, DEFAULT_IDENTITY)
         text = (filled / "experiments.md").read_text()
         assert "corridor" in text
+        assert "Do not run Python" in text
         assert "killed by a jackal" in (filled / "experience.md").read_text()
+        hungry = root / "hungry"
+        write_notes_from_evidence(hungry, {
+            "mean_progress": 0.04,
+            "results": [
+                {"trajectory_id": 0, "progress": 0.02, "turns": 5000, "max_depth": 1,
+                 "cause_of_death": "killed by a wolf"},
+                {"trajectory_id": 1, "progress": 0.02, "turns": 5206, "max_depth": 1,
+                 "cause_of_death": "died of starvation"},
+            ],
+        }, DEFAULT_IDENTITY)
+        assert "Eat before exploring" in (hungry / "experiments.md").read_text()
         assert agent_rewrote("same", "same") is False
         assert agent_rewrote("same", "rewritten playthrough") is True
         assert agent_rewrote("same", "This file is empty at the start of a run") is False
