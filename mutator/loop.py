@@ -8,10 +8,11 @@ into the repo's `mutator/` directory. A new run starts from the blank
 templates.
 
 ponytail: one `evolve --iterations N` for the whole run, so the cold-start
-game happens once. The 20-minute cap is `docker kill` on `nethackers-mut-*`.
-nethackers hardcodes an 8-hour container timeout and has no flag for it.
-A killed iteration is discarded, not scored. Upgrade path is a timeout flag
-on that container.
+game happens once. The coding container is not killed from here.
+nethackers scores a tree only after the operator exits; a killed
+process is recorded as an operator error and is not measured.
+nethackers' own container ceiling is 8 hours. The Actions job stops
+at 360 minutes, which is the longest a GitHub-hosted runner allows.
 """
 
 from __future__ import annotations
@@ -21,8 +22,6 @@ import json
 import shutil
 import subprocess
 import sys
-import threading
-from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,7 +30,6 @@ DEFAULT_IDENTITY = "wiz-hum-cha-mal"
 MODEL = "opencode/big-pickle"
 OPERATOR = "opencode2"
 EFFORT = "medium"
-THINK_LIMIT_S = 1200
 RUN_NOTES = ("experience.md", "experiments.md")
 NOTES = ("GAME_RULES.md", *RUN_NOTES)
 BOT_NAMES = ("bot.py", "arena_adapter.py", "autoascend", "nethackers.solution.json", "LICENSE")
@@ -56,13 +54,12 @@ def _game_rules(identity: str) -> str:
     header = (
         f"# This gameplay\n\n"
         f"Identity: `{identity}`\n\n"
-        "Play and score this identity only. "
-        "`experience.md` already lists every public seed. Do not run the arena, "
-        "do not write a diagnostic harness, and do not re-play those seeds. "
-        "The container is killed after 20 minutes. "
-        "The last run died at 10 minutes on an unfinished step. "
-        "Implement the single change in `experiments.md` in `autoascend/`, "
-        "then rewrite both note files. An unchanged note file discards the edit.\n\n"
+        "The one change is already written in `experiments.md`. "
+        "Implement it in `autoascend/` and mark it with a `# hypothesis:` "
+        "comment, then exit. The judge scores the tree only after this "
+        "process exits. A killed process is not scored. "
+        "`experience.md` lists the public seeds. Read it, then edit the bot. "
+        "Do not write a second scorer.\n\n"
     )
     return header + body
 
@@ -132,7 +129,7 @@ def _hypothesis(cause: str, shallow: int, total: int, causes: list[str] | None =
             "Eat before exploring. At least one game ends in starvation or "
             "fainting from lack of food, and the rest die on the early floors. "
             "Change food handling in autoascend so this character eats when "
-            "hungry instead of walking on. Do not re-run the seeds."
+            "hungry instead of walking on."
         )
     if "poison" in blob:
         return (
@@ -204,7 +201,7 @@ def write_notes_from_evidence(notes: Path, evidence: dict, identity: str) -> Non
         f"is strictly higher on `{identity}`.\n\n"
         f"## What might solve it\n\n"
         f"{hypothesis}\n\n"
-        "Do not run Python against the game. Edit `autoascend/` only.\n"
+        "Edit `autoascend/` and exit. The judge measures that tree.\n"
     )
 
 
@@ -233,53 +230,6 @@ def evolve_command(seed: Path, workdir: Path, identity: str, iterations: int) ->
     ]
 
 
-def _started_age_seconds(started_at: str, now: datetime) -> float | None:
-    text = started_at.strip()
-    if text.endswith("Z"):
-        text = text[:-1] + "+00:00"
-    if "." in text:
-        head, rest = text.split(".", 1)
-        tz = ""
-        for mark in ("+", "-"):
-            at = rest.find(mark)
-            if at > 0:
-                tz = rest[at:]
-                rest = rest[:at]
-                break
-        text = f"{head}.{rest[:6]}{tz}"
-    try:
-        started = datetime.fromisoformat(text)
-    except ValueError:
-        return None
-    if started.tzinfo is None:
-        started = started.replace(tzinfo=timezone.utc)
-    return (now.astimezone(timezone.utc) - started.astimezone(timezone.utc)).total_seconds()
-
-
-def _cap_mutators(stop: threading.Event, limit_s: int) -> None:
-    """Kill a mutator container that has been up longer than `limit_s`.
-
-    Arena containers are not named `nethackers-mut-`, so the judge's games
-    are left alone. nethackers has no per-iteration timeout flag.
-    """
-    while not stop.wait(15):
-        listed = subprocess.run(
-            ["docker", "ps", "-q", "--filter", "name=nethackers-mut-"],
-            capture_output=True, text=True,
-        )
-        if listed.returncode != 0:
-            continue
-        now = datetime.now(timezone.utc)
-        for cid in listed.stdout.split():
-            inspected = subprocess.run(
-                ["docker", "inspect", "-f", "{{.State.StartedAt}}", cid],
-                capture_output=True, text=True,
-            )
-            age = _started_age_seconds(inspected.stdout, now)
-            if age is not None and age >= limit_s:
-                subprocess.run(["docker", "kill", cid], capture_output=True)
-
-
 def _iter_dirs(workdir: Path) -> list[Path]:
     found = [path for path in (workdir / "runs").glob("*/iter-*") if path.is_dir()]
     return sorted(found, key=lambda path: int(path.name.split("-", 1)[1]))
@@ -302,7 +252,7 @@ def _metric_rows(workdir: Path) -> list[dict]:
 
 def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
     """One evolve call for every iteration. Score the bot once first and put
-    those notes in the seed. Kill the coding-agent container at 20 minutes."""
+    those notes in the seed. Leave the coding container until it exits."""
     state.mkdir(parents=True, exist_ok=True)
     notes = state / "notes"
     evidence = eval_identity(bot, identity)
@@ -312,15 +262,9 @@ def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
     seed = state / "seed"
     workdir = state / "work"
     prepare_seed(bot, notes, seed, identity)
-    stop = threading.Event()
-    watcher = threading.Thread(target=_cap_mutators, args=(stop, THINK_LIMIT_S), daemon=True)
-    watcher.start()
-    try:
-        proc = subprocess.run(
-            evolve_command(seed, workdir, identity, iterations), text=True,
-        )
-    finally:
-        stop.set()
+    proc = subprocess.run(
+        evolve_command(seed, workdir, identity, iterations), text=True,
+    )
     trees = {int(path.name.split("-", 1)[1]): path for path in _iter_dirs(workdir)}
     results = []
     last_improved: Path | None = None
@@ -443,11 +387,8 @@ def self_check() -> None:
         assert DEFAULT_IDENTITY in command
         assert command[command.index("--iterations") + 1] == "3"
         assert command[command.index("--effort") + 1] == "medium"
-        age = _started_age_seconds(
-            "2026-10-01T10:00:00.123456789Z",
-            datetime(2026, 10, 1, 10, 10, 5, tzinfo=timezone.utc),
-        )
-        assert age is not None and 600 <= age < 610
+        assert "killed after" not in game
+        assert "# hypothesis:" in game
         bare = root / "bare-notes"
         bare.mkdir()
         seed_bare = root / "seed-bare"
@@ -467,7 +408,7 @@ def self_check() -> None:
         }, DEFAULT_IDENTITY)
         text = (filled / "experiments.md").read_text()
         assert "corridor" in text
-        assert "Do not run Python" in text
+        assert "The judge measures" in text
         assert "killed by a jackal" in (filled / "experience.md").read_text()
         hungry = root / "hungry"
         write_notes_from_evidence(hungry, {
