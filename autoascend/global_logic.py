@@ -625,8 +625,18 @@ class GlobalLogic:
                 self.agent.cure_disease().every(5),
             ])
             .preempt(self.agent, [
-                self.agent.eat_corpses_from_ground(only_below_me=True).condition(lambda: self.agent.blstats.hunger_state >= Hunger.NOT_HUNGRY),
-                self.agent.eat_corpses_from_ground().every(5).condition(lambda: self.agent.blstats.hunger_state >= Hunger.NOT_HUNGRY),
+                # hypothesis: the bot starves on the early floors because it only ever eats a
+                # corpse it is already standing on. On dlvl 1 corpses are the only reliable food,
+                # they are never picked up (ItemPriority skips corpses), and eating them from the
+                # pack is restricted to lizard/lichen, so the wizard spends whole games at hunger
+                # WEAK/FAINTING -- helpless for dozens of turns per faint and easy prey. Once we are
+                # actually WEAK, walking to the nearest corpse that is safe to eat and eating it
+                # there is worth the trip, so that more turns go into gaining XP/depth (what the
+                # score counts) instead of into starving.
+                self.agent.eat_corpses_from_ground(only_below_me=False)
+                .condition(lambda: self.agent.blstats.hunger_state >= Hunger.WEAK),
+                self.agent.eat_corpses_from_ground(only_below_me=True)
+                .condition(lambda: self.agent.blstats.hunger_state >= Hunger.NOT_HUNGRY),
                 self.agent.eat_from_inventory().every(5),
             ])
             .preempt(self.agent, [
