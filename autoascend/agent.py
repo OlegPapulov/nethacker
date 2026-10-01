@@ -1351,21 +1351,33 @@ class Agent:
                 yield True
             self.go_to(target_y, target_x, debug_tiles_args=dict(color=(255, 255, 0), is_path=True))
 
-        # TODO: checking level.corpses_to_eat again (moving to non-existing corpses often)
+        # Checking level.corpses_to_eat again (moving to non-existing corpses often)
         if (target_y, target_x) in level.corpses_to_eat and monster_id in level.corpses_to_eat[target_y, target_x]:
             corpse_age = level.corpses_to_eat[target_y, target_x][monster_id]
             if level.shop[target_y, target_x]:
                 del level.corpses_to_eat[target_y, target_x]
                 return
-            for item in self.inventory.items_below_me:
-                if item.is_corpse() and item.monster_id == monster_id:
-                    if self._is_corpse_editable(monster_id, corpse_age):
-                        if not yielded:
-                            yielded = True
-                            yield True
-                        self.inventory.eat(item)
+            corpse_below_me = next((item for item in self.inventory.items_below_me
+                                   if item.is_corpse() and item.monster_id == monster_id), None)
+            if corpse_below_me is not None:
+                # Walking to a corpse can easily take longer than the 50 turns the aging check in
+                # _is_corpse_editable allows, which would make us walk to the corpse, refuse to eat it
+                # and then walk to it again on the next turn. If we can see that the corpse we recorded
+                # is still lying right here where we killed it, treat it as freshly created - unless a
+                # pet is nearby, since then the corpse could belong to a pet of the same species instead.
+                if not self.has_pet:
+                    corpse_age = self.blstats.time
+                    level.corpses_to_eat[target_y, target_x][monster_id] = corpse_age
+                if self._is_corpse_editable(monster_id, corpse_age):
+                    if not yielded:
+                        yielded = True
+                        yield True
+                    self.inventory.eat(corpse_below_me)
+                    return
 
-            if not yielded:
+            # We are standing on the square we walked to and there is nothing here to eat:
+            # forget the corpse so that we don't waste our turns walking to it again and again.
+            if yielded:
                 del level.corpses_to_eat[target_y, target_x][monster_id]
 
         if not yielded:

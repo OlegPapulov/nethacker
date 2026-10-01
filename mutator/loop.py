@@ -54,12 +54,12 @@ def _game_rules(identity: str) -> str:
     header = (
         f"# This gameplay\n\n"
         f"Identity: `{identity}`\n\n"
-        "The one change is already written in `experiments.md`. "
-        "Implement it in `autoascend/` and mark it with a `# hypothesis:` "
-        "comment, then exit. The judge scores the tree only after this "
-        "process exits. A killed process is not scored. "
-        "`experience.md` lists the public seeds. Read it, then edit the bot. "
-        "Do not write a second scorer.\n\n"
+        "Be brief. Read `experiments.md`, make that one edit in `autoascend/`, "
+        "mark it with a `# hypothesis:` comment, and exit. "
+        "Do not narrate, do not tour the tree, and do not run the arena. "
+        "The judge scores the tree after this process exits. "
+        "Private Dungeons are scored by their verifier after that registration. "
+        "You do not have those seeds, and a local game is not a private result.\n\n"
     )
     return header + body
 
@@ -231,7 +231,10 @@ def evolve_command(seed: Path, workdir: Path, identity: str, iterations: int) ->
 
 
 def _iter_dirs(workdir: Path) -> list[Path]:
-    found = [path for path in (workdir / "runs").glob("*/iter-*") if path.is_dir()]
+    """Iteration trees live at runs/<id>/work/iter-N in nethackers 0.37.3.
+    The older runs/<id>/iter-N layout is kept so a scored tree is still found."""
+    found = [path for path in workdir.glob("runs/*/work/iter-*") if path.is_dir()]
+    found += [path for path in workdir.glob("runs/*/iter-*") if path.is_dir()]
     return sorted(found, key=lambda path: int(path.name.split("-", 1)[1]))
 
 
@@ -389,6 +392,7 @@ def self_check() -> None:
         assert command[command.index("--effort") + 1] == "medium"
         assert "killed after" not in game
         assert "# hypothesis:" in game
+        assert "Be brief" in game
         bare = root / "bare-notes"
         bare.mkdir()
         seed_bare = root / "seed-bare"
@@ -424,6 +428,9 @@ def self_check() -> None:
         assert agent_rewrote("same", "same") is False
         assert agent_rewrote("same", "rewritten playthrough") is True
         assert agent_rewrote("same", "This file is empty at the start of a run") is False
+        nested = root / "work" / "runs" / "20261001" / "work" / "iter-0"
+        nested.mkdir(parents=True)
+        assert _iter_dirs(root / "work") == [nested]
     print("self-check ok")
 
 

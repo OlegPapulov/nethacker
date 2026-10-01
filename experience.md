@@ -82,47 +82,23 @@ The judge table for iteration 3 prints 0.082. Seed 13, the starvation game, went
 
 Set the git author globally in the mutate job, so the publish clone can commit and push. Commit the improved bot from the runner workspace onto `main` as well, so the next run starts from the scored tree if the hub push fails.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=registered dev_fitness=0.06431333032572426 improved=True notes_ignored=True
+## Run 36921712685, wiz-hum-cha-mal, 1 iteration
+
+[36921712685](https://github.com/OlegPapulov/nethacker/actions/runs/36921712685) finished green. Cold-start mean 0.063. One iteration, 78 minutes, 402,750 tokens, then `✓ REGISTERED dev=0.064`. `hub_reason` is empty. The published tree is `ea143fc` on `evo-harness-v1/20261001-203217`.
+
+The edit is the starvation experiment. When hunger reaches weak, the wizard walks to a corpse and eats it. A corpse it is already standing on is treated as fresh. Seed 13 went from starvation at 5,206 turns on depth 1 to 31,848 turns on depth 3 (0.024 to 0.075). Seed 4 went the other way: 32,346 turns on depth 7 (0.179) down to 2,644 turns on depth 1 (0.018). Seed 11 fell from 0.117 to 0.037. The mean moved from 0.063 to 0.064.
 
 ### Why it stopped
-registered
+
+The job succeeded. The record commit on `main` (`3d6aba1`) contains only `experience.md` and `experiments.md`. The next checkout is still the 0.062 baseline.
 
 ### What is the problem
-# Playthrough
 
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-2 of 15 games stopped at killed by a wolf. Mean progress 0.062.
-
-| seed | progress | turns | stop |
-| --- | --- | --- | --- |
-| 0 | 0.036887590648350246 | 13697 | killed by a goblin |
-| 1 | 0.036887590648350246 | 17693 | killed by a jackal |
-| 2 | 0.07453595273884014 | 20700 | killed by a white unicorn |
-| 3 | 0.02081163581974355 | 3052 | killed by a grid bug |
-| 4 | 0.17909953770432294 | 32346 | killed by a wolf |
-| 5 | 0.0507583712345433 | 14486 | killed by a bat |
-| 6 | 0.036887590648350246 | 11919 | killed by a kitten |
-| 7 | 0.07453595273884014 | 23971 | killed by a rothe |
-| 8 | 0.07453595273884014 | 23604 | killed by a soldier ant |
-| 9 | 0.07453595273884014 | 24295 | killed by an ape |
-| 10 | 0.024160136550546978 | 4014 | killed by a hobbit |
-| 11 | 0.11704996473565571 | 27094 | killed by a wolf |
-| 12 | 0.036887590648350246 | 12509 | killed by a newt |
-| 13 | 0.024160136550546978 | 5206 | died of starvation |
-| 14 | 0.07453595273884014 | 22485 | killed by a crossbow bolt |
-
-## What is the problem
-
-The score is the mean of these games. 9 of 15 end at depth 1. A change that does not move the usual stop, killed by a wolf, does not change the mean.
-
-## What might solve it
-
-See `experiments.md`.
+`nethackers` writes the iteration at `runs/<id>/work/iter-0`. `mutator/loop.py` looked for `runs/<id>/iter-0`, found nothing, and did not copy the tree into the checkout. `notes_ignored` is true for the same reason. The hub has the bot. `main` does not.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+Look for `runs/*/work/iter-*`, and copy those two AutoAscend files from `ea143fc` onto `main` so the next seed is the registered bot.
+
+The hub program is `prog_6f3a5ba98505db8d0c2cfd7b9a4f167e`. Its identity list is the one public row at 0.064. There is no verified row, so Private Dungeons has not scored it. This login cannot read `/verify/candidates` (401). Their verifier is the only process that writes that board.
 
