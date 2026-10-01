@@ -78,8 +78,24 @@ jobs:
 
       - name: Mutate
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python mutator/loop.py --iterations "${{ inputs.iterations }}" --identity "${{ inputs.identity }}"
+          # The Actions token cannot call GET /user, so nethackers treats gh as
+          # logged out and skips registration. This token is `gh` on the
+          # owner's account, which can push.
+          GH_TOKEN: ${{ secrets.NETHACKERS_GH_TOKEN }}
+          NETHACKERS_LOGIN: ${{ secrets.NETHACKERS_LOGIN }}
+        run: |
+          set -euo pipefail
+          login=$(gh api user -q .login)
+          if [ "$login" != "$NETHACKERS_LOGIN" ]; then
+            echo "::error::gh is authenticated as $login, hub login is $NETHACKERS_LOGIN"
+            exit 1
+          fi
+          push=$(gh api "repos/$login/nethacker" --jq .permissions.push)
+          if [ "$push" != "true" ]; then
+            echo "::error::gh cannot push to $login/nethacker, so the scored bot would not be registered"
+            exit 1
+          fi
+          python mutator/loop.py --iterations "${{ inputs.iterations }}" --identity "${{ inputs.identity }}"
 
       - name: Record the run on main
         if: always()
