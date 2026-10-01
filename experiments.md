@@ -13,3 +13,23 @@ The publish clone is a new git repo. Author identity set with `git config` on th
 ## What might solve it
 
 Set `user.name` and `user.email` with `git config --global` before `nethackers evolve`. In the record step, also commit `bot.py`, `arena_adapter.py`, `autoascend/`, `nethackers.solution.json`, and `LICENSE` when the loop left an improved tree in the workspace.
+
+## Proposal (not approved)
+Source: the last mutator iteration. Applying this means editing `mutator/`, which needs a human yes.
+
+# Next experiment
+
+## Why it stopped
+
+killed by a wolf (2 of 15).
+
+## What is the problem
+
+Mean progress is 0.062. The bot is kept only if the next mean is strictly higher on `wiz-hum-cha-mal`.
+
+## What might solve it
+
+Eat before exploring. At least one game ends in starvation or fainting from lack of food, and the rest die on the early floors. Change food handling in autoascend so this character eats when hungry instead of walking on.
+
+Edit `autoascend/` and exit. The judge measures that tree.
+

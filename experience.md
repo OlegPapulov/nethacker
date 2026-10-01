@@ -82,3 +82,47 @@ The judge table for iteration 3 prints 0.082. Seed 13, the starvation game, went
 
 Set the git author globally in the mutate job, so the publish clone can commit and push. Commit the improved bot from the runner workspace onto `main` as well, so the next run starts from the scored tree if the hub push fails.
 
+## Run wiz-hum-cha-mal (1 iteration(s))
+- iteration 1: reason=registered dev_fitness=0.06431333032572426 improved=True notes_ignored=True
+
+### Why it stopped
+registered
+
+### What is the problem
+# Playthrough
+
+Identity: `wiz-hum-cha-mal`
+
+## Why it stopped
+
+2 of 15 games stopped at killed by a wolf. Mean progress 0.062.
+
+| seed | progress | turns | stop |
+| --- | --- | --- | --- |
+| 0 | 0.036887590648350246 | 13697 | killed by a goblin |
+| 1 | 0.036887590648350246 | 17693 | killed by a jackal |
+| 2 | 0.07453595273884014 | 20700 | killed by a white unicorn |
+| 3 | 0.02081163581974355 | 3052 | killed by a grid bug |
+| 4 | 0.17909953770432294 | 32346 | killed by a wolf |
+| 5 | 0.0507583712345433 | 14486 | killed by a bat |
+| 6 | 0.036887590648350246 | 11919 | killed by a kitten |
+| 7 | 0.07453595273884014 | 23971 | killed by a rothe |
+| 8 | 0.07453595273884014 | 23604 | killed by a soldier ant |
+| 9 | 0.07453595273884014 | 24295 | killed by an ape |
+| 10 | 0.024160136550546978 | 4014 | killed by a hobbit |
+| 11 | 0.11704996473565571 | 27094 | killed by a wolf |
+| 12 | 0.036887590648350246 | 12509 | killed by a newt |
+| 13 | 0.024160136550546978 | 5206 | died of starvation |
+| 14 | 0.07453595273884014 | 22485 | killed by a crossbow bolt |
+
+## What is the problem
+
+The score is the mean of these games. 9 of 15 end at depth 1. A change that does not move the usual stop, killed by a wolf, does not change the mean.
+
+## What might solve it
+
+See `experiments.md`.
+
+### What might solve it
+See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
