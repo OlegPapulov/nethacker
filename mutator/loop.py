@@ -24,20 +24,43 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MUTATOR = Path(__file__).resolve().parent
-IDENTITY = "wiz-hum-cha-mal"
+DEFAULT_IDENTITY = "wiz-hum-cha-mal"
 MODEL = "opencode/big-pickle"
 OPERATOR = "opencode2"
-NOTES = ("GAME_RULES.md", "experience.md", "experiments.md")
+RUN_NOTES = ("experience.md", "experiments.md")
+NOTES = ("GAME_RULES.md", *RUN_NOTES)
 BOT_NAMES = ("bot.py", "arena_adapter.py", "autoascend", "nethackers.solution.json", "LICENSE")
 
 
-def _blank_notes(dest: Path) -> None:
+def ensure_notes(dest: Path) -> None:
+    """Create experience.md and experiments.md when this run does not have them.
+
+    A new run has neither file. That is the state before iteration 1.
+    Later iterations already harvested whatever the agent wrote, so those
+    files are left as they are.
+    """
     dest.mkdir(parents=True, exist_ok=True)
-    for name in NOTES:
-        shutil.copyfile(MUTATOR / name, dest / name)
+    for name in RUN_NOTES:
+        path = dest / name
+        if not path.is_file():
+            shutil.copyfile(MUTATOR / name, path)
 
 
-def prepare_seed(bot: Path, notes: Path, seed: Path) -> None:
+def _game_rules(identity: str) -> str:
+    body = (MUTATOR / "GAME_RULES.md").read_text()
+    header = (
+        f"# This gameplay\n\n"
+        f"Identity: `{identity}`\n\n"
+        "Play and score this identity only. "
+        "Before iteration 1, `experience.md` and `experiments.md` are missing. "
+        "If either file is not in this tree, create it with the sections "
+        "Why it stopped, What is the problem, and What might solve it, "
+        "then fill them from `/refs/parent-eval.json` and the rules below.\n\n"
+    )
+    return header + body
+
+
+def prepare_seed(bot: Path, notes: Path, seed: Path, identity: str) -> None:
     """Bot code plus this run's notes. Notes are gitignored so a publish of
     the seed cannot carry them into the next run."""
     if seed.exists():
@@ -50,8 +73,11 @@ def prepare_seed(bot: Path, notes: Path, seed: Path) -> None:
             shutil.copytree(src, dst)
         else:
             shutil.copyfile(src, dst)
-    for name in NOTES:
-        shutil.copyfile(notes / name, seed / name)
+    (seed / "GAME_RULES.md").write_text(_game_rules(identity))
+    for name in RUN_NOTES:
+        src = notes / name
+        if src.is_file():
+            shutil.copyfile(src, seed / name)
     (seed / ".gitignore").write_text("".join(f"{name}\n" for name in NOTES))
 
 
@@ -93,34 +119,35 @@ def _apply_code(tree: Path, bot: Path) -> None:
             shutil.copyfile(src, dst)
 
 
-def evolve_once(seed: Path, workdir: Path) -> subprocess.CompletedProcess[str]:
+def evolve_command(seed: Path, workdir: Path, identity: str) -> list[str]:
+    return [
+        "nethackers", "evolve", identity,
+        "--seed", str(seed),
+        "--from-seed",
+        "--operator", OPERATOR,
+        "--model", MODEL,
+        "--iterations", "1",
+        "--workdir", str(workdir),
+    ]
+
+
+def evolve_once(seed: Path, workdir: Path, identity: str) -> subprocess.CompletedProcess[str]:
     workdir.mkdir(parents=True, exist_ok=True)
-    return subprocess.run(
-        [
-            "nethackers", "evolve", IDENTITY,
-            "--seed", str(seed),
-            "--from-seed",
-            "--operator", OPERATOR,
-            "--model", MODEL,
-            "--iterations", "1",
-            "--workdir", str(workdir),
-        ],
-        text=True,
-    )
+    return subprocess.run(evolve_command(seed, workdir, identity), text=True)
 
 
-def run(iterations: int, bot: Path, state: Path) -> list[dict]:
+def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
     """Mutate `bot` in place when an iteration improves it. Always leave the
     scored tree under `state/publish/<n>` so the caller can register it.
     Notes stay in `state/notes` and are not copied back to `mutator/`."""
     notes = state / "notes"
-    _blank_notes(notes)
     results = []
     for i in range(1, iterations + 1):
+        ensure_notes(notes)
         seed = state / f"seed-{i}"
         workdir = state / f"work-{i}"
-        prepare_seed(bot, notes, seed)
-        proc = evolve_once(seed, workdir)
+        prepare_seed(bot, notes, seed, identity)
+        proc = evolve_once(seed, workdir, identity)
         _harvest(workdir, notes)
         metric = _metrics(workdir)
         tree = _latest_iter(workdir)
@@ -134,6 +161,7 @@ def run(iterations: int, bot: Path, state: Path) -> list[dict]:
         if improved and tree is not None:
             _apply_code(tree, bot)
         results.append({
+            "identity": identity,
             "iteration": i,
             "exit_code": proc.returncode,
             "scored": scored,
@@ -153,7 +181,8 @@ def record_local(results: list[dict], notes: Path) -> None:
     proposal in experiments.md. Does not touch `mutator/`."""
     play = (notes / "experience.md").read_text() if (notes / "experience.md").is_file() else ""
     nxt = (notes / "experiments.md").read_text() if (notes / "experiments.md").is_file() else ""
-    lines = ["", f"## Run ({len(results)} iteration(s))"]
+    who = results[0].get("identity", DEFAULT_IDENTITY) if results else DEFAULT_IDENTITY
+    lines = ["", f"## Run {who} ({len(results)} iteration(s))"]
     for row in results:
         lines.append(
             f"- iteration {row['iteration']}: reason={row['reason']} "
@@ -196,21 +225,35 @@ def self_check() -> None:
         (bot / "autoascend").mkdir()
         (bot / "autoascend" / "agent.py").write_text("# agent\n")
         notes = root / "notes"
-        _blank_notes(notes)
+        assert not (notes / "experience.md").exists()
+        ensure_notes(notes)
+        assert (notes / "experience.md").read_text().startswith("# Playthrough")
+        assert (notes / "experiments.md").is_file()
+        (notes / "experience.md").write_text("# Playthrough\n\nkept\n")
+        ensure_notes(notes)
+        assert "kept" in (notes / "experience.md").read_text()
         seed = root / "seed"
-        prepare_seed(bot, notes, seed)
+        prepare_seed(bot, notes, seed, DEFAULT_IDENTITY)
         game = (seed / "GAME_RULES.md").read_text()
+        assert f"Identity: `{DEFAULT_IDENTITY}`" in game
         assert "Elemental Planes" in game
         assert "Competition" not in game
-        assert (seed / "experience.md").read_text().startswith("# Playthrough")
-        assert "GAME_RULES.md" in (seed / ".gitignore").read_text()
-        assert not (seed / "GAME_RULES.md").name == ""
+        assert (seed / "experience.md").is_file()
+        assert DEFAULT_IDENTITY in evolve_command(seed, root / "work", DEFAULT_IDENTITY)
+        bare = root / "bare-notes"
+        bare.mkdir()
+        seed_bare = root / "seed-bare"
+        prepare_seed(bot, bare, seed_bare, "val-dwa-law-fem")
+        assert not (seed_bare / "experience.md").exists()
+        assert not (seed_bare / "experiments.md").exists()
+        assert "Identity: `val-dwa-law-fem`" in (seed_bare / "GAME_RULES.md").read_text()
     print("self-check ok")
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--iterations", type=int, default=1)
+    parser.add_argument("--identity", default=DEFAULT_IDENTITY)
     parser.add_argument("--self-check", action="store_true")
     parser.add_argument("--state", type=Path, default=None)
     args = parser.parse_args(argv)
@@ -220,7 +263,7 @@ def main(argv: list[str] | None = None) -> int:
     state = args.state or (ROOT / ".mutator-run")
     if state.exists():
         shutil.rmtree(state)
-    results = run(args.iterations, ROOT, state)
+    results = run(args.iterations, ROOT, state, args.identity)
     record_local(results, state / "notes")
     print(json.dumps(results, indent=2))
     if not results or any(row.get("hub_reason") for row in results):

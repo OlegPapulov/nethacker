@@ -9,6 +9,10 @@ name: mutate
 on:
   workflow_dispatch:
     inputs:
+      identity:
+        description: "Identity for this gameplay (role-race-align-gender)"
+        required: true
+        default: wiz-hum-cha-mal
       iterations:
         description: "Bot iterations in this run"
         required: true
@@ -75,7 +79,7 @@ jobs:
       - name: Mutate
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python mutator/loop.py --iterations "${{ inputs.iterations }}"
+        run: python mutator/loop.py --iterations "${{ inputs.iterations }}" --identity "${{ inputs.identity }}"
 
       - name: Record the run on main
         if: always()
