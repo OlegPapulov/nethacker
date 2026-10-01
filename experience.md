@@ -58,49 +58,27 @@ The seed header told the agent not to run the arena, and that an unchanged note 
 
 Stop killing the coding container. Point the seed notes at `experiments.md` and tell the agent to edit `autoascend/` and exit, so the judge can measure the tree.
 
-## Run wiz-hum-cha-mal (3 iteration(s))
-- iteration 1: reason=registered dev_fitness=0.07762503292546875 improved=True notes_ignored=True
-- iteration 2: reason=registered dev_fitness=0.07884509189124216 improved=True notes_ignored=True
-- iteration 3: reason=registered dev_fitness=0.08135498269727483 improved=True notes_ignored=True
+## Run 36881136099, wiz-hum-cha-mal, no host kill
+
+[36881136099](https://github.com/OlegPapulov/nethacker/actions/runs/36881136099) played all three iterations and the job exited 1. Cold-start mean was 0.063. Each child beat its parent on the 15 public seeds. None of them were published.
+
+| Iteration | Operator | Tokens | Judge mean | Hub |
+|---|---|---|---|---|
+| 1 | 96 min, completed | 703557 | 0.078 | local-only |
+| 2 | 78 min, completed | 679463 | 0.079 | local-only |
+| 3 | 85 min, completed | 618055 | 0.081 | local-only |
+
+The judge table for iteration 3 prints 0.082. Seed 13, the starvation game, went from 5,206 turns at depth 1 to 24,520 turns at depth 4. The notes were not rewritten (`notes_ignored` true). The code change was scored anyway.
 
 ### Why it stopped
-registered
+
+`nethackers` reported `local-only: not published (no gh publisher / dev owner)` on every iteration. `mutator/loop.py` returns 1 when that field is set, so the Actions step is red. The log line `✓ improved 1 cell(s) dev=0.081 (kept local)` is the same fact: the tree beat the parent and stayed on the runner.
 
 ### What is the problem
-# Playthrough
 
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-2 of 15 games stopped at killed by a wolf. Mean progress 0.062.
-
-| seed | progress | turns | stop |
-| --- | --- | --- | --- |
-| 0 | 0.036887590648350246 | 13697 | killed by a goblin |
-| 1 | 0.036887590648350246 | 17693 | killed by a jackal |
-| 2 | 0.07453595273884014 | 20700 | killed by a white unicorn |
-| 3 | 0.02081163581974355 | 3052 | killed by a grid bug |
-| 4 | 0.17909953770432294 | 32346 | killed by a wolf |
-| 5 | 0.0507583712345433 | 14486 | killed by a bat |
-| 6 | 0.036887590648350246 | 11919 | killed by a kitten |
-| 7 | 0.07453595273884014 | 23971 | killed by a rothe |
-| 8 | 0.07453595273884014 | 23604 | killed by a soldier ant |
-| 9 | 0.07453595273884014 | 24295 | killed by an ape |
-| 10 | 0.024160136550546978 | 4014 | killed by a hobbit |
-| 11 | 0.11704996473565571 | 27094 | killed by a wolf |
-| 12 | 0.036887590648350246 | 12509 | killed by a newt |
-| 13 | 0.024160136550546978 | 5206 | died of starvation |
-| 14 | 0.07453595273884014 | 22485 | killed by a crossbow bolt |
-
-## What is the problem
-
-The score is the mean of these games. 9 of 15 end at depth 1. A change that does not move the usual stop, killed by a wolf, does not change the mean.
-
-## What might solve it
-
-See `experiments.md`.
+`gh` was logged in. The preflight `GET /user` and the push check both passed. Publish then clones `OlegPapulov/nethacker` into a fresh temp directory and commits there. The job sets `user.name` and `user.email` only on the checkout, so that clone has no author. `git commit` fails, `nethackers` swallows the error, and the hub never sees the tree. The runner is deleted with the 0.081 bot still only in that workspace. The next checkout of `main` is the 0.062 baseline again.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+Set the git author globally in the mutate job, so the publish clone can commit and push. Commit the improved bot from the runner workspace onto `main` as well, so the next run starts from the scored tree if the hub push fails.
 

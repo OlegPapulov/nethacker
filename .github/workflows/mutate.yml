@@ -73,8 +73,8 @@ jobs:
           }))
           path.chmod(0o600)
           PY
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Mutate
         env:
@@ -101,7 +101,7 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
-          git add experience.md experiments.md
+          git add experience.md experiments.md bot.py arena_adapter.py autoascend nethackers.solution.json LICENSE
           if git diff --cached --quiet; then
             exit 0
           fi
