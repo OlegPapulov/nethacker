@@ -8,7 +8,7 @@ into the repo's `mutator/` directory. A new run starts from the blank
 templates.
 
 ponytail: one `evolve --iterations N` for the whole run, so the cold-start
-game happens once. The 10-minute cap is `docker kill` on `nethackers-mut-*`.
+game happens once. The 20-minute cap is `docker kill` on `nethackers-mut-*`.
 nethackers hardcodes an 8-hour container timeout and has no flag for it.
 A killed iteration is discarded, not scored. Upgrade path is a timeout flag
 on that container.
@@ -30,7 +30,8 @@ MUTATOR = Path(__file__).resolve().parent
 DEFAULT_IDENTITY = "wiz-hum-cha-mal"
 MODEL = "opencode/big-pickle"
 OPERATOR = "opencode2"
-THINK_LIMIT_S = 600
+EFFORT = "medium"
+THINK_LIMIT_S = 1200
 RUN_NOTES = ("experience.md", "experiments.md")
 NOTES = ("GAME_RULES.md", *RUN_NOTES)
 BOT_NAMES = ("bot.py", "arena_adapter.py", "autoascend", "nethackers.solution.json", "LICENSE")
@@ -58,8 +59,8 @@ def _game_rules(identity: str) -> str:
         "Play and score this identity only. "
         "`experience.md` already lists every public seed. Do not run the arena, "
         "do not write a diagnostic harness, and do not re-play those seeds. "
-        "The container is killed after 10 minutes, and the last run died at "
-        "that limit while it was still reading deaths. "
+        "The container is killed after 20 minutes. "
+        "The last run died at 10 minutes on an unfinished step. "
         "Implement the single change in `experiments.md` in `autoascend/`, "
         "then rewrite both note files. An unchanged note file discards the edit.\n\n"
     )
@@ -226,6 +227,7 @@ def evolve_command(seed: Path, workdir: Path, identity: str, iterations: int) ->
         "--from-seed",
         "--operator", OPERATOR,
         "--model", MODEL,
+        "--effort", EFFORT,
         "--iterations", str(iterations),
         "--workdir", str(workdir),
     ]
@@ -300,7 +302,7 @@ def _metric_rows(workdir: Path) -> list[dict]:
 
 def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
     """One evolve call for every iteration. Score the bot once first and put
-    those notes in the seed. Kill the coding-agent container at 10 minutes."""
+    those notes in the seed. Kill the coding-agent container at 20 minutes."""
     state.mkdir(parents=True, exist_ok=True)
     notes = state / "notes"
     evidence = eval_identity(bot, identity)
@@ -440,6 +442,7 @@ def self_check() -> None:
         command = evolve_command(seed, root / "work", DEFAULT_IDENTITY, 3)
         assert DEFAULT_IDENTITY in command
         assert command[command.index("--iterations") + 1] == "3"
+        assert command[command.index("--effort") + 1] == "medium"
         age = _started_age_seconds(
             "2026-10-01T10:00:00.123456789Z",
             datetime(2026, 10, 1, 10, 10, 5, tzinfo=timezone.utc),
