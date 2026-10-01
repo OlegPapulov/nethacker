@@ -1,0 +1,89 @@
+name: mutate
+
+# One mutator run on linux/amd64. Starts only when dispatched.
+# nethackers evolve registers every scored bot (public board, and therefore
+# the private verifier's queue). experience.md and experiments.md inside the
+# bot tree are gitignored and are not part of those commits.
+# This job appends a proposal on main. It does not edit mutator/.
+
+on:
+  workflow_dispatch:
+    inputs:
+      iterations:
+        description: "Bot iterations in this run"
+        required: true
+        default: "1"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mutate
+  cancel-in-progress: false
+
+jobs:
+  mutate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check hub token
+        env:
+          NETHACKERS_TOKEN: ${{ secrets.NETHACKERS_TOKEN }}
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${NETHACKERS_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "User-Agent: nethackers" \
+            https://api.github.com/user)
+          if [ "$code" != "200" ]; then
+            echo "::error::NETHACKERS_TOKEN was rejected by GitHub (HTTP $code). Refresh it before this job."
+            exit 1
+          fi
+
+      - name: Install nethackers
+        run: pip install --quiet nethackers
+
+      - name: Hub login and git identity
+        env:
+          NETHACKERS_LOGIN: ${{ secrets.NETHACKERS_LOGIN }}
+          NETHACKERS_TOKEN: ${{ secrets.NETHACKERS_TOKEN }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          path = Path.home() / ".nethackers" / "credentials.json"
+          path.parent.mkdir(parents=True, exist_ok=True)
+          path.write_text(json.dumps({
+              "login": os.environ["NETHACKERS_LOGIN"],
+              "access_token": os.environ["NETHACKERS_TOKEN"],
+              "refresh_token": None,
+              "expires_at": None,
+          }))
+          path.chmod(0o600)
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Mutate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python mutator/loop.py --iterations "${{ inputs.iterations }}"
+
+      - name: Record the run on main
+        if: always()
+        run: |
+          set -euo pipefail
+          git add experience.md experiments.md
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Record mutator run"
+          git push origin main

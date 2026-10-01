@@ -1,8 +1,14 @@
 # nethacker
 
-This repo is the AutoAscend baseline submitted to NetHackers for one identity: `wiz-hum-cha-mal`.
+This repo keeps two loops for `wiz-hum-cha-mal`.
 
-The arena runs in GitHub Actions on `ubuntu-latest` (`linux/amd64`). Do not run `nethackers eval` or Docker on the laptop. A push that changes `bot.py`, `arena_adapter.py`, `autoascend/`, or `nethackers.solution.json` starts `.github/workflows/score.yml`. That workflow evaluates the identity's 15 published seeds and registers this commit with the hub.
+The mutator (`mutator/`) edits the bot. `mutator/GAME_RULES.md` is the NetHack rulebook. `mutator/experience.md` and `mutator/experiments.md` are blank templates. A run copies them into the bot tree, the coding agent rewrites them between iterations, and they are gitignored so they are not in the registered commit and are not there for the next run.
+
+This folder edits the mutator. Root `GAME_RULES.md` is the competition. Root `experience.md` is the log of mutator runs. Root `experiments.md` is a proposal for the next mutator change.
+
+Do not edit anything under `mutator/` until the user has approved that proposal in chat. Recording a run into the root markdown files is not a mutator edit.
+
+The arena runs in GitHub Actions on `ubuntu-latest` (`linux/amd64`). Do not run `nethackers eval`, `nethackers evolve`, or Docker on the laptop. `.github/workflows/mutate.yml` is the mutator run (`opencode2`, model `opencode/big-pickle`). It registers every scored bot. Private Dungeons are their verifier's queue; registering is the only step this repo can take toward that board. `.github/workflows/score.yml` rescores the tree on `main` when the bot files change.
 
 `NETHACKERS_LOGIN` and `NETHACKERS_TOKEN` are repo secrets. The token is a GitHub user token for `OlegPapulov` (`GET /user` must return that login). It has to still be valid when the job reaches the register step, which can be hours after the run starts. Refresh it just before dispatching a run.
 

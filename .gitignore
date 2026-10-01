@@ -3,3 +3,4 @@ __pycache__/
 *.pyo
 evidence.json
 .DS_Store
+.mutator-run/
