@@ -1,0 +1,253 @@
+{
+  "run_id": "36776339631",
+  "identity": "",
+  "operator": "",
+  "model": "",
+  "conclusion": "",
+  "transcript": true,
+  "history": [
+    {
+      "iteration": 1,
+      "child_mean": 0.07358885545834461,
+      "parent_mean": 0.06241799392553074,
+      "hypothesis": "progression for wiz-hum-cha-mal is gated on experience, not depth -- `current_strategy` refuses to leave the first dungeon level until `blstats.experience_level >= 8`, and every seed either crosses that gate early (progress 0.074-0.117, dlvl 2-7) or dies on dlvl 1 below it (progress 0.02-0.07). The explorer searches five squares deep on every newly visited tile, and that single call is where the run goes: 2255 search calls ate 9018 of 18578 turns (48%) on seed 0, 9778 of 17693 (55%) on seed 1 and 6983 of 18485 (38%) on seed 5, against ~55 turns per monster kill.  Three searches keep the discovery rate (a secret door or a hidden trap is found on the first or second search of a square; the fourth and fifth almost never pay) while handing ~1800 turns per run back to the only thing the xp gate rewards, killing monsters.  Measured over 20 local seeds x three budgets: 0.0597 -> 0.0756, 0.0524 -> 0.0505 and 0.0592 -> 0.0664 mean BALROG progression, with seeds reaching experience level 8 going from 10/20 to 15/20.",
+      "hypothesis_source": "tree-comment",
+      "report": "Spell work fully removed. Now the official arena evaluation:",
+      "edit": {
+        "changed": [
+          {
+            "file": "autoascend/agent.py",
+            "change": "modified",
+            "+": 0,
+            "-": 1
+          },
+          {
+            "file": "autoascend/character.py",
+            "change": "modified",
+            "+": 1,
+            "-": 5
+          },
+          {
+            "file": "autoascend/exploration_logic.py",
+            "change": "modified",
+            "+": 21,
+            "-": 1
+          },
+          {
+            "file": "nle.ttyrec3.bz2",
+            "change": "added",
+            "+": 0,
+            "-": 0
+          }
+        ],
+        "truncated": false
+      },
+      "verdict": "TIMED-OUT",
+      "why": "agent hit the 150-minute ceiling after 4 file(s) changed; not a measurement of the hypothesis"
+    },
+    {
+      "iteration": 2,
+      "child_mean": 0.06316474078802146,
+      "parent_mean": 0.06241799392553074,
+      "hypothesis": "the wizard already knows 'force bolt' (0% fail) but never casts it, wasting a free ranged attack each fight; casting it for free damage should end fights sooner and so raise XP per episode.",
+      "hypothesis_source": "tree-comment",
+      "report": "Iteration complete. Summary of this turn:\n\n**Tested and rejected:** lowering the descent gate (`global_logic.py:518`, XP\u22658\u21924/6/2). Measured negative \u2014 it lets strong seeds (2, 11) descend early and die, net \u22120.008/seed. Reverted to `>= 8`.\n\n**Implemented and kept:** wizard force-bolt spellcasting (was entirely unwired \u2014 `known_spells` never populated).\n- `character.py`: `parse_spellcast_view` now parses WIZARD menus (skips `(end)`, stores category).\n- `agent.py`: enabled the parse in `main()`; fixed a latent `cast()` bug where diagonal directions were yielded as `'ne'` (rejected by `step()`); added the `cast` action handler.\n- `fight_heur.py`: `get_potential_spellcast_usages` casts a known attack spell at a monster within 3 tiles, skipping pets, stationary molds, hungry states, and confusion/stun.\n\n**Result:** wiring works (up to 126 casts/game). First version stalled casting until starvation (seed 0 Xp6\u2192Xp1, seed 4 Xp10\u2192Xp3); hunger guard + range\u22643 fixed that. Measured 15 seeds in-harness and 10 with the real arena (they agree seed-for-seed): big wins on weak seeds (3, 6, 10, 12, 13) offset by losses on strong seeds (2, 7, 9, 11, 14), **net \u2248 \u22120.003 mean (neutral, within noise)**.\n\n**Open lead:** `prop.confusion/hallu/stun` never return True even when casts fail with \"Your knowledge of this spell is twisted\", so ~20\u201340% of casts fail and burn turns; a reliable confusion check should make this clearly positive.\n\nLogged to `experience.md`.",
+      "edit": {
+        "changed": [
+          {
+            "file": "autoascend/agent.py",
+            "change": "modified",
+            "+": 19,
+            "-": 4
+          },
+          {
+            "file": "autoascend/character.py",
+            "change": "modified",
+            "+": 14,
+            "-": 5
+          },
+          {
+            "file": "autoascend/combat/fight_heur.py",
+            "change": "modified",
+            "+": 54,
+            "-": 2
+          }
+        ],
+        "truncated": true
+      },
+      "verdict": "NOT-A-WIN",
+      "why": "6 of 15 moved seeds went forward, short of two-thirds (9 went back)",
+      "shared_seeds": 15,
+      "changed": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "forward": [
+        3,
+        5,
+        6,
+        10,
+        12,
+        13
+      ],
+      "backward": [
+        0,
+        1,
+        2,
+        4,
+        7,
+        8,
+        9,
+        11,
+        14
+      ],
+      "deeper": [
+        4,
+        5,
+        6,
+        10,
+        12,
+        13
+      ]
+    }
+  ],
+  "baseline": {
+    "identity": "wiz-hum-cha-mal",
+    "mean_progress": 0.06241799392553074,
+    "results": [
+      {
+        "seed": 0,
+        "turns": 13697,
+        "depth": 1,
+        "progress": 0.036887590648350246,
+        "death": "killed by a goblin",
+        "status": "completed"
+      },
+      {
+        "seed": 1,
+        "turns": 17693,
+        "depth": 1,
+        "progress": 0.036887590648350246,
+        "death": "killed by a jackal",
+        "status": "completed"
+      },
+      {
+        "seed": 2,
+        "turns": 20700,
+        "depth": 5,
+        "progress": 0.07453595273884014,
+        "death": "killed by a white unicorn",
+        "status": "completed"
+      },
+      {
+        "seed": 3,
+        "turns": 3052,
+        "depth": 1,
+        "progress": 0.02081163581974355,
+        "death": "killed by a grid bug",
+        "status": "completed"
+      },
+      {
+        "seed": 4,
+        "turns": 32346,
+        "depth": 7,
+        "progress": 0.17909953770432294,
+        "death": "killed by a wolf",
+        "status": "completed"
+      },
+      {
+        "seed": 5,
+        "turns": 14486,
+        "depth": 1,
+        "progress": 0.0507583712345433,
+        "death": "killed by a bat",
+        "status": "completed"
+      },
+      {
+        "seed": 6,
+        "turns": 11919,
+        "depth": 1,
+        "progress": 0.036887590648350246,
+        "death": "killed by a kitten",
+        "status": "completed"
+      },
+      {
+        "seed": 7,
+        "turns": 23971,
+        "depth": 2,
+        "progress": 0.07453595273884014,
+        "death": "killed by a rothe",
+        "status": "completed"
+      },
+      {
+        "seed": 8,
+        "turns": 23604,
+        "depth": 5,
+        "progress": 0.07453595273884014,
+        "death": "killed by a soldier ant",
+        "status": "completed"
+      },
+      {
+        "seed": 9,
+        "turns": 24295,
+        "depth": 4,
+        "progress": 0.07453595273884014,
+        "death": "killed by an ape",
+        "status": "completed"
+      },
+      {
+        "seed": 10,
+        "turns": 4014,
+        "depth": 1,
+        "progress": 0.024160136550546978,
+        "death": "killed by a hobbit",
+        "status": "completed"
+      },
+      {
+        "seed": 11,
+        "turns": 27094,
+        "depth": 5,
+        "progress": 0.11704996473565571,
+        "death": "killed by a wolf",
+        "status": "completed"
+      },
+      {
+        "seed": 12,
+        "turns": 12509,
+        "depth": 1,
+        "progress": 0.036887590648350246,
+        "death": "killed by a newt",
+        "status": "completed"
+      },
+      {
+        "seed": 13,
+        "turns": 5206,
+        "depth": 1,
+        "progress": 0.024160136550546978,
+        "death": "died of starvation",
+        "status": "completed"
+      },
+      {
+        "seed": 14,
+        "turns": 22485,
+        "depth": 1,
+        "progress": 0.07453595273884014,
+        "death": "killed by a crossbow bolt",
+        "status": "completed"
+      }
+    ]
+  }
+}
