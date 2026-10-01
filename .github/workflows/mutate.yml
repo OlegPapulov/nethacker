@@ -16,7 +16,7 @@ on:
       iterations:
         description: "Bot iterations in this run"
         required: true
-        default: "1"
+        default: "3"
 
 permissions:
   contents: write
