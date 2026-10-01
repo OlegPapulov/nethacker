@@ -1,12 +1,7 @@
 # nethacker
 
-Storage for the NetHack bots I've submitted to [NetHackers](https://nethackers.dunnolab.ai),
-an open effort to solve NetHack.
+AutoAscend, scored on NetHackers as `wiz-hum-cha-mal`.
 
-- **My results:** https://nethackers.dunnolab.ai/h/OlegPapulov
-- **Where's the code?** Each run lives on its own branch; the leaderboard pins
-  every bot to an exact commit. Fetch one:
-  `nethackers pull github.com/OlegPapulov/nethacker@<commit> ./bot`
-- **Want to help?** `pip install nethackers`
+The arena runs on a GitHub-hosted `linux/amd64` runner. Pushing `bot.py` or `autoascend/` starts [score.yml](.github/workflows/score.yml), which evaluates the published 15-seed batch and registers this commit with the hub.
 
-<sub>Created by the `nethackers` CLI. It's your repo — edit or delete this file freely.</sub>
+AutoAscend is MIT, Copyright © 2022 Maciej Sypetkowski, Michał Sypetkowski. See [LICENSE](LICENSE). `bot.py` and `arena_adapter.py` are the NetHackers arena shim (Apache-2.0, from the `nethackers` package).

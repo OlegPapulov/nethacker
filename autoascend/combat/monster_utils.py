@@ -1,13 +1,5 @@
 # heuristic monster types lists
-from .. import jf_config
-
 ONLY_RANGED_SLOW_MONSTERS = ['floating eye', 'blue jelly', 'brown mold', 'gas spore', 'acid blob']
-if jf_config.HAZARD_FIXES:
-    # passive acid / paralysis on touch (astra: no melee); a spotted jelly killed an XL9 elite game
-    ONLY_RANGED_SLOW_MONSTERS += ['spotted jelly', 'ochre jelly', 'gelatinous cube']
-if jf_config.LATE_FIXES:
-    # passive stun / acid / fire molds: common from Dlvl 1, so this one reshuffles early games
-    ONLY_RANGED_SLOW_MONSTERS += ['yellow mold', 'green mold', 'red mold']
 EXPLODING_MONSTERS = ['yellow light', 'gas spore', 'flaming sphere', 'freezing sphere', 'shocking sphere']
 INSECTS = ['giant ant', 'killer bee', 'soldier ant', 'fire ant', 'giant beetle', 'queen bee']
 WEAK_MONSTERS = ['lichen', 'newt', 'shrieker', 'grid bug']
@@ -25,9 +17,7 @@ def is_monster_faster(agent, monster):
 def imminent_death_on_melee(agent, monster):
     if is_dangerous_monster(monster):
         return agent.blstats.hitpoints <= 16
-    # hypothesis: retreating from ordinary monsters below 10 HP avoids the
-    # common two-hit deaths while retaining normal aggression at full health.
-    return agent.blstats.hitpoints <= 10
+    return agent.blstats.hitpoints <= 8
 
 
 def is_dangerous_monster(monster):

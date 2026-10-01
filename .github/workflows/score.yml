@@ -1,0 +1,105 @@
+name: score
+
+# Score this tree on linux/amd64 and register the commit with the NetHackers hub.
+# The arena does not run on the laptop.
+
+on:
+  workflow_dispatch:
+    inputs:
+      identity:
+        description: "Starting identity (role-race-align-gender)"
+        required: true
+        default: wiz-hum-cha-mal
+  push:
+    branches: [main]
+    paths:
+      - bot.py
+      - arena_adapter.py
+      - autoascend/**
+      - nethackers.solution.json
+      - .github/workflows/score.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: score-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check hub token
+        env:
+          NETHACKERS_TOKEN: ${{ secrets.NETHACKERS_TOKEN }}
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${NETHACKERS_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "User-Agent: nethackers" \
+            https://api.github.com/user)
+          if [ "$code" != "200" ]; then
+            echo "::error::NETHACKERS_TOKEN was rejected by GitHub (HTTP $code). It is a user token for OlegPapulov and it expires; refresh it before this job spends hours in the arena."
+            exit 1
+          fi
+
+      - name: Install nethackers
+        run: |
+          pip install --quiet nethackers
+          nethackers --version
+
+      - name: Evaluate
+        env:
+          IDENTITY: ${{ github.event_name == 'workflow_dispatch' && inputs.identity || 'wiz-hum-cha-mal' }}
+        run: |
+          set -euo pipefail
+          echo "identity=$IDENTITY" | tee -a "$GITHUB_STEP_SUMMARY"
+          nethackers eval . --objective "$IDENTITY" > evidence.json
+          python - <<'PY'
+          import json, os
+          ev = json.load(open("evidence.json"))
+          line = (
+              f"mean_progress={ev['mean_progress']} "
+              f"ascensions={ev['ascensions']} episodes={ev['episodes']}\n"
+          )
+          print(line, end="")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as fh:
+              fh.write(line)
+          PY
+
+      - name: Register
+        env:
+          NETHACKERS_LOGIN: ${{ secrets.NETHACKERS_LOGIN }}
+          NETHACKERS_TOKEN: ${{ secrets.NETHACKERS_TOKEN }}
+          IDENTITY: ${{ github.event_name == 'workflow_dispatch' && inputs.identity || 'wiz-hum-cha-mal' }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          path = Path.home() / ".nethackers" / "credentials.json"
+          path.parent.mkdir(parents=True, exist_ok=True)
+          path.write_text(json.dumps({
+              "login": os.environ["NETHACKERS_LOGIN"],
+              "access_token": os.environ["NETHACKERS_TOKEN"],
+              "refresh_token": None,
+              "expires_at": None,
+          }))
+          path.chmod(0o600)
+          PY
+          nethackers register \
+            --repo "github.com/${{ github.repository }}" \
+            --commit "${{ github.sha }}" \
+            --evidence evidence.json \
+            --root . \
+            --entrypoint bot.py
+          rm -f evidence.json

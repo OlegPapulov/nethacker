@@ -4,8 +4,7 @@ from itertools import product
 import numpy as np
 from scipy import signal
 
-from ..glyph import G, MON
-from .. import jf_config, utils
+from ..glyph import G
 from ..utils import adjacent
 from .monster_utils import is_monster_faster, is_dangerous_monster, \
     ONLY_RANGED_SLOW_MONSTERS, EXPLODING_MONSTERS, WEAK_MONSTERS, consider_melee_only_ranged_if_hp_full
@@ -94,12 +93,6 @@ def ranged_priority(agent, dy, dx, monsters):
                 ret -= 6
                 if mon.mname == 'gas spore':  # only gas spore ?
                     ret -= 100
-            # hypothesis: a gas spore's explosion (radius 1) that kills the pet costs -15 alignment
-            # ("rumble of distant thunder"), after which every prayer fails and the character
-            # starves (DT6A seed 1). Astra: kill spores from range only, away from pets.
-            if jf_config.HAZARD_FIXES and mon.mname == 'gas spore' and \
-                    utils.any_in(agent.glyphs[max(y - 1, 0):y + 2, max(x - 1, 0):x + 2], G.PETS):
-                return None
             return ret, y, x, monster[0]
 
 
@@ -177,7 +170,7 @@ def get_potential_wand_usages(agent, monsters, dy, dx):
     # TODO: also get items recursively from bags
     for item in agent.inventory.items:
         targeted_monsters = set()
-        if not item.is_offensive_usable_wand() or agent.inventory.is_known_empty(item):
+        if not item.is_offensive_usable_wand():
             continue
         priority = 0
         # print('--------------', dy, dx)
@@ -253,17 +246,7 @@ def get_available_actions(agent, monsters):
                 priority -= 100
             dy = y - agent.blstats.y
             dx = x - agent.blstats.x
-            # hypothesis: refusing all bare contact with cockatrices prevents
-            # instant petrification, while leaving ranged attacks and retreat
-            # available to both armed and unarmed characters.
-            bare_handed = agent.inventory.items.main_hand is None
-            bare_hands = agent.inventory.items.gloves is None
-            bare_feet = agent.inventory.items.boots is None
-            if ord(mon.mlet) == MON.S_COCKATRICE and bare_handed and bare_hands:
-                if not bare_feet:
-                    actions.append((priority, ('kick', dy, dx)))
-            else:
-                actions.append((priority, ('melee', dy, dx)))
+            actions.append((priority, ('melee', dy, dx)))
 
     # ranged attack actions
     for dy, dx in product([-1, 0, 1], [-1, 0, 1]):
@@ -318,8 +301,7 @@ def goto_action(agent, priority, monsters):
         if not adjacent((agent.blstats.y, agent.blstats.x), (my, mx)):
             # and not mon.mname in ONLY_RANGED_SLOW_MONSTERS:
             return [(1, ('go_to', my, mx))]
-    # every monster adjacent and nothing to do (e.g. no weapon known): fight2 falls back to moving/waiting
-    return []
+    assert 0, monsters
 
 
 def get_corridors_priority_map(walkable):
@@ -354,7 +336,7 @@ def get_priorities(agent):
     priority -= priority[agent.blstats.y, agent.blstats.x]
 
     actions = get_available_actions(agent, monsters)
-    if not any(a[1][0] in ('melee', 'kick', 'ranged') for a in actions):
+    if not any(a[1][0] in ('melee', 'ranged') for a in actions):
         actions.extend(goto_action(agent, priority, monsters))
     return priority, actions
 

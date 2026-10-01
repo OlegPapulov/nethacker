@@ -7,9 +7,7 @@ from nle.nethack import actions as A
 from . import objects as O
 from . import soko_solver
 from . import utils
-from . import jf_config
 from .character import Character
-from .dive_logic import DiveLogic
 from .exceptions import AgentPanic
 from .glyph import Hunger, G, MON
 from .item import Item, flatten_items
@@ -49,9 +47,7 @@ class ItemPriority(ItemPriorityBase):
 
             how_many_already_total = ret_inv.get(item, 0) + ret_bag.get(item, 0)
             how_many_already = ret.get(item, 0)
-            unit_weight = item.unit_weight(with_content=False)
-            # weightless items (e.g. wraith corpses) would make this an infinite count
-            max_to_add = item.count if unit_weight <= 0 else int(remaining_weight // unit_weight)
+            max_to_add = int(remaining_weight // item.unit_weight(with_content=False))
             if count is not None:
                 max_to_add = min(max_to_add, count)
             ret[item] = min(item.count, how_many_already_total + max_to_add) - (how_many_already_total - how_many_already)
@@ -73,19 +69,10 @@ class ItemPriority(ItemPriorityBase):
             if item is not None:
                 add_item(item)
 
-            dive_ = getattr(self.agent.global_logic, 'dive', None)
-            no_shield = dive_ is not None and dive_.mattock_digger()
             for item in self.agent.inventory.get_best_armorset(items=forced_items + items,
                                                                allow_unknown_status=allow_unknown_status):
-                if item is not None and not (no_shield and getattr(item.objs[0], 'sub', None) == O.ARM_SHIELD):
+                if item is not None:
                     add_item(item)
-
-        # the dive digs down with a pick-axe: keep one (the tour drops them for lighter loot)
-        dive = getattr(self.agent.global_logic, 'dive', None)
-        if dive is not None and dive.keep_digging_tool():
-            tool = dive.best_digging_tool(forced_items + items)
-            if tool is not None:
-                add_item(tool)
 
         for item in items:
             if item.is_unambiguous():
@@ -163,8 +150,6 @@ class Milestone(IntEnum):
     GO_DOWN = auto() # TODO
 
 
-
-
 class GlobalLogic:
     def __init__(self, agent):
         self.agent = agent
@@ -178,11 +163,7 @@ class GlobalLogic:
 
         self._got_artifact = False
 
-        self.dive = DiveLogic(agent)
-
     def update(self):
-        self.dive.update()
-
         if not self.agent.character.prop.hallu:
             if utils.isin(self.agent.glyphs, G.ORACLE).any():
                 if self.oracle_level is None:
@@ -416,8 +397,7 @@ class GlobalLogic:
             candidate = self.agent.inventory.move_to_inventory(candidate)
             self.agent.step(A.Command.DIP)
             self.agent.type_text(self.agent.inventory.items.get_letter(candidate))
-            if ('What do you want to dip ' in self.agent.message and 'into?' in self.agent.message) or \
-                    "You don't have anything to dip " in self.agent.message:
+            if 'What do you want to dip ' in self.agent.message and 'into?' in self.agent.message:
                 raise AgentPanic('no fountain here')
 
     def can_sacrify(self, item):
@@ -529,44 +509,13 @@ class GlobalLogic:
 
         self.agent.go_to(y, x, stop_one_before=True)
 
-    def _safe_to_dip(self):
-        # SAFE_DIPS (full HP + prayer ready, astra) changes the tour; off until tested on its own
-        bl = self.agent.blstats
-        if not jf_config.SAFE_DIPS:
-            return bl.experience_level >= 7
-        return bl.experience_level >= 7 and bl.hitpoints >= 0.9 * bl.max_hitpoints and \
-            self.agent.is_safe_to_pray(800)
-
-    def exploration_strategy(self, search_prio_limit):
-        """The tour's exploration (used by the dive phase too)."""
-        return (
-            Strategy(lambda: self.agent.exploration.explore1(
-                search_prio_limit, trap_search_offset=1,
-                kick_doors=self.agent.current_level().dungeon_number != Level.GNOMISH_MINES).strategy())
-            .preempt(self.agent, [
-                self.identify_items_on_altar().every(100),
-                self.identify_items_on_altar().condition(
-                    lambda: self.agent.current_level().objects[self.agent.blstats.y,
-                                                               self.agent.blstats.x] in G.ALTAR),
-                # hypothesis: fountain dips summon water demons (killed an XL9 elite game); dip only
-                # at (near) full HP with a prayer in hand, as astra did (full HP, retreat ready)
-                self.dip_for_excalibur().condition(self._safe_to_dip).every(10),
-            ])
-        )
-
-    def current_strategy(self):
-        # hypothesis: AutoAscend's levelling tour keeps the character alive to XL 10-13 (the elite's
-        # recipe); once it is strong, the depth-first dive with the Quest-portal sweep is worth more
-        # than further levelling (Home 1 = 0.366, Dlvl 20+ = 0.38+, vs XL 12 = 0.333).
-        return self.tour_strategy().until(self.agent, self.dive.should_dive).before(self.dive.strategy())
-
     @Strategy.wrap
-    def tour_strategy(self):
+    def current_strategy(self):
         yield True
         while 1:
             explore_stairs_condition = lambda: False
             if self.milestone == Milestone.BE_ON_FIRST_LEVEL:
-                condition = self.dive.first_level_done
+                condition = lambda: self.agent.blstats.experience_level >= 8
                 # explore_stairs_condition = lambda: self.agent.inventory.items.total_nutrition() == 0 and \
                 #                                    self.agent.blstats.hunger_state >= Hunger.NOT_HUNGRY
                 level = (Level.DUNGEONS_OF_DOOM, 1)
@@ -609,9 +558,6 @@ class GlobalLogic:
 
             if condition():
                 self.milestone = Milestone(int(self.milestone) + 1)
-                if jf_config.SKIP_SOKOBAN and self.milestone in (Milestone.FIND_SOKOBAN, Milestone.SOLVE_SOKOBAN) \
-                        and self.agent.character.race in (Character.DWARF, Character.GNOME):
-                    self.milestone = Milestone.FIND_MINES_END
                 continue
 
 
@@ -624,7 +570,8 @@ class GlobalLogic:
                         self.identify_items_on_altar().condition(
                             lambda: self.agent.current_level().objects[self.agent.blstats.y,
                                                                        self.agent.blstats.x] in G.ALTAR),
-                        self.dip_for_excalibur().condition(self._safe_to_dip).every(10),
+                        self.dip_for_excalibur().condition(
+                            lambda: self.agent.blstats.experience_level >= 7).every(10),
                     ])
                 )
 
@@ -635,7 +582,7 @@ class GlobalLogic:
                         self.agent.exploration.go_to_strategy(y, x).preempt(self.agent, [
                             self.agent.inventory.gather_items(),
                             self.identify_items_on_altar(),
-                            self.dip_for_excalibur().condition(self._safe_to_dip),
+                            self.dip_for_excalibur().condition(lambda: self.agent.blstats.experience_level >= 7),
                         ])
                         .condition(lambda: self._got_artifact or
                                            not any([alignment == self.agent.character.alignment
@@ -661,10 +608,6 @@ class GlobalLogic:
     def global_strategy(self):
         return (
             self.current_strategy().repeat()
-            # lowest priority: a peaceful dwarf's pick-axe while in the Mines (dive_logic.DWARF_HUNT)
-            .preempt(self.agent, [
-                self.dive.hunt_strategy(),
-            ])
             .preempt(self.agent, [
                 self.solve_sokoban_strategy()
                 .condition(lambda: self.milestone == Milestone.SOLVE_SOKOBAN and
@@ -691,17 +634,6 @@ class GlobalLogic:
             ])
             .preempt(self.agent, [
                 self.agent.fight2(),
-            ])
-            # a digger with room to dig finishes the hole instead of walking to a fight
-            .preempt(self.agent, [
-                self.dive.dig_first(),
-            ])
-            # astra's survival layer, only once diving (the tour keeps the elite's proven behaviour)
-            .preempt(self.agent, [
-                self.dive.elbereth_rest().condition(lambda: self.dive.diving or jf_config.SURVIVAL_IN_TOUR),
-            ])
-            .preempt(self.agent, [
-                self.dive.retreat_upstairs().condition(lambda: self.dive.diving or jf_config.SURVIVAL_IN_TOUR),
             ])
             .preempt(self.agent, [
                 self.agent.engulfed_fight(),
