@@ -487,12 +487,36 @@ seed rows: the shape now returns `NOT-A-WIN`, `fwd=0 back=14`.
 **3. A capped turn was recorded as a failed hypothesis.** When
 `AGENT_TIMEOUT_SECONDS` fired, `run_operator` caught the cancellation, logged
 it, and returned the tree unchanged — which the loop then scored and filed as a
-`NOT-A-WIN` it would "not repeat". Iteration 1 of that run is a run record
+`NOT-A-WIN` it would "not repeat". Iteration 1 of `36764071814` is a run record
 claiming the agent disproved something, when in fact the agent ran out of clock.
 That is the wrong lesson in the one place the next iteration reads from. It is
-now `TIMED-OUT`: not in `KEEPING_VERDICTS`, so the tree is reverted, with the
-child's numbers and findings still recorded, because 16 episodes and 3.9M tokens
-of observation are evidence even when the turn is truncated.
+now `TIMED-OUT`: a label that says what happened, with the child's numbers and
+findings still recorded.
+
+**And then the fix itself cost the best tree this project has produced.** The
+first version of `TIMED-OUT` put it outside `KEEPING_VERDICTS` and reverted it,
+on the reasoning that a truncated turn is not a measurement of the hypothesis.
+Run `36776339631` iteration 1 refuted that in one run. The agent changed
+`exploration_logic.py` from `search(5)` to `search(3)`, spent the rest of its
+budget verifying the change on 20 of its own seeds, and was cut off *after* the
+edit was complete. The tree is not a half-applied diff — it is one clean change
+with a documented rationale. It scored **0.0736 against 0.0624, +17.9%**, and
+was binned because of a clock.
+
+The reasoning was conflating two separate questions. *Did the agent finish its
+reasoning?* No — it was truncated. *Is the tree better?* Yes, and that was
+measured on all 15 seeds and cost 16 episodes to establish. A verdict label may
+record the first; it may not decide the second. So the disposition follows the
+mean as it does everywhere else: a truncated turn that improved the tree is kept
+as the next parent, a truncated turn that did not is binned, and `WIN` remains
+the only registrable label — we cannot certify an interrupted edit is finished,
+and "we have no idea what state this file is in" is not a claim to publish.
+
+This also cost the run its chance to compose. Iteration 2 was measured against
+0.0624 again rather than 0.0736, so `36776339631` produced two independent
+experiments where it could have produced a second step on the first. Whether
+this loop can compose improvements is the oldest open question in this file, and
+a bookkeeping rule was answering it.
 
 **The keep floor.** A material regression is now a **discard**, not a keep, with
 `MEAN_KEEP_FLOOR = 0.9`. The threshold is taken from the noise, not from the one
@@ -512,6 +536,15 @@ is reverted rather than carried forward as the parent"* — one sentence
 asserting both dispositions. `paired_verdict` now reports only the paired facts
 and `mean_gate` owns the disposition, so the two cannot contradict.
 
+**A fourth thing, found by moving a step.** `Write the verdict` was moved ahead
+of `Upload everything` so the run's own record would be on the artifact's file
+list. `log_verdict.py` reads `IDENTITY`/`OPERATOR`/`MODEL` from the environment
+and falls back to `'run'`/`'unknown'`, and the new step had no `env` block, so
+`36776339631` committed `log/run-36776339631.json` with identity, operator and
+model **all empty**. Nothing failed and the artifact carried it — the record was
+simply wrong, which is harder to notice than an error. The step now carries the
+same env as `Commit the verdict`. Moving a step means moving its environment.
+
 **Not claimed.** No timing is derived from this entry, and the floor has not been
 tested against a real regression — it is calibrated against the noise band and
 checked against the run's own seed rows, which is not the same as a run that
@@ -522,7 +555,18 @@ regresses on purpose. `MEAN_KEEP_FLOOR` is one constant if it proves wrong.
 - E8 is now measured (see its entry): the sleeping is fixed by the `MEASURE`
   import, and the 40-minute cap that replaced it was truncating more than half
   of all runs. What is still missing is a systematic distribution of agent-phase
-  durations, which is what the next cap should be derived from.
+  durations, which is what the next cap should be derived from. The one data
+  point since the cap moved to 150 minutes is that a turn used all 150 and was
+  still productive when it stopped — so the cap is not obviously too low, but
+  nothing is established about where the right value is.
+- **The 0.0736 tree from `36776339631` iteration 1 exists and was binned by a
+  rule, not by a measurement.** `runs/work-1/` and `diff-001.patch` are in that
+  run's artifact and results branch, and the change is one line
+  (`search(5)` → `search(3)`) plus two small edits. E12 now keeps such trees, but
+  that tree was never re-adopted as a parent, so nothing has been built on it.
+  Whether to re-seed a run from it is an open decision, not an automatic one —
+  it has been measured once on 15 seeds and the leaderboard re-runs on secret
+  dungeons.
 - The loop has no checkpoint. A timeout costs every iteration in the job, not
   the one in flight, because `publish_results` runs only at the end. Calling it
   per iteration would make the results branch the checkpoint for the cost of one
@@ -537,5 +581,13 @@ regresses on purpose. `MEAN_KEEP_FLOOR` is one constant if it proves wrong.
 - The loop has still never been kept over more than **one** iteration.
   `36731664027` kept its second tree, which is the first time the loop advanced
   its own parent, and then the job ended — so "can this compose improvements, or
-  only accumulate findings" is still unanswered. It is now a cheaper question
-  than it was, because E5 and E10 mean a kept tree survives the job.
+  only accumulate findings" is still unanswered. `36776339631` had the chance and
+  lost it: iteration 1 measured +17.9% and was binned by the rule E12 has since
+  corrected, so iteration 2 was scored against the original parent. Composition
+  is now one dispatch away from being tested, which makes it worth spending the
+  next run on rather than on another two independent experiments.
+- Two iterations do fit the ceiling at a 150-minute cap — `36776339631` finished
+  in 232 minutes — but only because iteration 2 ran 61 minutes. At two full
+  150-minute turns they do not. The distribution is wide enough that a dispatch
+  can either fit comfortably or not fit at all, and there is no way to tell in
+  advance.

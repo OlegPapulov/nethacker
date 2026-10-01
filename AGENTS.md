@@ -89,6 +89,20 @@ the code contradicted it — a 9-forward-6-back split was being described as
 "short of the 5-seed bar" when it had cleared it and failed only the two-thirds
 shape. A rule that only exists in prose is not enforced.
 
+**A verdict label records what happened; it does not decide whether a tree
+survives.** Run `36776339631` iteration 1 changed `search(5)` to `search(3)`,
+spent the rest of a 150-minute turn verifying it on 20 of its own seeds, was cut
+off by the ceiling *after* the edit was complete, and scored **0.0736 against a
+0.0624 parent — +17.9%, the best tree this project has produced.** It was binned
+because `TIMED-OUT` was not in `KEEPING_VERDICTS`, on the reasoning that a
+truncated turn "is not a measurement of the hypothesis". That reasoning answered
+the wrong question: *did the agent finish reasoning?* no; *is the tree better?*
+yes, measured on all 15 seeds. So `TIMED-OUT` is now a label, and its disposition
+follows the mean like everything else — kept if it improved, binned if it did not,
+and never registrable, because we cannot certify an interrupted edit is finished.
+"Keep" and "trust" are different axes; conflating them threw away the best result
+this loop has produced.
+
 **And a KEEP has to survive the mean too.** `paired_verdict` asks whether most
 seeds moved forward; `mean_gate` asks whether the batch average held. Both must
 hold for a `WIN`, and there are **two** demotions, not one: a mean that held
@@ -263,6 +277,13 @@ Three generalisations, all learned the same way:
   `Write the verdict` now precedes the upload for that reason alone.
 - **Say what the fallback actually is.** It is a 30-day artifact, not a ref.
   Naming the expiry is the difference between a record and a rumour.
+- **A step that moves carries its environment with it.** `Write the verdict` was
+  moved ahead of the upload so the record would be on the artifact's file list,
+  and the new step had no `env:` block — so `log_verdict.py` read empty
+  `IDENTITY`/`OPERATOR`/`MODEL`, fell back to `'run'`, and committed
+  `log/run-36776339631.json` with all three blank. The step succeeded, the commit
+  succeeded, the artifact carried it, and the record was simply wrong. A wrong
+  record is harder to catch than a failed step, because nothing points at it.
 
 ## `tree_diff` records the edit, because the report is not the edit
 

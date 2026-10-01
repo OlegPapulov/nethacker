@@ -250,8 +250,21 @@ jobs:
       # run yet. Only the older records committed to the repository were there.
       # This step is `always()` for the same reason as the others -- a run that
       # timed out still has seeds measured and a story to tell.
+      #
+      # The env block is not decoration and moving the step broke it once.
+      # `log_verdict.py` reads IDENTITY/OPERATOR/MODEL from the environment and
+      # falls back to 'run'/'unknown' when they are missing, so this step ran
+      # without them in 36776339631 and wrote `log/run-36776339631.json` with
+      # identity, operator and model all empty. It committed cleanly and the
+      # artifact carried it, so nothing failed -- the record was simply wrong.
+      # A step that is moved carries its environment with it or it does not get
+      # moved; `Commit the verdict` below has the same block for the same reason.
       - name: Write the verdict
         if: always()
+        env:
+          IDENTITY: ${{ inputs.identity }}
+          OPERATOR: ${{ inputs.operator }}
+          MODEL: ${{ inputs.model }}
         run: python log_verdict.py || echo "::warning::could not write the verdict"
 
       - name: Upload everything

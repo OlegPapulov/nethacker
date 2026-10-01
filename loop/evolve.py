@@ -732,26 +732,44 @@ def main() -> int:
         # inherits a NOT-A-WIN that no hypothesis earned. The mutant's findings
         # are still harvested, because a truncated turn can have measured
         # something real before it ran out of clock.
+        #
+        # What the clock must NOT decide is whether a tree that measurably
+        # improved survives. The first version of this reverted every TIMED-OUT
+        # tree, and run 36776339631 iteration 1 is why that was wrong: the
+        # agent changed `exploration_logic.py` from `search(5)` to `search(3)`,
+        # spent its remaining budget on its own verification, and was cut off
+        # *after* the edit was complete. The tree is coherent, it is not a
+        # half-applied edit, and it scored 0.0736 against a 0.0624 parent --
+        # +17.9%, the best measured tree this project has produced. It was
+        # binned because of a clock.
+        #
+        # So the verdict says what happened and the disposition follows the
+        # mean, as it does everywhere else. A truncated turn that improved the
+        # tree is kept as the next parent; a truncated turn that did not is
+        # binned. Neither is registrable -- `WIN` is the only registrable label
+        # and TIMED_OUT is not one -- because we
+        # cannot certify an interrupted edit is finished, and "we have no idea
+        # what state this file is in" is not a claim worth making to a
+        # leaderboard. Keeping it costs nothing and composes; publishing it is a
+        # statement about the edit's coherence that a timeout denies us.
         if agent_cancelled:
+            kept_anyway = child_mean > best_mean + 1e-9
             verdict = {
                 "verdict": TIMED_OUT,
                 "why": (
                     f"agent hit the {AGENT_TIMEOUT_SECONDS // 60}-minute ceiling "
-                    f"after {len(edit['changed'])} file(s) changed; not a "
-                    f"measurement of the hypothesis"
+                    f"after {len(edit['changed'])} file(s) changed, so this is not "
+                    f"a measurement of the hypothesis; the tree itself was scored "
+                    f"on all 15 seeds and "
+                    + ("improved, so it is kept as the parent" if kept_anyway
+                       else "did not improve, so it is binned")
                 ),
             }
-            print(
-                f"child {child_mean:.4f} vs parent {best_mean:.4f} -> "
-                f"{verdict['verdict']}: {verdict['why']}",
-                flush=True,
-            )
-        else:
-            print(
-                f"child {child_mean:.4f} vs parent {best_mean:.4f} -> "
-                f"{verdict['verdict']}: {verdict['why']}",
-                flush=True,
-            )
+        print(
+            f"child {child_mean:.4f} vs parent {best_mean:.4f} -> "
+            f"{verdict['verdict']}: {verdict['why']}",
+            flush=True,
+        )
 
         history.append({
             "iteration": iteration, "child_mean": child_mean,
@@ -767,7 +785,14 @@ def main() -> int:
         })
         (work / "history.json").write_text(json.dumps(history, indent=2))
 
-        if verdict["verdict"] in KEEPING_VERDICTS:
+        # Keep or bin. A TIMED-OUT verdict is not in KEEPING_VERDICTS because a
+        # truncated turn earns no trust, but it still has a disposition, and it
+        # is decided by the mean rather than by the clock -- see above.
+        keeping = (
+            verdict["verdict"] in KEEPING_VERDICTS
+            or (verdict["verdict"] == TIMED_OUT and child_mean > best_mean + 1e-9)
+        )
+        if keeping:
             kept = work / f"winner-{iteration}"
             if kept.exists():
                 shutil.rmtree(kept)
