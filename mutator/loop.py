@@ -7,10 +7,11 @@ They are gitignored inside the seed, and this script never writes them back
 into the repo's `mutator/` directory. A new run starts from the blank
 templates.
 
-ponytail: one `evolve --iterations 1` per step. The notes survive a rejected
-edit only because we copy them out ourselves; a crash between the edit and
-that copy loses the iteration's notes. Upgrade path is a side directory the
-operator writes to directly.
+ponytail: one `evolve --iterations N` for the whole run, so the cold-start
+game happens once. The 10-minute cap is `docker kill` on `nethackers-mut-*`.
+nethackers hardcodes an 8-hour container timeout and has no flag for it.
+A killed iteration is discarded, not scored. Upgrade path is a timeout flag
+on that container.
 """
 
 from __future__ import annotations
@@ -20,6 +21,8 @@ import json
 import shutil
 import subprocess
 import sys
+import threading
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,6 +30,7 @@ MUTATOR = Path(__file__).resolve().parent
 DEFAULT_IDENTITY = "wiz-hum-cha-mal"
 MODEL = "opencode/big-pickle"
 OPERATOR = "opencode2"
+THINK_LIMIT_S = 600
 RUN_NOTES = ("experience.md", "experiments.md")
 NOTES = ("GAME_RULES.md", *RUN_NOTES)
 BOT_NAMES = ("bot.py", "arena_adapter.py", "autoascend", "nethackers.solution.json", "LICENSE")
@@ -79,30 +83,6 @@ def prepare_seed(bot: Path, notes: Path, seed: Path, identity: str) -> None:
         if src.is_file():
             shutil.copyfile(src, seed / name)
     (seed / ".gitignore").write_text("".join(f"{name}\n" for name in NOTES))
-
-
-def _latest_iter(workdir: Path) -> Path | None:
-    runs = sorted((workdir / "runs").glob("*/iter-0"))
-    return runs[-1] if runs else None
-
-
-def _harvest(workdir: Path, notes: Path) -> None:
-    tree = _latest_iter(workdir)
-    if tree is None:
-        return
-    for name in ("experience.md", "experiments.md"):
-        src = tree / name
-        if src.is_file() and src.read_text().strip():
-            shutil.copyfile(src, notes / name)
-
-
-def _metrics(workdir: Path) -> dict:
-    rows = []
-    for path in sorted((workdir / "runs").glob("*/metrics.jsonl")):
-        for line in path.read_text().splitlines():
-            if line.strip():
-                rows.append(json.loads(line))
-    return rows[-1] if rows else {}
 
 
 def _apply_code(tree: Path, bot: Path) -> None:
@@ -235,75 +215,147 @@ def agent_rewrote(before: str, after: str) -> bool:
     return bool(after.strip()) and after != before and "This file is empty at the start of a run" not in after
 
 
-def evolve_command(seed: Path, workdir: Path, identity: str) -> list[str]:
+def evolve_command(seed: Path, workdir: Path, identity: str, iterations: int) -> list[str]:
     return [
         "nethackers", "evolve", identity,
         "--seed", str(seed),
         "--from-seed",
         "--operator", OPERATOR,
         "--model", MODEL,
-        "--iterations", "1",
+        "--iterations", str(iterations),
         "--workdir", str(workdir),
     ]
 
 
-def evolve_once(seed: Path, workdir: Path, identity: str) -> subprocess.CompletedProcess[str]:
-    workdir.mkdir(parents=True, exist_ok=True)
-    return subprocess.run(evolve_command(seed, workdir, identity), text=True)
+def _started_age_seconds(started_at: str, now: datetime) -> float | None:
+    text = started_at.strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    if "." in text:
+        head, rest = text.split(".", 1)
+        tz = ""
+        for mark in ("+", "-"):
+            at = rest.find(mark)
+            if at > 0:
+                tz = rest[at:]
+                rest = rest[:at]
+                break
+        text = f"{head}.{rest[:6]}{tz}"
+    try:
+        started = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if started.tzinfo is None:
+        started = started.replace(tzinfo=timezone.utc)
+    return (now.astimezone(timezone.utc) - started.astimezone(timezone.utc)).total_seconds()
+
+
+def _cap_mutators(stop: threading.Event, limit_s: int) -> None:
+    """Kill a mutator container that has been up longer than `limit_s`.
+
+    Arena containers are not named `nethackers-mut-`, so the judge's games
+    are left alone. nethackers has no per-iteration timeout flag.
+    """
+    while not stop.wait(15):
+        listed = subprocess.run(
+            ["docker", "ps", "-q", "--filter", "name=nethackers-mut-"],
+            capture_output=True, text=True,
+        )
+        if listed.returncode != 0:
+            continue
+        now = datetime.now(timezone.utc)
+        for cid in listed.stdout.split():
+            inspected = subprocess.run(
+                ["docker", "inspect", "-f", "{{.State.StartedAt}}", cid],
+                capture_output=True, text=True,
+            )
+            age = _started_age_seconds(inspected.stdout, now)
+            if age is not None and age >= limit_s:
+                subprocess.run(["docker", "kill", cid], capture_output=True)
+
+
+def _iter_dirs(workdir: Path) -> list[Path]:
+    found = [path for path in (workdir / "runs").glob("*/iter-*") if path.is_dir()]
+    return sorted(found, key=lambda path: int(path.name.split("-", 1)[1]))
+
+
+def _metric_rows(workdir: Path) -> list[dict]:
+    rows = []
+    for path in sorted((workdir / "runs").glob("*/metrics.jsonl")):
+        for line in path.read_text().splitlines():
+            if line.strip():
+                rows.append(json.loads(line))
+    return [row for row in rows if row.get("reason") != "baseline"]
 
 
 def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
-    """Mutate `bot` in place when an iteration improves it. Always leave the
-    scored tree under `state/publish/<n>` so the caller can register it.
-    Notes stay in `state/notes` and are not copied back to `mutator/`."""
+    """One evolve call for every iteration. Score the bot once first and put
+    those notes in the seed. Kill the coding-agent container at 10 minutes."""
     state.mkdir(parents=True, exist_ok=True)
     notes = state / "notes"
+    evidence = eval_identity(bot, identity)
+    (state / "parent-eval.json").write_text(json.dumps(evidence))
+    write_notes_from_evidence(notes, evidence, identity)
+    before = _note_text(notes)
+    seed = state / "seed"
+    workdir = state / "work"
+    prepare_seed(bot, notes, seed, identity)
+    stop = threading.Event()
+    watcher = threading.Thread(target=_cap_mutators, args=(stop, THINK_LIMIT_S), daemon=True)
+    watcher.start()
+    try:
+        proc = subprocess.run(
+            evolve_command(seed, workdir, identity, iterations), text=True,
+        )
+    finally:
+        stop.set()
+    trees = {int(path.name.split("-", 1)[1]): path for path in _iter_dirs(workdir)}
     results = []
-    use_agent_notes = False
-    for i in range(1, iterations + 1):
-        if not use_agent_notes:
-            evidence = eval_identity(bot, identity)
-            (state / f"parent-eval-{i}.json").write_text(json.dumps(evidence))
-            write_notes_from_evidence(notes, evidence, identity)
-        before_files = {name: (notes / name).read_text() for name in RUN_NOTES}
-        before = _note_text(notes)
-        seed = state / f"seed-{i}"
-        workdir = state / f"work-{i}"
-        prepare_seed(bot, notes, seed, identity)
-        proc = evolve_once(seed, workdir, identity)
-        _harvest(workdir, notes)
-        use_agent_notes = agent_rewrote(before, _note_text(notes))
-        if not use_agent_notes:
-            for name, text in before_files.items():
-                (notes / name).write_text(text)
-            (notes / "experience.md").write_text(
-                before_files["experience.md"].rstrip()
-                + "\n\nThe agent left these notes unchanged.\n"
-            )
-        metric = _metrics(workdir)
-        tree = _latest_iter(workdir)
+    last_improved: Path | None = None
+    for metric in _metric_rows(workdir):
+        number = int(metric.get("iteration") or 0)
+        tree = trees.get(number - 1) or trees.get(number)
         scored = metric.get("dev_fitness") is not None
         improved = metric.get("reason") == "registered"
         if scored and tree is not None:
-            dest = state / "publish" / str(i)
+            dest = state / "publish" / str(number)
             if dest.exists():
                 shutil.rmtree(dest)
             shutil.copytree(tree, dest, ignore=shutil.ignore_patterns(*NOTES, ".gitignore"))
         if improved and tree is not None:
-            _apply_code(tree, bot)
+            last_improved = tree
+        ignored = True
+        if tree is not None:
+            after = "\n".join(
+                (tree / name).read_text() if (tree / name).is_file() else ""
+                for name in RUN_NOTES
+            )
+            ignored = not agent_rewrote(before, after)
         results.append({
             "identity": identity,
-            "iteration": i,
+            "iteration": number,
             "exit_code": proc.returncode,
             "scored": scored,
             "improved": improved,
             "dev_fitness": metric.get("dev_fitness"),
             "reason": metric.get("reason"),
             "hub_reason": metric.get("hub_reason"),
-            "notes_ignored": not use_agent_notes,
+            "notes_ignored": ignored,
         })
-        if proc.returncode != 0 and not scored:
-            break
+    if last_improved is not None:
+        _apply_code(last_improved, bot)
+    if not results:
+        results.append({
+            "identity": identity,
+            "iteration": 0,
+            "exit_code": proc.returncode,
+            "scored": False,
+            "improved": False,
+            "dev_fitness": None,
+            "reason": "no-metrics",
+            "hub_reason": None,
+            "notes_ignored": True,
+        })
     (state / "results.json").write_text(json.dumps(results, indent=2))
     return results
 
@@ -372,7 +424,14 @@ def self_check() -> None:
         assert "Elemental Planes" in game
         assert "Competition" not in game
         assert (seed / "experience.md").is_file()
-        assert DEFAULT_IDENTITY in evolve_command(seed, root / "work", DEFAULT_IDENTITY)
+        command = evolve_command(seed, root / "work", DEFAULT_IDENTITY, 3)
+        assert DEFAULT_IDENTITY in command
+        assert command[command.index("--iterations") + 1] == "3"
+        age = _started_age_seconds(
+            "2026-10-01T10:00:00.123456789Z",
+            datetime(2026, 10, 1, 10, 10, 5, tzinfo=timezone.utc),
+        )
+        assert age is not None and 600 <= age < 610
         bare = root / "bare-notes"
         bare.mkdir()
         seed_bare = root / "seed-bare"

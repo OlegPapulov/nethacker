@@ -2,7 +2,7 @@
 
 This repo keeps two loops for `wiz-hum-cha-mal`.
 
-The mutator (`mutator/`) edits the bot for the identity given to that run. The test gameplay is `wiz-hum-cha-mal`. `mutator/GAME_RULES.md` is the NetHack rulebook. A run does not start with `experience.md` or `experiments.md`. Before each edit the loop scores the current bot and writes both files from that batch: the deaths, and one experiment for the most common one. The coding agent is supposed to rewrite them after the edit. If it leaves them unchanged, the next iteration scores the bot again and writes new notes. They are gitignored, so they are not in the registered commit and they are not there for the next run.
+The mutator (`mutator/`) edits the bot for the identity given to that run. The test gameplay is `wiz-hum-cha-mal`. `mutator/GAME_RULES.md` is the NetHack rulebook. A run does not start with `experience.md` or `experiments.md`. The loop scores the current bot once, writes both files from that batch, and passes `--iterations` to a single `nethackers evolve`. The coding-agent container is killed at 10 minutes. `nethackers` has no timeout flag; its own ceiling is 8 hours. They are gitignored, so they are not in the registered commit and they are not there for the next run.
 
 This folder edits the mutator. Root `GAME_RULES.md` is the competition. Root `experience.md` is the log of mutator runs. Root `experiments.md` is a proposal for the next mutator change.
 
