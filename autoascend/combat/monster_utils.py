@@ -14,10 +14,11 @@ def is_monster_faster(agent, monster):
            or 'bee' in mon.mname or 'fox' in mon.mname
 
 
+# hypothesis: flee earlier when HP is low to improve survivability
 def imminent_death_on_melee(agent, monster):
     if is_dangerous_monster(monster):
-        return agent.blstats.hitpoints <= 16
-    return agent.blstats.hitpoints <= 8
+        return agent.blstats.hitpoints <= 20
+    return agent.blstats.hitpoints <= 12
 
 
 def is_dangerous_monster(monster):

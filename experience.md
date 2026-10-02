@@ -4,7 +4,7 @@ Identity: `wiz-hum-cha-mal`
 
 ## Why it stopped
 
-2 of 15 games stopped at killed by a jackal. Mean progress 0.0643.
+2 of 15 games stopped at killed by a jackal. Mean progress 0.064.
 
 | seed | progress | turns | stop |
 | --- | --- | --- | --- |

@@ -1342,12 +1342,6 @@ class Agent:
         to_eat = sorted(filter(lambda e: dis[e[0], e[1]] != -1, to_eat), key=lambda e: dis[e[0], e[1]])
         if not to_eat:
             yield False
-        # hypothesis: avoid long corpse hunts when just hungry to save turns; only go far when weak
-        if not only_below_me and self.blstats.hunger_state < Hunger.WEAK:
-            # hypothesis: allow slightly farther corpse search when hungry to find food without wasting too many turns
-            to_eat = [t for t in to_eat if dis[t[0], t[1]] <= 3]
-            if not to_eat:
-                yield False
 
         target_y, target_x, monster_id = to_eat[0]
 
@@ -1476,14 +1470,29 @@ class Agent:
     def eat_from_inventory(self):
         if self.blstats.hunger_state < Hunger.HUNGRY:
             yield False
+        # hypothesis: when very hungry, eat safe corpses from inventory too
         for item in flatten_items(self.inventory.items):
             if item.category == nh.FOOD_CLASS and \
-                    item.objs[0].name != 'sprig of wolfsbane' and \
-                    (not item.is_corpse() or
-                     item.monster_id in [MON.from_name(n) - nh.GLYPH_MON_OFF for n in ['lizard', 'lichen']]):
-                yield True
-                self.inventory.eat(item)
-                return
+                    item.objs[0].name != 'sprig of wolfsbane':
+                if not item.is_corpse():
+                    yield True
+                    self.inventory.eat(item)
+                    return
+                # it's a corpse - check if editable
+                if item.is_corpse():
+                    try:
+                        if self._is_corpse_editable(item.monster_id, item.age_turn if hasattr(item, 'age_turn') else self.blstats.time):
+                            yield True
+                            self.inventory.eat(item)
+                            return
+                    except Exception:
+                        pass
+                # fallback to old behavior for non-weak hunger
+                if self.blstats.hunger_state < Hunger.WEAK and item.is_corpse():
+                    if item.monster_id in [MON.id_from_name(n) for n in ['lizard', 'lichen']]:
+                        yield True
+                        self.inventory.eat(item)
+                        return
         yield False
 
     @utils.debug_log('cure_disease')

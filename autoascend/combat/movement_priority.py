@@ -82,17 +82,19 @@ def draw_monster_priority_positive(agent, monster, priority, walkable):
 def draw_monster_priority_negative(agent, monster, priority, walkable):
     _, y, x, mon, _ = monster
 
+    # hypothesis: stronger fleeing when in imminent danger
     if imminent_death_on_melee(agent, monster) and not mon.mname in WEAK_MONSTERS \
             and not mon.mname in ONLY_RANGED_SLOW_MONSTERS:
         if mon.mmove <= 12:
-            _draw_around(priority, y, x, -10, radius=1)
+            _draw_around(priority, y, x, -15, radius=1)
+            _draw_around(priority, y, x, -10, radius=2)
         else:
             if adjacent((agent.blstats.y, agent.blstats.x), (y, x)):
                 # no point in running -- monster is fast
                 pass
             else:
-                _draw_around(priority, y, x, -10, radius=2)
-                _draw_around(priority, y, x, -5, radius=1)
+                _draw_around(priority, y, x, -15, radius=2)
+                _draw_around(priority, y, x, -10, radius=1)
 
         if not len(agent.inventory.get_ranged_combinations()):
             # prefer avoiding being in line of fire

@@ -1,15 +1,20 @@
 # Next experiment
 
 ## Result
-- iteration 1: 0.0643 (no improvement over baseline 0.0643). Limited non-local corpse search to distance <= 3 when hunger is HUNGRY (< WEAK) to avoid wasting turns on long food hunts.
+
+- iteration 1: 0.063 not kept (no-cell-improved). Decreases the mean by 0.001 (from 0.064 to 0.063). Moved the weak-hunger eat step to the front of the strategy list.
+- iteration 2: 0.060 not kept (no-cell-improved). Decreases the mean by 0.003 (from 0.063 to 0.060). Lowered that threshold from weak to hungry.
 
 ## Why it stopped
+
 killed by a jackal (2 of 15).
 
 ## What is the problem
-Mean progress is 0.0643 (unchanged). The bot still dies early on many seeds; avoiding long corpse-seeking trips when only mildly hungry saves turns but does not sufficiently improve survival.
+
+Mean progress is 0.064. The bot is kept only if the next mean is strictly higher on `wiz-hum-cha-mal`.
 
 ## What might solve it
-One coherent, general improvement is needed. Future work should focus on better early-game survival (combat/escape behavior) without exploiting seed-specific patterns.
+
+One game still starves, and the parent already walks to a corpse once hunger is weak. Eating any sooner spends the turns the deep games used to descend, and the mean falls. Leave that threshold. Change one other decision in autoascend.
 
 Edit `autoascend/` and exit. The judge measures that tree.

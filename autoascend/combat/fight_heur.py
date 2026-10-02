@@ -15,10 +15,11 @@ from .utils import wielding_ranged_weapon, line_dis_from, inside
 def melee_monster_priority(agent, monsters, monster):
     _, y, x, mon, _ = monster
     ret = 1
-    if agent.blstats.hitpoints > 8 or is_monster_faster(agent, monster):
+    # hypothesis: be more conservative in melee when HP is low
+    if agent.blstats.hitpoints > 12 or is_monster_faster(agent, monster):
         ret += 15
     if wielding_ranged_weapon(agent) and not is_monster_faster(agent, monster):
-        ret -= 6
+        ret -= 8
     if mon.mname in EXPLODING_MONSTERS:
         ret -= 17
     if 'were' in mon.mname:
@@ -213,16 +214,18 @@ def elbereth_action(agent, monsters):
         multiplier = np.clip(20 / agent.blstats.hitpoints, 1.0, 1.5)
         if is_monster_faster(agent, monster):
             multiplier *= 2
-        if mon in WEAK_MONSTERS:
+        if mon.mname in WEAK_MONSTERS:
             adj_monsters_count += 0.1 * multiplier
             continue
         adj_monsters_count += 1 * multiplier
         if is_dangerous_monster(monster):
             adj_monsters_count += 2 * multiplier
 
+    # hypothesis: be more aggressive about engraving Elbereth when low on HP
+    # so fragile early-game characters can better survive common threats
     player_hp_ratio = (agent.blstats.hitpoints / agent.blstats.max_hitpoints) ** 0.5
-    if agent.blstats.hitpoints < 30 and adj_monsters_count > 0:
-        return [(-15 + 20 * adj_monsters_count * (1 - player_hp_ratio), ('elbereth',))]
+    if agent.blstats.hitpoints < 40 and adj_monsters_count > 0:
+        return [(-10 + 25 * adj_monsters_count * (1 - player_hp_ratio), ('elbereth',))]
     return []
 
 
