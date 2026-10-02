@@ -194,3 +194,48 @@ There is no lost edit in the loop. The publish contains the tree the operator le
 
 Tell the agent to leave the edit in the tree. A local game is not the score, and restoring the parent makes the judge score the parent. The edit is the wizard spell path: parse the spell menu for a wizard, and cast `force bolt` from `emergency_strategy` when it is known, energy is at least 5, and a monster is adjacent.
 
+## Run wiz-hum-cha-mal (2 iteration(s))
+- iteration 1: reason=registered dev_fitness=0.07737020128671113 improved=True notes_ignored=True code_unchanged=False
+- iteration 2: reason=no-cell-improved dev_fitness=0.07737020128671113 improved=False notes_ignored=True code_unchanged=False
+
+### Why it stopped
+no-cell-improved
+
+### What is the problem
+# Playthrough
+
+Identity: `wiz-hum-cha-mal`
+
+## Why it stopped
+
+1 of 15 games stopped at died of starvation. Mean progress 0.064.
+
+| seed | progress | turns | stop |
+| --- | --- | --- | --- |
+| 0 | 0.07453595273884014 | 27740 | killed by an ape |
+| 1 | 0.11704996473565571 | 21697 | killed by a fire ant |
+| 2 | 0.07453595273884014 | 24862 | killed by Mr. Queyssac; the shopkeeper |
+| 3 | 0.07453595273884014 | 19861 | killed by an invisible gnome king |
+| 4 | 0.01847840456172601 | 2644 | killed by a kobold zombie |
+| 5 | 0.036887590648350246 | 8788 | killed by a sewer rat |
+| 6 | 0.11704996473565571 | 27730 | killed by a lynx |
+| 7 | 0.11704996473565571 | 34603 | killed by a rope golem |
+| 8 | 0.02081163581974355 | 4142 | killed by a giant rat |
+| 9 | 0.07453595273884014 | 25313 | killed by a jackal |
+| 10 | 0.07453595273884014 | 29898 | killed by a lizard |
+| 11 | 0.036887590648350246 | 12486 | killed by a jackal |
+| 12 | 0.024160136550546978 | 4917 | killed by a bat |
+| 13 | 0.07453595273884014 | 31848 | killed by a white unicorn |
+| 14 | 0.029108986017138745 | 7795 | died of starvation |
+
+## What is the problem
+
+The score is the mean of these games. 6 of 15 end at depth 1. The mean moves when a long game gets longer, and it falls when a long game gets shorter.
+
+## What might solve it
+
+See `experiments.md`.
+
+### What might solve it
+See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
