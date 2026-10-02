@@ -97,15 +97,9 @@ class ItemPriority(ItemPriorityBase):
                            key=lambda i: -utils.calc_dps(*self.agent.character.get_ranged_bonus(None, i))):
             add_item(item)
 
-        hunger = self.agent.blstats.hunger_state if hasattr(self.agent.blstats, 'hunger_state') else 1
-        # Don't pick up corpses into inventory (can cause issues) - eat from ground
         for item in sorted(filter(lambda i: i.is_food() and not i.is_corpse(), items),
                            key=lambda x: -x.nutrition_per_weight() - 1000 * (x.objs[0].name == 'sprig of wolfsbane')):
             add_item(item)
-
-        if self._take_sacrificial_corpses:
-            for item in filter(self.agent.global_logic.can_sacrify, items):
-                add_item(item)
 
         if self._take_sacrificial_corpses:
             for item in filter(self.agent.global_logic.can_sacrify, items):
@@ -615,14 +609,6 @@ class GlobalLogic:
         return (
             self.current_strategy().repeat()
             .preempt(self.agent, [
-                # hypothesis: prioritize eating when hungry to avoid starvation
-                self.agent.eat_corpses_from_ground(only_below_me=False)
-                .condition(lambda: self.agent.blstats.hunger_state >= Hunger.WEAK),
-                self.agent.eat_corpses_from_ground(only_below_me=True)
-                .condition(lambda: self.agent.blstats.hunger_state >= Hunger.NOT_HUNGRY),
-                self.agent.eat_from_inventory().every(5),
-            ])
-            .preempt(self.agent, [
                 self.solve_sokoban_strategy()
                 .condition(lambda: self.milestone == Milestone.SOLVE_SOKOBAN and
                                    self.agent.current_level().dungeon_number == Level.SOKOBAN)
@@ -637,6 +623,16 @@ class GlobalLogic:
             ])
             .preempt(self.agent, [
                 self.agent.cure_disease().every(5),
+            ])
+            .preempt(self.agent, [
+                # hypothesis: proactively seek and eat safe corpses when hungry (not just when weak)
+                # to reduce starvation/fainting time on early floors; eating before exploring preserves
+                # turns for advancement.
+                self.agent.eat_corpses_from_ground(only_below_me=False)
+                .condition(lambda: self.agent.blstats.hunger_state >= Hunger.HUNGRY),
+                self.agent.eat_corpses_from_ground(only_below_me=True)
+                .condition(lambda: self.agent.blstats.hunger_state >= Hunger.NOT_HUNGRY),
+                self.agent.eat_from_inventory().every(5),
             ])
             .preempt(self.agent, [
                 self.follow_guard(),

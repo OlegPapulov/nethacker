@@ -1282,8 +1282,7 @@ class Agent:
         #     return False
 
         # petrification
-        # Petrifying corpses
-        if monster_id in [MON.id_from_name('chickatrice'), MON.id_from_name('cockatrice'), MON.id_from_name('pyrolisk'), MON.id_from_name('Medusa')]:
+        if ord(permonst.mlet) == MON.S_COCKATRICE or monster_id == MON.id_from_name('Medusa'):
             return False
 
         # temporary prevents movement
@@ -1369,23 +1368,6 @@ class Agent:
                 if not self.has_pet:
                     corpse_age = self.blstats.time
                     level.corpses_to_eat[target_y, target_x][monster_id] = corpse_age
-                # extra safety check
-                if monster_id in [MON.id_from_name('chickatrice'), MON.id_from_name('cockatrice'), MON.id_from_name('pyrolisk'), MON.id_from_name('Medusa')]:
-                    del level.corpses_to_eat[target_y, target_x][monster_id]
-                    if not level.corpses_to_eat[target_y, target_x]:
-                        del level.corpses_to_eat[target_y, target_x]
-                    if not yielded:
-                        yield False
-                    return
-                if monster_id in [MON.id_from_name('chickatrice'), MON.id_from_name('cockatrice'), MON.id_from_name('pyrolisk'), MON.id_from_name('Medusa')]:
-                    # remove and don't eat
-                    if (target_y, target_x) in level.corpses_to_eat:
-                        level.corpses_to_eat[target_y, target_x].pop(monster_id, None)
-                        if not level.corpses_to_eat[target_y, target_x]:
-                            level.corpses_to_eat.pop((target_y, target_x), None)
-                    if not yielded:
-                        yield False
-                    return
                 if self._is_corpse_editable(monster_id, corpse_age):
                     if not yielded:
                         yielded = True
@@ -1486,21 +1468,13 @@ class Agent:
     @utils.debug_log('eat_from_inventory')
     @Strategy.wrap
     def eat_from_inventory(self):
-        # hypothesis: eat from inventory earlier to avoid starvation
-        if self.blstats.hunger_state < Hunger.NOT_HUNGRY:
+        if self.blstats.hunger_state < Hunger.HUNGRY:
             yield False
         for item in flatten_items(self.inventory.items):
             if item.category == nh.FOOD_CLASS and \
-                    item.objs[0].name != 'sprig of wolfsbane':
-                if item.is_corpse():
-                    mid = item.monster_id
-                    # block dangerous
-                    # Block all dangerous/petrifying corpses regardless
-                    if mid in [MON.id_from_name('chickatrice'), MON.id_from_name('cockatrice'), MON.id_from_name('pyrolisk'), MON.id_from_name('Medusa')]:
-                        continue
-                    # For non-dangerous, be more permissive when hungry? But to be safe, only allow lizard/lichen
-                    if mid not in [MON.id_from_name('lizard'), MON.id_from_name('lichen')]:
-                        continue
+                    item.objs[0].name != 'sprig of wolfsbane' and \
+                    (not item.is_corpse() or
+                     item.monster_id in [MON.from_name(n) - nh.GLYPH_MON_OFF for n in ['lizard', 'lichen']]):
                 yield True
                 self.inventory.eat(item)
                 return
