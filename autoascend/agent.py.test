@@ -1127,11 +1127,7 @@ class Agent:
                 yielded = True
                 yield True
                 self.character.parse_enhance_view()
-                # hypothesis: parse spell list for wizards too
-                # try:
-                #     self.character.parse_spellcast_view()
-                # except Exception:
-                #     pass
+                # self.character.parse_spellcast_view()
 
             move_priority_heatmap, actions = combat.fight_heur.get_priorities(self)
             actions.extend(combat.fight_heur.get_move_actions(self, dis, move_priority_heatmap))
@@ -1349,14 +1345,7 @@ class Agent:
         # hypothesis: avoid long corpse hunts when just hungry to save turns; only go far when weak
         if not only_below_me and self.blstats.hunger_state < Hunger.WEAK:
             # hypothesis: allow slightly farther corpse search when hungry to find food without wasting too many turns
-            max_dist = 5
-            to_eat = [t for t in to_eat if dis[t[0], t[1]] <= max_dist]
-            if not to_eat:
-                yield False
-        elif not only_below_me and self.blstats.hunger_state >= Hunger.WEAK:
-            # hypothesis: when weak, look farther for food to avoid starvation
-            max_dist = 20
-            to_eat = [t for t in to_eat if dis[t[0], t[1]] <= max_dist]
+            to_eat = [t for t in to_eat if dis[t[0], t[1]] <= 3]
             if not to_eat:
                 yield False
 
@@ -1442,20 +1431,6 @@ class Agent:
         #     yield True
         #     self.cast('healing', direction=(0, 0))
         #     return
-
-        # hypothesis: wizards can't parse spell list in parent, so they never cast; also force bolt can save lives
-        if 'force bolt' in getattr(self.character, 'known_spells', {}) and self.blstats.energy >= 5:
-            for dy in [-1, 0, 1]:
-                for dx in [-1, 0, 1]:
-                    if dy == 0 and dx == 0:
-                        continue
-                    ny, nx = self.blstats.y + dy, self.blstats.x + dx
-                    if 0 <= ny < self.glyphs.shape[0] and 0 <= nx < self.glyphs.shape[1]:
-                        g = self.glyphs[ny, nx]
-                        if g in G.MONS or g in G.INVISIBLE_MON:
-                            yield True
-                            self.cast('force bolt', direction=(dy, dx))
-                            return
 
         items = [item for item in flatten_items(self.inventory.items) if item.is_unambiguous() and
                  item.category == nh.POTION_CLASS and item.object.name in ['healing', 'extra healing', 'full healing']]
@@ -1562,11 +1537,7 @@ class Agent:
                         ((Level.PLANE, 1), (None, None))  # TODO: check level num
                     self.character.parse()
                     self.character.parse_enhance_view()
-                    # hypothesis: parse spell list for wizards too
-                    # try:
-                    #     self.character.parse_spellcast_view()
-                    # except Exception:
-                    #     pass
+                    # self.character.parse_spellcast_view()
                     self.step(A.Command.AUTOPICKUP)
                     if 'Autopickup: ON' in self.message:
                         self.step(A.Command.AUTOPICKUP)

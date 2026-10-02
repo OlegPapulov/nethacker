@@ -322,13 +322,18 @@ class Character:
         self.alignment = self.name_to_alignment[alignment]
         self.race = self.name_to_race[race]
         self.gender = self.name_to_gender[gender]
-
-    def parse_spellcast_view(self):
+        # Initialize known spells
         self.known_spells = dict()
         self.spell_fail_chance = dict()
 
+    def parse_spellcast_view(self):
         # TODO: parse for other spellcaster classes
-        if self.role not in (self.HEALER,):
+        if self.role == self.WIZARD:
+            # Wizards know force bolt
+            if 'force bolt' not in self.known_spells:
+                self.known_spells['force bolt'] = 'f'
+                self.spell_fail_chance['force bolt'] = 0.05
+        if self.role not in (self.HEALER, self.WIZARD):
             return
 
         with self.agent.atom_operation():
