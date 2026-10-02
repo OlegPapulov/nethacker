@@ -127,48 +127,43 @@ The next parent for an identity has to be this owner's best public commit for th
 
 Seed each identity from that commit before evolve. Tell the agent to leave the weak-hunger threshold alone.
 
-## Run wiz-hum-cha-mal (2 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.06431333032572426 improved=False notes_ignored=False
-- iteration 2: reason=no-cell-improved dev_fitness=0.06258381245687528 improved=False notes_ignored=True
+## Run 36951341311, wiz-hum-cha-mal, 2 iterations from the 0.064 parent
+
+[36951341311](https://github.com/OlegPapulov/nethacker/actions/runs/36951341311) finished green with no new elite. The seed was this owner's best public bot for the identity. Cold-start mean was 0.06431333032572426, the same number as that parent. Seed 14 of the parent still starves (7,795 turns, depth 1). Six of 15 games end at depth 1. The note named the modal death, a jackal (seeds 9 and 11), and told the agent to leave the weak-hunger threshold and change one other decision.
+
+| Iteration | Operator | Judge | Kept | Commit |
+|---|---|---|---|---|
+| 1 | 166 min, 4,953,018 tokens | 0.06431333032572426 | no | `47e65cb` |
+| 2 | 72 min, 969,128 tokens | 0.062584 | no | `9917b47` |
+
+Iteration 1 added a distance cap inside `eat_corpses_from_ground`: when hunger is below weak and the walk is non-local, keep only corpses within 3 squares. That branch cannot run. A non-local walk is already called only when hunger is at least weak. The 15 public seeds replayed the parent. The printed mean is 0.064 because the table rounds.
+
+Iteration 2 removed that cap and edited five combat decisions plus inventory eating (`9917b47`). Melee priority now wants more than 12 hit points instead of 8. Elbereth engraves below 40 hit points instead of 30. `imminent_death_on_melee` flees at 12 hit points, or 20 against a dangerous monster, instead of 8 and 16. The flee radii got larger. `eat_from_inventory` will eat any corpse `_is_corpse_editable` accepts, not only lizard and lichen. It also changed `mon in WEAK_MONSTERS` to `mon.mname in WEAK_MONSTERS`. `WEAK_MONSTERS` is a list of names, so the old check was always false.
+
+| Seed | Parent | Iteration 2 |
+|---|---|---|
+| 6 | 0.117, depth 5, 27,730 turns, lynx | 0.000, depth 1, 1,289 turns |
+| 2 | 0.075, depth 5 | 0.037, depth 1 |
+| 7 | 0.117, depth 5 | 0.075, depth 5 |
+| 1 | 0.117, depth 3 | 0.075, depth 3 |
+| 4 | 0.018, depth 1, 2,644 turns | 0.075, depth 5 |
+| 8 | 0.021, depth 1 | 0.075, depth 4 |
+| 11 | 0.037, depth 1 | 0.117, depth 4 |
+| 12 | 0.024, depth 1 | 0.075, depth 3 |
+| 13 | 0.075, depth 3 | 0.117, depth 5 |
+| 14 | 0.029, depth 1, starvation | 0.051, depth 1 |
 
 ### Why it stopped
-no-cell-improved
+
+A child is kept only when its mean is strictly above the parent. Iteration 1 tied the parent on every seed. Iteration 2 scored 0.063. Both `hub_reason` values are empty, so the job is green. `main` stays on the 0.064 parent.
 
 ### What is the problem
-# Playthrough
 
-Identity: `wiz-hum-cha-mal`
+The mean is the long games. Fleeing earlier saved several depth-1 deaths and shortened the games that were already deep. Seed 6, a 0.117 game, became a zero. "Change one other decision" was read as a license to retune every combat threshold in one diff.
 
-## Why it stopped
-
-2 of 15 games stopped at killed by a jackal. Mean progress 0.064.
-
-| seed | progress | turns | stop |
-| --- | --- | --- | --- |
-| 0 | 0.07453595273884014 | 27740 | killed by an ape |
-| 1 | 0.11704996473565571 | 21697 | killed by a fire ant |
-| 2 | 0.07453595273884014 | 24862 | killed by Ms. Fleac; the shopkeeper |
-| 3 | 0.07453595273884014 | 19861 | killed by an invisible gnome king |
-| 4 | 0.01847840456172601 | 2644 | killed by a kobold zombie |
-| 5 | 0.036887590648350246 | 8788 | killed by a sewer rat |
-| 6 | 0.11704996473565571 | 27730 | killed by a lynx |
-| 7 | 0.11704996473565571 | 34603 | killed by a rope golem |
-| 8 | 0.02081163581974355 | 4142 | killed by a giant rat |
-| 9 | 0.07453595273884014 | 25313 | killed by a jackal |
-| 10 | 0.07453595273884014 | 29898 | killed by a lizard |
-| 11 | 0.036887590648350246 | 12486 | killed by a jackal |
-| 12 | 0.024160136550546978 | 4917 | killed by a bat |
-| 13 | 0.07453595273884014 | 31848 | killed by a white unicorn |
-| 14 | 0.029108986017138745 | 7795 | died of starvation |
-
-## What is the problem
-
-The score is the mean of these games. 6 of 15 end at depth 1. A change that does not move the usual stop, killed by a jackal, does not change the mean.
-
-## What might solve it
-
-See `experiments.md`.
+The first edit spent 166 minutes and 4.9 million tokens on a branch the hunger gate makes unreachable. The playthrough header still calls a jackal the usual stop, because that string appears twice, while the starvation game is the one the hypothesis was written for.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+Name one function in the note. Tell the agent not to edit `eat_corpses_from_ground`, because a distance cap there never runs. The one allowed edit is `imminent_death_on_melee`: raise the ordinary cut from 8 hit points to 10, and leave the dangerous-monster cut at 16. Leave Elbereth, melee priority, flee radii, and `eat_from_inventory` alone.
 

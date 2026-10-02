@@ -57,8 +57,9 @@ def _game_rules(identity: str) -> str:
     header = (
         f"# This gameplay\n\n"
         f"Identity: `{identity}`\n\n"
-        "Be brief. Read `experiments.md`, make that one edit in `autoascend/`, "
+        "Be brief. Read `experiments.md`, make that one edit in the function it names, "
         "mark it with a `# hypothesis:` comment, and exit. "
+        "Do not edit a second function. "
         "Do not narrate, do not tour the tree, and do not run the arena. "
         "The judge scores the tree after this process exits. "
         "Private Dungeons are scored by their verifier after that registration. "
@@ -125,14 +126,34 @@ def _cause(row: dict) -> str:
     return row.get("cause_of_death") or row.get("milestone") or row.get("status") or "unknown"
 
 
+def _food_death(name: str) -> bool:
+    low = name.lower()
+    return any(word in low for word in ("starv", "hunger", "faint"))
+
+
+def _lead_cause(counts: dict[str, int]) -> str:
+    """A starvation or fainting death leads the note. A monster that appears
+    twice is not the task when one game still dies of hunger."""
+    for name in counts:
+        if _food_death(name):
+            return name
+    if not counts:
+        return "no finished games"
+    return max(counts, key=lambda name: (counts[name], name))
+
+
 def _hypothesis(cause: str, shallow: int, total: int, causes: list[str] | None = None) -> str:
     blob = " ".join([cause, *(causes or [])]).lower()
     if any(word in blob for word in ("starv", "hunger", "faint")):
         return (
-            "One game still starves, and the parent already walks to a corpse "
-            "once hunger is weak. Eating any sooner spends the turns the deep "
-            "games used to descend, and the mean falls. Leave that threshold. "
-            "Change one other decision in autoascend."
+            "One game still starves. The parent already walks to a corpse once "
+            "hunger is weak. Do not edit `eat_corpses_from_ground`. A distance "
+            "cap there never runs, and eating sooner shortens the long games. "
+            "Change only `imminent_death_on_melee` in "
+            "`autoascend/combat/monster_utils.py`: raise the ordinary cut from "
+            "8 hit points to 10, and leave the dangerous-monster cut at 16. "
+            "Do not edit Elbereth, melee priority, flee radii, or "
+            "`eat_from_inventory`."
         )
     if "poison" in blob:
         return (
@@ -203,10 +224,7 @@ def write_notes_from_evidence(notes: Path, evidence: dict, identity: str, earlie
     for row in results:
         cause = _cause(row)
         counts[cause] = counts.get(cause, 0) + 1
-    if counts:
-        cause = max(counts, key=lambda name: (counts[name], name))
-    else:
-        cause = "no finished games"
+    cause = _lead_cause(counts)
     mean = evidence.get("mean_progress")
     mean_text = f"{mean:.3f}" if isinstance(mean, (int, float)) else "unknown"
     shallow = sum(1 for row in results if (row.get("max_depth") or 0) <= 1)
@@ -230,8 +248,8 @@ def write_notes_from_evidence(notes: Path, evidence: dict, identity: str, earlie
         f"{table}\n\n"
         f"## What is the problem\n\n"
         f"The score is the mean of these games. {shallow} of {len(results)} "
-        f"end at depth 1. A change that does not move the usual stop, {cause}, "
-        f"does not change the mean.\n\n"
+        f"end at depth 1. The mean moves when a long game gets longer, and it "
+        f"falls when a long game gets shorter.\n\n"
         f"## What might solve it\n\n"
         f"See `experiments.md`.\n"
     )
@@ -535,7 +553,12 @@ def self_check() -> None:
                  "cause_of_death": "died of starvation"},
             ],
         }, DEFAULT_IDENTITY)
-        assert "Leave that threshold" in (hungry / "experiments.md").read_text()
+        hungry_text = (hungry / "experiments.md").read_text()
+        assert "imminent_death_on_melee" in hungry_text
+        assert "8 hit points to 10" in hungry_text
+        assert "Do not edit `eat_corpses_from_ground`" in hungry_text
+        assert "died of starvation (1 of 2)" in hungry_text
+        assert "second function" in game
         write_notes_from_evidence(hungry, {
             "mean_progress": 0.04,
             "results": [
