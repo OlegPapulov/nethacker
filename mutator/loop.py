@@ -27,6 +27,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MUTATOR = Path(__file__).resolve().parent
 DEFAULT_IDENTITY = "wiz-hum-cha-mal"
+OWNER = "OlegPapulov"
+# The AutoAscend import. Used for an identity this owner has never scored.
+BASELINE_COMMIT = "8387c34be4ce7c4019f4d98a9445a48e83e42731"
 MODEL = "opencode/big-pickle"
 OPERATOR = "opencode2"
 EFFORT = "medium"
@@ -126,10 +129,10 @@ def _hypothesis(cause: str, shallow: int, total: int, causes: list[str] | None =
     blob = " ".join([cause, *(causes or [])]).lower()
     if any(word in blob for word in ("starv", "hunger", "faint")):
         return (
-            "Eat before exploring. At least one game ends in starvation or "
-            "fainting from lack of food, and the rest die on the early floors. "
-            "Change food handling in autoascend so this character eats when "
-            "hungry instead of walking on."
+            "One game still starves, and the parent already walks to a corpse "
+            "once hunger is weak. Eating any sooner spends the turns the deep "
+            "games used to descend, and the mean falls. Leave that threshold. "
+            "Change one other decision in autoascend."
         )
     if "poison" in blob:
         return (
@@ -151,9 +154,49 @@ def _hypothesis(cause: str, shallow: int, total: int, causes: list[str] | None =
     )
 
 
-def write_notes_from_evidence(notes: Path, evidence: dict, identity: str) -> None:
-    """Fill both note files from one public-batch eval. The agent implements
-    the experiment; it does not have to invent the playthrough."""
+def mean_change(previous: float, score: float) -> str:
+    """How this attempt moved the mean relative to the attempt before it."""
+    delta = score - previous
+    if abs(delta) < 0.0005:
+        return f"does not change the mean ({previous:.3f})"
+    direction = "decreases" if delta < 0 else "increases"
+    return f"{direction} the mean by {abs(delta):.3f} (from {previous:.3f} to {score:.3f})"
+
+
+def result_block(results: list[dict]) -> str:
+    """One scored attempt per line. This is what both experiments.md files keep."""
+    lines = ["## Result", ""]
+    previous = results[0].get("parent_mean") if results else None
+    for row in results:
+        score = row.get("dev_fitness")
+        score_text = f"{score:.3f}" if isinstance(score, float) else "none"
+        kept = "kept" if row.get("improved") else "not kept"
+        change = ""
+        if isinstance(score, float) and isinstance(previous, (int, float)):
+            sentence = mean_change(float(previous), score)
+            change = f" {sentence[0].upper()}{sentence[1:]}."
+        lines.append(
+            f"- iteration {row.get('iteration')}: {score_text} {kept} "
+            f"({row.get('reason')}).{change}"
+        )
+        if isinstance(score, float):
+            previous = score
+    return "\n".join(lines)
+
+
+def saved_results(text: str) -> str:
+    chunks = []
+    for part in text.split("## Result")[1:]:
+        body = part.split("\n## ")[0].strip()
+        if body:
+            chunks.append("## Result\n\n" + body)
+    return "\n\n".join(chunks)
+
+
+def write_notes_from_evidence(notes: Path, evidence: dict, identity: str, earlier: str = "") -> None:
+    """Fill both note files from one public-batch eval. Earlier experiment
+    scores stay at the top of experiments.md. The agent implements the new
+    hypothesis under them."""
     notes.mkdir(parents=True, exist_ok=True)
     results = list(evidence.get("results") or [])
     counts: dict[str, int] = {}
@@ -192,8 +235,11 @@ def write_notes_from_evidence(notes: Path, evidence: dict, identity: str) -> Non
         f"## What might solve it\n\n"
         f"See `experiments.md`.\n"
     )
+    prior = saved_results(earlier).strip()
+    prior_text = f"{prior}\n\n" if prior else ""
     (notes / "experiments.md").write_text(
         f"# Next experiment\n\n"
+        f"{prior_text}"
         f"## Why it stopped\n\n"
         f"{cause} ({counts.get(cause, 0)} of {len(results)}).\n\n"
         f"## What is the problem\n\n"
@@ -215,6 +261,51 @@ def _note_text(notes: Path) -> str:
 
 def agent_rewrote(before: str, after: str) -> bool:
     return bool(after.strip()) and after != before and "This file is empty at the start of a run" not in after
+
+
+def best_public(programs: list[dict], identity: str) -> tuple[str, float] | None:
+    """Highest public progression this owner has registered for one identity."""
+    best: tuple[str, float] | None = None
+    for program in programs:
+        commit = (program.get("reference") or {}).get("commit")
+        if not commit:
+            continue
+        for row in program.get("identities") or []:
+            if row.get("identity") != identity:
+                continue
+            score = row.get("progression")
+            if not isinstance(score, (int, float)):
+                continue
+            if best is None or score > best[1]:
+                best = (str(commit), float(score))
+    return best
+
+
+def public_programs(owner: str) -> list[dict]:
+    from nethackers.hubclient.client import HubClient
+    hub = HubClient("https://nethackers.dunnolab.ai")
+    found = []
+    for row in hub.search(owner, limit=50):
+        found.append({**row, "identities": hub.program_identities(row["id"])})
+    return found
+
+
+def pull_commit(commit: str, dest: Path) -> None:
+    if dest.exists():
+        shutil.rmtree(dest)
+    subprocess.run(
+        ["nethackers", "pull", f"github.com/OlegPapulov/nethacker@{commit}", str(dest)],
+        check=True,
+    )
+
+
+def parent_tree(dest: Path, identity: str, programs: list[dict] | None = None) -> str:
+    """The seed for this identity: the owner's best public commit, or the
+    AutoAscend import when that identity has no public score."""
+    picked = best_public(programs if programs is not None else public_programs(OWNER), identity)
+    commit = picked[0] if picked else BASELINE_COMMIT
+    pull_commit(commit, dest)
+    return commit
 
 
 def evolve_command(seed: Path, workdir: Path, identity: str, iterations: int) -> list[str]:
@@ -258,9 +349,20 @@ def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
     those notes in the seed. Leave the coding container until it exits."""
     state.mkdir(parents=True, exist_ok=True)
     notes = state / "notes"
+    parent = state / "parent"
+    try:
+        parent_tree(parent, identity)
+        bot = parent
+    except (OSError, subprocess.CalledProcessError):
+        pass
     evidence = eval_identity(bot, identity)
     (state / "parent-eval.json").write_text(json.dumps(evidence))
-    write_notes_from_evidence(notes, evidence, identity)
+    parent_mean = evidence.get("mean_progress")
+    if not isinstance(parent_mean, (int, float)):
+        parent_mean = None
+    write_notes_from_evidence(
+        notes, evidence, identity, (MUTATOR / "experiments.md").read_text(),
+    )
     before = _note_text(notes)
     seed = state / "seed"
     workdir = state / "work"
@@ -297,6 +399,7 @@ def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
             "scored": scored,
             "improved": improved,
             "dev_fitness": metric.get("dev_fitness"),
+            "parent_mean": parent_mean,
             "reason": metric.get("reason"),
             "hub_reason": metric.get("hub_reason"),
             "notes_ignored": ignored,
@@ -311,6 +414,7 @@ def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
             "scored": False,
             "improved": False,
             "dev_fitness": None,
+            "parent_mean": parent_mean,
             "reason": "no-metrics",
             "hub_reason": None,
             "notes_ignored": True,
@@ -320,8 +424,9 @@ def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
 
 
 def record_local(results: list[dict], notes: Path) -> None:
-    """Append this run to the repo's experience.md and leave an unapproved
-    proposal in experiments.md. Does not touch `mutator/`."""
+    """Append this run to the repo's experience.md. Append the score of each
+    attempt to both experiments.md files. The proposal under the outer file
+    still needs a human yes before any other mutator edit."""
     play = (notes / "experience.md").read_text() if (notes / "experience.md").is_file() else ""
     nxt = (notes / "experiments.md").read_text() if (notes / "experiments.md").is_file() else ""
     who = results[0].get("identity", DEFAULT_IDENTITY) if results else DEFAULT_IDENTITY
@@ -356,7 +461,13 @@ def record_local(results: list[dict], notes: Path) -> None:
         nxt.strip(),
         "",
     ]
-    (ROOT / "experiments.md").write_text((ROOT / "experiments.md").read_text().rstrip() + "\n" + "\n".join(proposal) + "\n")
+    outcome = result_block(results)
+    (ROOT / "experiments.md").write_text(
+        (ROOT / "experiments.md").read_text().rstrip() + "\n\n" + outcome + "\n" + "\n".join(proposal) + "\n"
+    )
+    (MUTATOR / "experiments.md").write_text(
+        (MUTATOR / "experiments.md").read_text().rstrip() + "\n\n" + outcome + "\n"
+    )
 
 
 def self_check() -> None:
@@ -424,7 +535,34 @@ def self_check() -> None:
                  "cause_of_death": "died of starvation"},
             ],
         }, DEFAULT_IDENTITY)
-        assert "Eat before exploring" in (hungry / "experiments.md").read_text()
+        assert "Leave that threshold" in (hungry / "experiments.md").read_text()
+        write_notes_from_evidence(hungry, {
+            "mean_progress": 0.04,
+            "results": [
+                {"trajectory_id": 0, "progress": 0.02, "turns": 10, "max_depth": 1,
+                 "cause_of_death": "died of starvation"},
+            ],
+        }, DEFAULT_IDENTITY, "## Result\n\n- iteration 1: 0.060 not kept (no-cell-improved)\n")
+        assert "0.060 not kept" in (hungry / "experiments.md").read_text()
+        assert saved_results("## Result\n\n- iteration 1: 0.060 not kept\n\n## Why it stopped\n\nx\n") == (
+            "## Result\n\n- iteration 1: 0.060 not kept"
+        )
+        block = result_block([
+            {"iteration": 1, "dev_fitness": 0.063, "parent_mean": 0.064, "improved": False, "reason": "no-cell-improved"},
+            {"iteration": 2, "dev_fitness": 0.060, "parent_mean": 0.064, "improved": False, "reason": "no-cell-improved"},
+        ])
+        assert "Decreases the mean by 0.001 (from 0.064 to 0.063)" in block
+        assert "Decreases the mean by 0.003 (from 0.063 to 0.060)" in block
+        assert best_public([
+            {"reference": {"commit": "aaa"}, "identities": [
+                {"identity": "wiz-hum-cha-mal", "progression": 0.064},
+            ]},
+            {"reference": {"commit": "bbb"}, "identities": [
+                {"identity": "wiz-hum-cha-mal", "progression": 0.062},
+                {"identity": "val-dwa-law-fem", "progression": 0.1},
+            ]},
+        ], "wiz-hum-cha-mal") == ("aaa", 0.064)
+        assert best_public([], "val-dwa-law-fem") is None
         assert agent_rewrote("same", "same") is False
         assert agent_rewrote("same", "rewritten playthrough") is True
         assert agent_rewrote("same", "This file is empty at the start of a run") is False
