@@ -194,48 +194,32 @@ There is no lost edit in the loop. The publish contains the tree the operator le
 
 Tell the agent to leave the edit in the tree. A local game is not the score, and restoring the parent makes the judge score the parent. The edit is the wizard spell path: parse the spell menu for a wizard, and cast `force bolt` from `emergency_strategy` when it is known, energy is at least 5, and a monster is adjacent.
 
-## Run wiz-hum-cha-mal (2 iteration(s))
-- iteration 1: reason=registered dev_fitness=0.07737020128671113 improved=True notes_ignored=True code_unchanged=False
-- iteration 2: reason=no-cell-improved dev_fitness=0.07737020128671113 improved=False notes_ignored=True code_unchanged=False
+## Run 37023219996, wiz-hum-cha-mal, 2 iterations, 0.077 kept
+
+[37023219996](https://github.com/OlegPapulov/nethacker/actions/runs/37023219996) finished green. Cold start was 0.06431333032572426. Iteration 1 registered 0.07737020128671113 (`fb8c262`). Iteration 2 scored that same number, and its judge table matches iteration 1 on every seed. One new elite.
+
+| Seed | Parent | Iteration 1 |
+|---|---|---|
+| 13 | 0.075, depth 3, 31,848 turns | 0.179, depth 6, 36,762 turns |
+| 14 | 0.029, depth 1, 7,795 turns, starvation | 0.117, depth 3, 28,988 turns |
+| 5 | 0.037, depth 1, 8,788 turns | 0.117, depth 2, 29,992 turns |
+| 6 | 0.117, depth 5 | 0.075, depth 4 |
+| 7 | 0.117, depth 5 | 0.075, depth 3 |
+| 10 | 0.075, depth 4 | 0.024, depth 1 |
 
 ### Why it stopped
-no-cell-improved
+
+Iteration 1 is strictly above the parent, so it was kept. Iteration 2 ties that child, so it was not kept. `hub_reason` is empty. The record commit on `main` (`f4316da`) contains only the two markdown files.
 
 ### What is the problem
-# Playthrough
 
-Identity: `wiz-hum-cha-mal`
+The improved tree was copied into `.mutator-run/parent`, the directory the loop pulled, and not into the checkout. The record step commits the checkout, so `main` stayed on the 0.064 bot.
 
-## Why it stopped
+The live change in `fb8c262` is a cap of 20 squares on a corpse walk once hunger is weak. The parent walked any distance. Seed 14, the starvation game, went from depth 1 to depth 3.
 
-1 of 15 games stopped at died of starvation. Mean progress 0.064.
-
-| seed | progress | turns | stop |
-| --- | --- | --- | --- |
-| 0 | 0.07453595273884014 | 27740 | killed by an ape |
-| 1 | 0.11704996473565571 | 21697 | killed by a fire ant |
-| 2 | 0.07453595273884014 | 24862 | killed by Mr. Queyssac; the shopkeeper |
-| 3 | 0.07453595273884014 | 19861 | killed by an invisible gnome king |
-| 4 | 0.01847840456172601 | 2644 | killed by a kobold zombie |
-| 5 | 0.036887590648350246 | 8788 | killed by a sewer rat |
-| 6 | 0.11704996473565571 | 27730 | killed by a lynx |
-| 7 | 0.11704996473565571 | 34603 | killed by a rope golem |
-| 8 | 0.02081163581974355 | 4142 | killed by a giant rat |
-| 9 | 0.07453595273884014 | 25313 | killed by a jackal |
-| 10 | 0.07453595273884014 | 29898 | killed by a lizard |
-| 11 | 0.036887590648350246 | 12486 | killed by a jackal |
-| 12 | 0.024160136550546978 | 4917 | killed by a bat |
-| 13 | 0.07453595273884014 | 31848 | killed by a white unicorn |
-| 14 | 0.029108986017138745 | 7795 | died of starvation |
-
-## What is the problem
-
-The score is the mean of these games. 6 of 15 end at depth 1. The mean moves when a long game gets longer, and it falls when a long game gets shorter.
-
-## What might solve it
-
-See `experiments.md`.
+The force bolt block does not run. Both calls to `parse_spellcast_view` are still commented out. The wizard branch that writes `force bolt` into `known_spells` is inside that function. `_parse` now sets `known_spells` to an empty dict whenever the character is read. The published tree also adds `autoascend/agent.py.test`, a second copy of `agent.py`, which nothing imports.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+Copy a kept tree onto the checkout as well as the pull directory. The next note leaves the 20-square cap alone and tells the agent to call `parse_spellcast_view` once the role is known, and to stop clearing `known_spells` inside `_parse`.
 

@@ -143,37 +143,36 @@ def _lead_cause(counts: dict[str, int]) -> str:
     return max(counts, key=lambda name: (counts[name], name))
 
 
+def _keep_win() -> str:
+    """The 0.077 bot's live change, and the spell call that is still commented out."""
+    return (
+        "Leave the weak-hunger corpse walk capped at 20 squares. That cap raised "
+        "the mean from 0.064 to 0.077. Do not edit it. "
+        "`parse_spellcast_view` is never called, and `_parse` sets `known_spells` "
+        "to an empty dict, so the force bolt block does not run. "
+        "Call `parse_spellcast_view` once the role is known, and stop clearing "
+        "`known_spells` inside `_parse`. Do not hardcode a spell letter. "
+        "Leave that edit in the tree. Do not revert it."
+    )
+
+
 def _hypothesis(cause: str, shallow: int, total: int, causes: list[str] | None = None) -> str:
     blob = " ".join([cause, *(causes or [])]).lower()
     if any(word in blob for word in ("starv", "hunger", "faint")):
-        return (
-            "One game still starves. Do not edit hunger, search, or hit-point cuts, "
-            "and do not edit `eat_corpses_from_ground`. "
-            "`parse_spellcast_view` returns immediately unless the role is a healer, "
-            "so a wizard's spell list stays empty and `cast` never runs. "
-            "Parse that menu for a wizard the same way as for a healer. "
-            "In `emergency_strategy`, when `force bolt` is known, energy is at least 5, "
-            "and a monster is adjacent, cast it. "
-            "Leave both edits in the tree. Do not revert them after a local game."
-        )
-    if "poison" in blob:
-        return (
+        lead = "One game still starves. Do not edit hunger or hit-point cuts. "
+    elif "poison" in blob:
+        lead = (
             "Treat poison as a reason to leave, not a hit to trade. A wizard "
-            "dies to it with no hit points in reserve. Change one combat or "
-            "eating decision in autoascend so this character avoids a poisoned "
-            "corpse or a poison attack it cannot survive."
+            "dies to it with no hit points in reserve. "
         )
-    if total and shallow * 2 >= total:
-        return (
+    elif total and shallow * 2 >= total:
+        lead = (
             f"Most games end at depth 1, usually {cause}. A chaotic human wizard "
-            "loses a melee. Change one fight-or-run decision in autoascend so "
-            "this character uses a corridor or a ranged attack instead of "
-            "standing and trading hits."
+            "loses a melee. "
         )
-    return (
-        f"The usual stop is {cause}. Change one strategy in autoascend so "
-        "this character survives that more often. Do not branch on the seed."
-    )
+    else:
+        lead = f"The usual stop is {cause}. "
+    return lead + _keep_win()
 
 
 def mean_change(previous: float, score: float) -> str:
@@ -382,6 +381,7 @@ def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
     state.mkdir(parents=True, exist_ok=True)
     notes = state / "notes"
     parent = state / "parent"
+    checkout = bot
     try:
         parent_tree(parent, identity)
         bot = parent
@@ -441,6 +441,9 @@ def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
         })
     if last_improved is not None:
         _apply_code(last_improved, bot)
+        # The pull lives under the run directory. The record step commits the checkout.
+        if checkout.resolve() != bot.resolve():
+            _apply_code(last_improved, checkout)
     if not results:
         results.append({
             "identity": identity,
@@ -559,7 +562,7 @@ def self_check() -> None:
             ],
         }, DEFAULT_IDENTITY)
         text = (filled / "experiments.md").read_text()
-        assert "corridor" in text
+        assert "20 squares" in text
         assert "The judge measures" in text
         assert "killed by a jackal" in (filled / "experience.md").read_text()
         hungry = root / "hungry"
@@ -573,8 +576,9 @@ def self_check() -> None:
             ],
         }, DEFAULT_IDENTITY)
         hungry_text = (hungry / "experiments.md").read_text()
+        assert "20 squares" in hungry_text
         assert "parse_spellcast_view" in hungry_text
-        assert "force bolt" in hungry_text
+        assert "Do not hardcode a spell letter" in hungry_text
         assert "Do not revert" in hungry_text
         assert "died of starvation (1 of 2)" in hungry_text
         same = root / "same-tree"
