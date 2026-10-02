@@ -57,10 +57,11 @@ def _game_rules(identity: str) -> str:
     header = (
         f"# This gameplay\n\n"
         f"Identity: `{identity}`\n\n"
-        "Be brief. Read `experiments.md`, make that one edit in the function it names, "
-        "mark it with a `# hypothesis:` comment, and exit. "
-        "Do not edit a second function. "
-        "Do not narrate, do not tour the tree, and do not run the arena. "
+        "Read `experiments.md` and make that one change in `autoascend/`. "
+        "Leave the change in the files when you exit. Do not revert it and do not restore the parent. "
+        "A local game is not the score. A tree that matches the parent is thrown away. "
+        "Mark the change with a `# hypothesis:` comment. "
+        "Do not narrate and do not tour the tree. "
         "The judge scores the tree after this process exits. "
         "Private Dungeons are scored by their verifier after that registration. "
         "You do not have those seeds, and a local game is not a private result.\n\n"
@@ -146,14 +147,14 @@ def _hypothesis(cause: str, shallow: int, total: int, causes: list[str] | None =
     blob = " ".join([cause, *(causes or [])]).lower()
     if any(word in blob for word in ("starv", "hunger", "faint")):
         return (
-            "One game still starves. The parent already walks to a corpse once "
-            "hunger is weak. Do not edit `eat_corpses_from_ground`. A distance "
-            "cap there never runs, and eating sooner shortens the long games. "
-            "Change only `imminent_death_on_melee` in "
-            "`autoascend/combat/monster_utils.py`: raise the ordinary cut from "
-            "8 hit points to 10, and leave the dangerous-monster cut at 16. "
-            "Do not edit Elbereth, melee priority, flee radii, or "
-            "`eat_from_inventory`."
+            "One game still starves. Do not edit hunger, search, or hit-point cuts, "
+            "and do not edit `eat_corpses_from_ground`. "
+            "`parse_spellcast_view` returns immediately unless the role is a healer, "
+            "so a wizard's spell list stays empty and `cast` never runs. "
+            "Parse that menu for a wizard the same way as for a healer. "
+            "In `emergency_strategy`, when `force bolt` is known, energy is at least 5, "
+            "and a monster is adjacent, cast it. "
+            "Leave both edits in the tree. Do not revert them after a local game."
         )
     if "poison" in blob:
         return (
@@ -267,6 +268,19 @@ def write_notes_from_evidence(notes: Path, evidence: dict, identity: str, earlie
         f"{hypothesis}\n\n"
         "Edit `autoascend/` and exit. The judge measures that tree.\n"
     )
+
+
+def _tree_digest(root: Path) -> str:
+    """Hash of autoascend/. Equal digests mean the judged bot is the parent."""
+    import hashlib
+    digest = hashlib.sha256()
+    base = root / "autoascend"
+    if not base.is_dir():
+        return ""
+    for path in sorted(p for p in base.rglob("*") if p.is_file()):
+        digest.update(str(path.relative_to(base)).encode())
+        digest.update(path.read_bytes())
+    return digest.hexdigest()
 
 
 def _note_text(notes: Path) -> str:
@@ -389,6 +403,7 @@ def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
         evolve_command(seed, workdir, identity, iterations), text=True,
     )
     trees = {int(path.name.split("-", 1)[1]): path for path in _iter_dirs(workdir)}
+    parent_digest = _tree_digest(seed)
     results = []
     last_improved: Path | None = None
     for metric in _metric_rows(workdir):
@@ -410,6 +425,7 @@ def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
                 for name in RUN_NOTES
             )
             ignored = not agent_rewrote(before, after)
+        unchanged = tree is not None and _tree_digest(tree) == parent_digest
         results.append({
             "identity": identity,
             "iteration": number,
@@ -421,6 +437,7 @@ def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
             "reason": metric.get("reason"),
             "hub_reason": metric.get("hub_reason"),
             "notes_ignored": ignored,
+            "code_unchanged": unchanged,
         })
     if last_improved is not None:
         _apply_code(last_improved, bot)
@@ -436,6 +453,7 @@ def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
             "reason": "no-metrics",
             "hub_reason": None,
             "notes_ignored": True,
+            "code_unchanged": None,
         })
     (state / "results.json").write_text(json.dumps(results, indent=2))
     return results
@@ -456,7 +474,8 @@ def record_local(results: list[dict], notes: Path) -> None:
         lines.append(
             f"- iteration {row['iteration']}: reason={reason} "
             f"dev_fitness={row['dev_fitness']} improved={row['improved']} "
-            f"notes_ignored={row.get('notes_ignored')}"
+            f"notes_ignored={row.get('notes_ignored')} "
+            f"code_unchanged={row.get('code_unchanged')}"
         )
     lines += [
         "",
@@ -521,7 +540,7 @@ def self_check() -> None:
         assert command[command.index("--effort") + 1] == "medium"
         assert "killed after" not in game
         assert "# hypothesis:" in game
-        assert "Be brief" in game
+        assert "Do not revert" in game
         bare = root / "bare-notes"
         bare.mkdir()
         seed_bare = root / "seed-bare"
@@ -554,11 +573,18 @@ def self_check() -> None:
             ],
         }, DEFAULT_IDENTITY)
         hungry_text = (hungry / "experiments.md").read_text()
-        assert "imminent_death_on_melee" in hungry_text
-        assert "8 hit points to 10" in hungry_text
-        assert "Do not edit `eat_corpses_from_ground`" in hungry_text
+        assert "parse_spellcast_view" in hungry_text
+        assert "force bolt" in hungry_text
+        assert "Do not revert" in hungry_text
         assert "died of starvation (1 of 2)" in hungry_text
-        assert "second function" in game
+        same = root / "same-tree"
+        (same / "autoascend").mkdir(parents=True)
+        (same / "autoascend" / "agent.py").write_text("x\n")
+        assert _tree_digest(same) == _tree_digest(same)
+        other = root / "other-tree"
+        (other / "autoascend").mkdir(parents=True)
+        (other / "autoascend" / "agent.py").write_text("y\n")
+        assert _tree_digest(same) != _tree_digest(other)
         write_notes_from_evidence(hungry, {
             "mean_progress": 0.04,
             "results": [

@@ -167,48 +167,30 @@ The first edit spent 166 minutes and 4.9 million tokens on a branch the hunger g
 
 Name one function in the note. Tell the agent not to edit `eat_corpses_from_ground`, because a distance cap there never runs. The one allowed edit is `imminent_death_on_melee`: raise the ordinary cut from 8 hit points to 10, and leave the dangerous-monster cut at 16. Leave Elbereth, melee priority, flee radii, and `eat_from_inventory` alone.
 
-## Run wiz-hum-cha-mal (2 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.06431333032572426 improved=False notes_ignored=True
-- iteration 2: reason=no-cell-improved dev_fitness=0.06431333032572426 improved=False notes_ignored=False
+## Run 36983992379, wiz-hum-cha-mal, 2 iterations, no code change
+
+[36983992379](https://github.com/OlegPapulov/nethacker/actions/runs/36983992379) finished green with no new elite. Cold-start mean was 0.06431333032572426. Both children scored that same number, and every seed in both judge tables matches the parent turn for turn.
+
+| Iteration | Operator | Judge | Code |
+|---|---|---|---|
+| 1 | 154 min, 943,879 tokens | 0.06431333032572426 | identical to the seed, `d779a91` |
+| 2 | 178 min, 686,407 tokens | 0.06431333032572426 | identical to iteration 1 except `experiments.md`, `2aec99d` |
+
+`autoascend/` in `d779a91` matches the seeded commit `47e65cb`. Iteration 2 adds 44 lines to `experiments.md` and no Python. The note says the agent tried the 8-hit-point cut, a search-budget change, and earlier corpse eating in a private `peval.py`, then put the parent back. Those numbers are not judge scores.
 
 ### Why it stopped
-no-cell-improved
+
+A child is kept only when its mean is strictly above the parent. Both means are the parent, because the judged files are the parent. `hub_reason` is empty. `main` stays on the 0.064 bot.
 
 ### What is the problem
-# Playthrough
 
-Identity: `wiz-hum-cha-mal`
+The operator brief tells the model to measure a sample itself, and that a change which only matches the parent is discarded. The seed note asked for an 8-to-10 hit-point tweak and told it not to run the arena. The model followed the brief: it spent both iterations measuring, decided the tweak was not worth keeping, and restored the parent so the judge would not see a loser. The judge then scored the parent twice.
 
-## Why it stopped
+There is no lost edit in the loop. The publish contains the tree the operator left behind, and that tree has no Python diff.
 
-1 of 15 games stopped at died of starvation. Mean progress 0.064.
-
-| seed | progress | turns | stop |
-| --- | --- | --- | --- |
-| 0 | 0.07453595273884014 | 27740 | killed by an ape |
-| 1 | 0.11704996473565571 | 21697 | killed by a fire ant |
-| 2 | 0.07453595273884014 | 24862 | killed by Ms. Liorac; the shopkeeper |
-| 3 | 0.07453595273884014 | 19861 | killed by an invisible gnome king |
-| 4 | 0.01847840456172601 | 2644 | killed by a kobold zombie |
-| 5 | 0.036887590648350246 | 8788 | killed by a sewer rat |
-| 6 | 0.11704996473565571 | 27730 | killed by a lynx |
-| 7 | 0.11704996473565571 | 34603 | killed by a rope golem |
-| 8 | 0.02081163581974355 | 4142 | killed by a giant rat |
-| 9 | 0.07453595273884014 | 25313 | killed by a jackal |
-| 10 | 0.07453595273884014 | 29898 | killed by a lizard |
-| 11 | 0.036887590648350246 | 12486 | killed by a jackal |
-| 12 | 0.024160136550546978 | 4917 | killed by a bat |
-| 13 | 0.07453595273884014 | 31848 | killed by a white unicorn |
-| 14 | 0.029108986017138745 | 7795 | died of starvation |
-
-## What is the problem
-
-The score is the mean of these games. 6 of 15 end at depth 1. The mean moves when a long game gets longer, and it falls when a long game gets shorter.
-
-## What might solve it
-
-See `experiments.md`.
+`parse_spellcast_view` returns immediately unless the role is a healer, so a wizard's `known_spells` stays empty. The healing casts in `emergency_strategy` are commented out. The wizard never casts. That is a different change from another hit-point cut.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+Tell the agent to leave the edit in the tree. A local game is not the score, and restoring the parent makes the judge score the parent. The edit is the wizard spell path: parse the spell menu for a wizard, and cast `force bolt` from `emergency_strategy` when it is known, energy is at least 5, and a monster is adjacent.
 
