@@ -65,7 +65,14 @@ def _game_rules(identity: str) -> str:
         "Do not revert it and do not restore the parent. "
         "A local game is not the score. A tree that matches the parent is thrown away. "
         "Mark the change with a `# hypothesis:` comment. "
-        "Do not narrate and do not tour the tree. "
+        "Do not tour the tree. "
+        "Write that comment and the line in `experiments.md` in ASD-STE100 style. "
+        "Use one topic in each sentence. "
+        "Use the active voice and name the actor. "
+        "Put a condition before the result. "
+        "Use at most 25 words in a description sentence. "
+        "Do not use an -ing form. "
+        "Use one word for one thing. "
         "The judge scores the tree after this process exits. "
         "Private Dungeons are scored by their verifier after that registration. "
         "You do not have those seeds, and a local game is not a private result.\n\n"
@@ -148,11 +155,13 @@ def _lead_cause(counts: dict[str, int]) -> str:
 
 
 def _keep_win() -> str:
-    """The 0.077 cap stays. The next edit is depth-1 melee, not a search cut."""
+    """The 0.080 latch stays. The next edit is still the depth-1 melee bonus."""
     return (
         "Leave the weak-hunger corpse walk capped at 20 squares. Do not edit it. "
+        "Leave `_xp_farm_level` in place. That latch scored 0.080. Do not edit it. "
         "Do not edit `exploration_logic.py`. That search tree scored 0.040. "
         "Five games under 10,000 turns die on depth 1. "
+        "Seed 11 rose with the latch. Seeds 4, 8, and 10 did not. "
         "Every other file matches the parent. "
         "In `melee_monster_priority`, do not add 15 when `blstats.depth` is 1 "
         "and the monster is not in `INSECTS`. A bat, a coyote, a kobold zombie, "
@@ -640,6 +649,8 @@ def self_check() -> None:
         assert "when a long game gets longer" not in play
         assert "exploration_logic.py" in game
         assert "Edit only the function" in game
+        assert "ASD-STE100" in game
+        assert "_xp_farm_level" in hungry_text
         assert "died of starvation (1 of 2)" in hungry_text
         assert "matched the parent" in _carry({
             "code_unchanged": True, "reason": "gate:child identical to parent",

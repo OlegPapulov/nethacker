@@ -322,47 +322,21 @@ The melee line in the task does not match the five short games. A coyote, a kobo
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=registered dev_fitness=0.08021001539051657 improved=True notes_ignored=True code_unchanged=False
+## Run 37145731075, wiz-hum-cha-mal, 1 iteration, food latch kept
+
+[37145731075](https://github.com/OlegPapulov/nethacker/actions/runs/37145731075) finished green. The job ran about 214 minutes. The judge scored 0.08021001539051657. The parent is 0.07737020128671113. The child was kept. `main` has this bot in `85f7c2a`.
+
+The operator did not edit `melee_monster_priority`. The new behavior latches `_xp_farm_level` to dungeon level 2 when hunger is fainting and no edible corpse is within 20 squares. The tree also has the spell parser and the negative ring.
 
 ### Why it stopped
-registered
+
+A child is kept when its mean is strictly above the parent. This mean is higher.
 
 ### What is the problem
-# Playthrough
 
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-2 of 15 games stopped at killed by a soldier ant. Mean progress 0.077.
-
-| seed | progress | turns | stop |
-| --- | --- | --- | --- |
-| 0 | 0.07453595273884014 | 27750 | killed by an Uruk-hai |
-| 1 | 0.11704996473565571 | 21697 | killed by a fire ant |
-| 2 | 0.07453595273884014 | 24862 | killed by Ms. Rouffiac; the shopkeeper |
-| 3 | 0.07453595273884014 | 20368 | killed by a soldier ant |
-| 4 | 0.01847840456172601 | 2644 | killed by a kobold zombie |
-| 5 | 0.11704996473565571 | 29992 | killed by a giant beetle |
-| 6 | 0.07453595273884014 | 27825 | killed by a soldier ant |
-| 7 | 0.07453595273884014 | 24393 | killed by a wand |
-| 8 | 0.036887590648350246 | 9957 | killed by a newt |
-| 9 | 0.11704996473565571 | 26641 | killed by a white unicorn |
-| 10 | 0.024160136550546978 | 6746 | killed by a coyote |
-| 11 | 0.036887590648350246 | 9791 | killed by a bat |
-| 12 | 0.024160136550546978 | 4917 | killed by a bat |
-| 13 | 0.17909953770432294 | 36762 | killed by a rabid rat |
-| 14 | 0.11704996473565571 | 28988 | killed by a bolt of cold |
-
-## What is the problem
-
-The score is the mean of these games. 5 of 15 end at depth 1. A game under 10,000 turns that lasts longer raises the mean. A long game that gets shorter lowers the mean.
-
-## What might solve it
-
-See `experiments.md`.
+Ten seeds have the same turn count as the parent. Seed 11 went from 0.037 to 0.075. Seed 9 went from 0.117 to 0.179. Seed 13 went from 0.179 to 0.117. Seeds 4, 8, and 10 stayed at the same progress. The melee edit is still absent.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+Leave the latch in place. The next edit is still `melee_monster_priority` on depth 1 for a monster that is not in `INSECTS`. The operator writes the comment and the experiment line in ASD-STE100 style.
 
