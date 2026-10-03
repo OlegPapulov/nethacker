@@ -59,7 +59,8 @@ def _game_rules(identity: str) -> str:
         f"# This gameplay\n\n"
         f"Identity: `{identity}`\n\n"
         "Read `experiments.md` and edit only the function it names. "
-        "Do not edit `character.py`. Do not resubmit the spell-menu parser. "
+        "Do not edit `character.py` or `movement_priority.py`. "
+        "Do not resubmit the spell parser or the negative ring. "
         "Leave the change in the file when you exit. "
         "Do not revert it and do not restore the parent. "
         "A local game is not the score. A tree that matches the parent is thrown away. "
@@ -147,16 +148,18 @@ def _lead_cause(counts: dict[str, int]) -> str:
 
 
 def _keep_win() -> str:
-    """The 0.077 cap stays. The next edit is the adjacent-fast pass."""
+    """The 0.077 cap stays. The next edit is the short games, not the long ones."""
     return (
         "Leave the weak-hunger corpse walk capped at 20 squares. Do not edit it. "
-        "Do not edit `character.py` or the spell parser. That tree was scored: "
-        "all 15 seeds match the parent, and the smoke seed is 1,899 turns. "
-        "In `draw_monster_priority_negative`, a fast monster that is already "
-        "adjacent is ignored (`pass`). That is the bot standing in the melee. "
-        "When `imminent_death_on_melee` is true, draw the same negative ring for "
-        "a fast adjacent monster that you already draw for a slow one. "
-        "Do not leave the `pass`. Edit only that function."
+        "Do not edit `movement_priority.py` or `character.py`. "
+        "Five games end under 10,000 turns, all on depth 1: a kobold zombie at "
+        "2,644, a bat at 4,917, a coyote at 6,746, a bat at 9,791, and a newt at "
+        "9,957. Those are the games that move the mean. A soldier ant that already "
+        "lasts about 20,000 turns is not the edit. Do not shorten a long game. "
+        "In `melee_monster_priority`, do not add 15 when `imminent_death_on_melee` "
+        "is true. A coyote, a kobold zombie, and a newt are not in "
+        "`is_monster_faster`, so a faster-only check misses them. Return a priority "
+        "below every adjacent walkable step. Edit only that function."
     )
 
 
@@ -175,7 +178,10 @@ def _hypothesis(cause: str, shallow: int, total: int, causes: list[str] | None =
             "loses a melee. "
         )
     else:
-        lead = f"The usual stop is {cause}. "
+        lead = (
+            f"The usual stop is {cause}, and that game is already long. "
+            "The mean moves when a game under 10,000 turns lasts longer. "
+        )
     return lead + _keep_win()
 
 
@@ -226,7 +232,7 @@ def _carry(row: dict) -> str:
             "## Last iteration\n\n"
             "The previous tree matched the parent. The gate does not score that, "
             "so there is no result. These notes are not the edit. Change "
-            "`autoascend/` and leave the `self.cast` in the file."
+            "`autoascend/` and leave the edit in the file."
         )
     score = row.get("dev_fitness")
     if not isinstance(score, float):
@@ -625,9 +631,10 @@ def self_check() -> None:
         }, DEFAULT_IDENTITY)
         hungry_text = (hungry / "experiments.md").read_text()
         assert "20 squares" in hungry_text
-        assert "draw_monster_priority_negative" in hungry_text
+        assert "melee_monster_priority" in hungry_text
         assert "imminent_death_on_melee" in hungry_text
-        assert "Do not leave the `pass`" in hungry_text
+        assert "do not add 15" in hungry_text
+        assert "under 10,000 turns" in hungry_text
         assert "died of starvation (1 of 2)" in hungry_text
         assert "matched the parent" in _carry({
             "code_unchanged": True, "reason": "gate:child identical to parent",

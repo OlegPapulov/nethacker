@@ -284,47 +284,21 @@ In `draw_monster_priority_negative`, a fast monster that is already adjacent hit
 
 Name that one function and forbid `character.py`. When `imminent_death_on_melee` is true, draw the same negative ring for a fast adjacent monster that the code already draws for a slow one. Do not leave the `pass`.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.07737020128671113 improved=False notes_ignored=False code_unchanged=False
+## Run 37123137695, wiz-hum-cha-mal, 1 iteration, ring does not beat melee
+
+[37123137695](https://github.com/OlegPapulov/nethacker/actions/runs/37123137695) finished green. The operator ran about 143 minutes. The judge scored 0.07737020128671113. Progress and turn count match the parent on every seed. Not kept. `main` stays on the 0.077 bot. Published as `4e9d706`.
+
+The named function did change. In `draw_monster_priority_negative`, a fast adjacent monster now draws -5 at radius 1 and -10 at radius 2. The same tree also rewrites the spell parser, `cast`, inventory wear, and adds `agent.py.test`.
 
 ### Why it stopped
-no-cell-improved
+
+A child is kept only when its mean is strictly above the parent. This mean is the parent.
 
 ### What is the problem
-# Playthrough
 
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-2 of 15 games stopped at killed by a soldier ant. Mean progress 0.077.
-
-| seed | progress | turns | stop |
-| --- | --- | --- | --- |
-| 0 | 0.07453595273884014 | 27750 | killed by an Uruk-hai |
-| 1 | 0.11704996473565571 | 21697 | killed by a fire ant |
-| 2 | 0.07453595273884014 | 24862 | killed by Ms. Vanzac; the shopkeeper |
-| 3 | 0.07453595273884014 | 20368 | killed by a soldier ant |
-| 4 | 0.01847840456172601 | 2644 | killed by a kobold zombie |
-| 5 | 0.11704996473565571 | 29992 | killed by a giant beetle |
-| 6 | 0.07453595273884014 | 27825 | killed by a soldier ant |
-| 7 | 0.07453595273884014 | 24393 | killed by a wand |
-| 8 | 0.036887590648350246 | 9957 | killed by a newt |
-| 9 | 0.11704996473565571 | 26641 | killed by a white unicorn |
-| 10 | 0.024160136550546978 | 6746 | killed by a coyote |
-| 11 | 0.036887590648350246 | 9791 | killed by a bat |
-| 12 | 0.024160136550546978 | 4917 | killed by a bat |
-| 13 | 0.17909953770432294 | 36762 | killed by a rabid rat |
-| 14 | 0.11704996473565571 | 28988 | killed by a bolt of cold |
-
-## What is the problem
-
-The score is the mean of these games. 5 of 15 end at depth 1. The mean moves when a long game gets longer, and it falls when a long game gets shorter.
-
-## What might solve it
-
-See `experiments.md`.
+`fight2` takes the action with the highest priority. `melee_monster_priority` returns 16 for a faster monster, because it adds 15 whenever hit points are above 8 or the monster is faster. A bat is faster, so the swing stays at 16 even at 1 hit point. After the ring is subtracted from the square the bot is standing on, a step away is worth about 5 to 10. The swing still wins, so the 15 games do not move.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+Leave the heatmap alone. In `melee_monster_priority`, when `imminent_death_on_melee` is true and the monster is faster, do not add 15. The swing has to rank below a step onto an adjacent walkable square.
 

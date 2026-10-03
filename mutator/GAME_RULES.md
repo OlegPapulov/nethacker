@@ -32,4 +32,4 @@ Early: grid bugs, jackals, rats, goblins, mines inhabitants. They are a damage r
 
 ## What a good change looks like
 
-One idea, and it has to change an action during a game. A wizard loses a fair melee. Elbereth, a door, a corridor, or a ranged spell is how this character survives. It should show up as fewer deaths of the kind named in `experience.md`, on more than the seed you stared at. Seed-specific branches do not count: the private seeds are different games. Restoring the parent is not a result.
+One idea, and it has to be the action `fight2` picks. A number on a heatmap that still loses to the melee action is not a change. A wizard loses a fair melee. The gain has to show up in the short games, the ones under 10,000 turns. A game that already lasts about 20,000 turns is not the edit. Seed-specific branches do not count: the private seeds are different games. Restoring the parent is not a result.
