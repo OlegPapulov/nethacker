@@ -101,6 +101,8 @@ class ItemPriority(ItemPriorityBase):
                            key=lambda x: -x.nutrition_per_weight() - 1000 * (x.objs[0].name == 'sprig of wolfsbane')):
             add_item(item)
 
+
+
         if self._take_sacrificial_corpses:
             for item in filter(self.agent.global_logic.can_sacrify, items):
                 add_item(item)
@@ -162,6 +164,7 @@ class GlobalLogic:
         self.minetown_level = None
 
         self._got_artifact = False
+        self._xp_farm_level = None
 
     def update(self):
         if not self.agent.character.prop.hallu:
@@ -519,6 +522,24 @@ class GlobalLogic:
                 # explore_stairs_condition = lambda: self.agent.inventory.items.total_nutrition() == 0 and \
                 #                                    self.agent.blstats.hunger_state >= Hunger.NOT_HUNGRY
                 level = (Level.DUNGEONS_OF_DOOM, 1)
+                # hypothesis: on dlvl 1 the wizard starves to death on an exhausted floor -- all
+                # remaining corpses are far past the 50 turn freshness window, and NetHack gives
+                # *zero* nutrition (plus sickening) for anything with rotted > 5, so no amount of
+                # local behaviour change can fix it. Once the wizard is getting hungry with no
+                # edible corpse anywhere near, the only remaining food and XP is one level down,
+                # so keep farming dlvl 2 until the milestone is reached. The choice is latched
+                # (`_xp_farm_level`) so the bot cannot oscillate between the two levels.
+                if self._xp_farm_level is None:
+                    # hypothesis: on dlvl 1 the wizard starves to death on an exhausted floor
+                    # when no edible corpses remain in reach. When starvation becomes severe
+                    # (FAINTING), the only viable food/XP source may be one level down; latch
+                    # to DL2 to continue farming there if reachable. This preserves good
+                    # DL1 runs while rescuing food-starved cases.
+                    if (self.agent.blstats.hunger_state >= Hunger.FAINTING and
+                            not self.agent.has_edible_corpse_in_reach()):
+                        self._xp_farm_level = 2
+                if self._xp_farm_level is not None:
+                    level = (Level.DUNGEONS_OF_DOOM, self._xp_farm_level)
 
             elif self.milestone == Milestone.FIND_SOKOBAN:
                 condition = lambda: self.agent.current_level().dungeon_number == Level.SOKOBAN
