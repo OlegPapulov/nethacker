@@ -223,48 +223,26 @@ The force bolt block does not run. Both calls to `parse_spellcast_view` are stil
 
 Copy a kept tree onto the checkout as well as the pull directory. The next note leaves the 20-square cap alone and tells the agent to call `parse_spellcast_view` once the role is known, and to stop clearing `known_spells` inside `_parse`.
 
-## Run wiz-hum-cha-mal (2 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.07737020128671113 improved=False notes_ignored=False code_unchanged=True
-- iteration 2: reason=no-cell-improved dev_fitness=0.07737020128671113 improved=False notes_ignored=False code_unchanged=False
+## Run 37077364014, wiz-hum-cha-mal, 2 iterations, no new elite
+
+[37077364014](https://github.com/OlegPapulov/nethacker/actions/runs/37077364014) finished green. Parent mean 0.07737020128671113. Both children scored that same number. Every judge seed matches the parent turn for turn. No new elite.
+
+| Iteration | Operator | Code |
+|---|---|---|
+| 1 | ~86 min, 570,147 tokens | no Python change, `78c6c67` |
+| 2 | ~73 min, 705,600 tokens | spell parser and a deleted cast, `a27b54a` |
+
+The 0.077 parent still has five depth-1 games: seed 4 dies to a kobold zombie at 2,644 turns, seed 12 to a bat at 4,917, seed 10 to a coyote at 6,746, seed 11 to a bat at 9,791, seed 8 to a newt at 9,957. No game starves.
 
 ### Why it stopped
-no-cell-improved
+
+A child is kept only when its mean is strictly above 0.077. Both means are 0.077. `main` stays on that bot.
 
 ### What is the problem
-# Playthrough
 
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-2 of 15 games stopped at killed by a soldier ant. Mean progress 0.077.
-
-| seed | progress | turns | stop |
-| --- | --- | --- | --- |
-| 0 | 0.07453595273884014 | 27750 | killed by an Uruk-hai |
-| 1 | 0.11704996473565571 | 21697 | killed by a fire ant |
-| 2 | 0.07453595273884014 | 24862 | killed by Mr. Guizengeard; the shopkeeper |
-| 3 | 0.07453595273884014 | 20368 | killed by a soldier ant |
-| 4 | 0.01847840456172601 | 2644 | killed by a kobold zombie |
-| 5 | 0.11704996473565571 | 29992 | killed by a giant beetle |
-| 6 | 0.07453595273884014 | 27825 | killed by a soldier ant |
-| 7 | 0.07453595273884014 | 24393 | killed by a wand |
-| 8 | 0.036887590648350246 | 9957 | killed by a newt |
-| 9 | 0.11704996473565571 | 26641 | killed by a white unicorn |
-| 10 | 0.024160136550546978 | 6746 | killed by a coyote |
-| 11 | 0.036887590648350246 | 9791 | killed by a bat |
-| 12 | 0.024160136550546978 | 4917 | killed by a bat |
-| 13 | 0.17909953770432294 | 36762 | killed by a rabid rat |
-| 14 | 0.11704996473565571 | 28988 | killed by a bolt of cold |
-
-## What is the problem
-
-The score is the mean of these games. 5 of 15 end at depth 1. The mean moves when a long game gets longer, and it falls when a long game gets shorter.
-
-## What might solve it
-
-See `experiments.md`.
+Iteration 1 never edited `autoascend/`. Iteration 2 called `parse_spellcast_view` at startup and stopped clearing `known_spells`, then removed the only `self.cast('force bolt', ...)` from `emergency_strategy`. The spell list is filled and nothing casts. Opening the menu and pressing escape does not take a turn, so the 15 games are the parent. The smoke seed moved by 6 turns, so the judge did run the new code.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+The next note asks for a cast that stays in the file. Cast force bolt only when energy is at least 5 and an adjacent monster would make `imminent_death_on_melee` true, and that monster is not a pet and not in `WEAK_MONSTERS`. Do not cast at every adjacent glyph. Leave the 20-square corpse cap alone.
 

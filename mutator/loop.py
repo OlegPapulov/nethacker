@@ -58,7 +58,9 @@ def _game_rules(identity: str) -> str:
         f"# This gameplay\n\n"
         f"Identity: `{identity}`\n\n"
         "Read `experiments.md` and make that one change in `autoascend/`. "
-        "Leave the change in the files when you exit. Do not revert it and do not restore the parent. "
+        "The change has to be an action the bot takes during a game. "
+        "Leave an uncommented `self.cast` in the file when you exit. "
+        "Do not revert it and do not restore the parent. "
         "A local game is not the score. A tree that matches the parent is thrown away. "
         "Mark the change with a `# hypothesis:` comment. "
         "Do not narrate and do not tour the tree. "
@@ -144,15 +146,18 @@ def _lead_cause(counts: dict[str, int]) -> str:
 
 
 def _keep_win() -> str:
-    """The 0.077 bot's live change, and the spell call that is still commented out."""
+    """The 0.077 cap stays. The next edit has to cast, or the judge replays the parent."""
     return (
-        "Leave the weak-hunger corpse walk capped at 20 squares. That cap raised "
-        "the mean from 0.064 to 0.077. Do not edit it. "
-        "`parse_spellcast_view` is never called, and `_parse` sets `known_spells` "
-        "to an empty dict, so the force bolt block does not run. "
+        "Leave the weak-hunger corpse walk capped at 20 squares. Do not edit it. "
+        "The last edit read the spell menu and then deleted the cast, so all 15 "
+        "games replayed the parent. Filling `known_spells` is not a change. "
         "Call `parse_spellcast_view` once the role is known, and stop clearing "
-        "`known_spells` inside `_parse`. Do not hardcode a spell letter. "
-        "Leave that edit in the tree. Do not revert it."
+        "`known_spells` in `_parse`. In `emergency_strategy`, leave an uncommented "
+        "`self.cast('force bolt', ...)` that runs only when energy is at least 5 "
+        "and an adjacent monster makes `imminent_death_on_melee` true, and that "
+        "monster is not a pet and not in `WEAK_MONSTERS`. Do not cast at every "
+        "adjacent glyph. Do not delete that cast after a local game. "
+        "Do not hardcode a spell letter."
     )
 
 
@@ -578,8 +583,10 @@ def self_check() -> None:
         hungry_text = (hungry / "experiments.md").read_text()
         assert "20 squares" in hungry_text
         assert "parse_spellcast_view" in hungry_text
+        assert "self.cast" in hungry_text
+        assert "imminent_death_on_melee" in hungry_text
         assert "Do not hardcode a spell letter" in hungry_text
-        assert "Do not revert" in hungry_text
+        assert "Do not delete that cast" in hungry_text
         assert "died of starvation (1 of 2)" in hungry_text
         same = root / "same-tree"
         (same / "autoascend").mkdir(parents=True)
