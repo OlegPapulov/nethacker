@@ -302,47 +302,23 @@ A child is kept only when its mean is strictly above the parent. This mean is th
 
 Leave the heatmap alone. In `melee_monster_priority`, when `imminent_death_on_melee` is true and the monster is faster, do not add 15. The swing has to rank below a step onto an adjacent walkable square.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.04036337256709107 improved=False notes_ignored=True code_unchanged=False
+## Run 37133701364, wiz-hum-cha-mal, 1 iteration, search cut
+
+[37133701364](https://github.com/OlegPapulov/nethacker/actions/runs/37133701364) finished green. The operator ran about 178 minutes. The judge scored 0.04036337256709107. The parent is 0.07737020128671113. Not kept. `main` stays on the 0.077 bot. Published as `54245b6`.
+
+The operator did not edit `melee_monster_priority`. The new code prefers unseen tiles over a search in `exploration_logic.py`. Against the previous ring tree, that file is the only change. The notes were not rewritten.
 
 ### Why it stopped
-no-cell-improved
+
+A child is kept only when its mean is strictly above the parent. This mean is lower.
 
 ### What is the problem
-# Playthrough
 
-Identity: `wiz-hum-cha-mal`
+Seeds 10 and 12, the coyote and one bat, went from 0.024 to 0.075. Seed 13 went from 0.179 to 0.024. Seeds 0, 5, 9, and 14 also fell. The task paragraph did not forbid `exploration_logic.py`. The playthrough note said that a longer long game raises the mean.
 
-## Why it stopped
-
-2 of 15 games stopped at killed by a soldier ant. Mean progress 0.077.
-
-| seed | progress | turns | stop |
-| --- | --- | --- | --- |
-| 0 | 0.07453595273884014 | 27750 | killed by an Uruk-hai |
-| 1 | 0.11704996473565571 | 21697 | killed by a fire ant |
-| 2 | 0.07453595273884014 | 24862 | killed by Mr. Picq; the shopkeeper |
-| 3 | 0.07453595273884014 | 20368 | killed by a soldier ant |
-| 4 | 0.01847840456172601 | 2644 | killed by a kobold zombie |
-| 5 | 0.11704996473565571 | 29992 | killed by a giant beetle |
-| 6 | 0.07453595273884014 | 27825 | killed by a soldier ant |
-| 7 | 0.07453595273884014 | 24393 | killed by a wand |
-| 8 | 0.036887590648350246 | 9957 | killed by a newt |
-| 9 | 0.11704996473565571 | 26641 | killed by a white unicorn |
-| 10 | 0.024160136550546978 | 6746 | killed by a coyote |
-| 11 | 0.036887590648350246 | 9791 | killed by a bat |
-| 12 | 0.024160136550546978 | 4917 | killed by a bat |
-| 13 | 0.17909953770432294 | 36762 | killed by a rabid rat |
-| 14 | 0.11704996473565571 | 28988 | killed by a bolt of cold |
-
-## What is the problem
-
-The score is the mean of these games. 5 of 15 end at depth 1. The mean moves when a long game gets longer, and it falls when a long game gets shorter.
-
-## What might solve it
-
-See `experiments.md`.
+The melee line in the task does not match the five short games. A coyote, a kobold zombie, and a newt get the extra 15 only while hit points are above 8. `imminent_death_on_melee` is true for them only at 8 or below, and by then the 15 is already absent. A soldier ant is an insect, so that check is true at 16 hit points. The same line would change the long insect fights and would not change three of the five short games.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+See `experiments.md`. Do not edit `mutator/` until a human approves it.
 

@@ -59,7 +59,7 @@ def _game_rules(identity: str) -> str:
         f"# This gameplay\n\n"
         f"Identity: `{identity}`\n\n"
         "Read `experiments.md` and edit only the function it names. "
-        "Do not edit `character.py` or `movement_priority.py`. "
+        "Do not edit `character.py`, `movement_priority.py`, or `exploration_logic.py`. "
         "Do not resubmit the spell parser or the negative ring. "
         "Leave the change in the file when you exit. "
         "Do not revert it and do not restore the parent. "
@@ -148,18 +148,16 @@ def _lead_cause(counts: dict[str, int]) -> str:
 
 
 def _keep_win() -> str:
-    """The 0.077 cap stays. The next edit is the short games, not the long ones."""
+    """The 0.077 cap stays. The next edit is depth-1 melee, not a search cut."""
     return (
         "Leave the weak-hunger corpse walk capped at 20 squares. Do not edit it. "
-        "Do not edit `movement_priority.py` or `character.py`. "
-        "Five games end under 10,000 turns, all on depth 1: a kobold zombie at "
-        "2,644, a bat at 4,917, a coyote at 6,746, a bat at 9,791, and a newt at "
-        "9,957. Those are the games that move the mean. A soldier ant that already "
-        "lasts about 20,000 turns is not the edit. Do not shorten a long game. "
-        "In `melee_monster_priority`, do not add 15 when `imminent_death_on_melee` "
-        "is true. A coyote, a kobold zombie, and a newt are not in "
-        "`is_monster_faster`, so a faster-only check misses them. Return a priority "
-        "below every adjacent walkable step. Edit only that function."
+        "Do not edit `exploration_logic.py`. That search tree scored 0.040. "
+        "Five games under 10,000 turns die on depth 1. "
+        "Every other file matches the parent. "
+        "In `melee_monster_priority`, do not add 15 when `blstats.depth` is 1 "
+        "and the monster is not in `INSECTS`. A bat, a coyote, a kobold zombie, "
+        "and a newt lose the bonus on depth 1. A soldier ant keeps it. "
+        "Deeper levels keep the current bonus. Edit only that function."
     )
 
 
@@ -179,8 +177,8 @@ def _hypothesis(cause: str, shallow: int, total: int, causes: list[str] | None =
         )
     else:
         lead = (
-            f"The usual stop is {cause}, and that game is already long. "
-            "The mean moves when a game under 10,000 turns lasts longer. "
+            "A game under 10,000 turns that lasts longer raises the mean. "
+            "A long game that gets shorter lowers the mean. "
         )
     return lead + _keep_win()
 
@@ -284,8 +282,8 @@ def write_notes_from_evidence(
         f"{table}\n\n"
         f"## What is the problem\n\n"
         f"The score is the mean of these games. {shallow} of {len(results)} "
-        f"end at depth 1. The mean moves when a long game gets longer, and it "
-        f"falls when a long game gets shorter.\n\n"
+        f"end at depth 1. A game under 10,000 turns that lasts longer raises "
+        f"the mean. A long game that gets shorter lowers the mean.\n\n"
         f"## What might solve it\n\n"
         f"See `experiments.md`.\n"
     )
@@ -303,7 +301,7 @@ def write_notes_from_evidence(
         f"is strictly higher on `{identity}`.\n\n"
         f"## What might solve it\n\n"
         f"{hypothesis}\n\n"
-        "Edit `autoascend/` and exit. The judge measures that tree.\n"
+        "Edit only the function named above. The judge measures that tree.\n"
     )
 
 
@@ -632,9 +630,16 @@ def self_check() -> None:
         hungry_text = (hungry / "experiments.md").read_text()
         assert "20 squares" in hungry_text
         assert "melee_monster_priority" in hungry_text
-        assert "imminent_death_on_melee" in hungry_text
+        assert "blstats.depth" in hungry_text
+        assert "INSECTS" in hungry_text
         assert "do not add 15" in hungry_text
+        assert "exploration_logic.py" in hungry_text
         assert "under 10,000 turns" in hungry_text
+        play = (hungry / "experience.md").read_text()
+        assert "under 10,000 turns" in play
+        assert "when a long game gets longer" not in play
+        assert "exploration_logic.py" in game
+        assert "Edit only the function" in game
         assert "died of starvation (1 of 2)" in hungry_text
         assert "matched the parent" in _carry({
             "code_unchanged": True, "reason": "gate:child identical to parent",

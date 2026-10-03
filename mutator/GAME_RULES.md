@@ -2,7 +2,7 @@
 
 You are editing a bot that plays NetHack 3.6.6 through the NetHack Learning Environment. The public score for this run is `wiz-hum-cha-mal`: a chaotic male human wizard. The same code is later played as every legal character, so a trick that only works for this one character will lose on the private board.
 
-Read `experience.md` and `experiments.md`. Implement that one experiment as a change in `autoascend/`. The markdown is not the edit. If the code matches the parent, the gate throws the tree away and nothing is scored. Those two files exist only inside this run. After the code change is in place, add one line to `experiments.md` saying what you changed.
+Read `experience.md` and `experiments.md`. Edit only the function that `experiments.md` names. The markdown is not the edit. If the code matches the parent, the gate throws the tree away and nothing is scored. Those two files exist only inside this run. After the code change is in place, add one line to `experiments.md` saying what you changed.
 
 ## Goal of the game
 
@@ -18,7 +18,7 @@ Early death is usually food, a weak melee, a trap, or poison. Later death is usu
 
 Thirteen roles: Archeologist, Barbarian, Caveman, Healer, Knight, Monk, Priest, Ranger, Rogue, Samurai, Tourist, Valkyrie, Wizard. Five races: human, elf, dwarf, gnome, orc. Three alignments: lawful, neutral, chaotic. Two genders. Valkyrie is female only. That is the 73 identities.
 
-A wizard's strength is spells: damage from a distance, mapping, identification, and later controlled teleport. A wizard's weakness is hit points and melee. Metal body armor blocks spellcasting. Hunger rises when you cast. A chaotic wizard is off the role's natural alignment (neutral), so prayer and sacrifice are less forgiving than for a neutral wizard. Do not assume a starting item you have not seen in the inventory.
+A wizard's strength is spells: damage from a distance, mapping, identification, and later controlled teleport. Mapping and the spell list are not this edit. A wizard's weakness is hit points and melee. Metal body armor blocks spellcasting. Hunger rises when you cast. A chaotic wizard is off the role's natural alignment (neutral), so prayer and sacrifice are less forgiving than for a neutral wizard. Do not assume a starting item you have not seen in the inventory.
 
 Strength, dexterity, constitution, intelligence, wisdom, and charisma are the six stats. Armor class goes down as protection goes up. Energy is the spell budget. Burden from a heavy pack drops speed to zero.
 
@@ -28,8 +28,8 @@ Weapons, armor, potions, scrolls, wands, spellbooks, rings, amulets, tools. Most
 
 ## Enemies
 
-Early: grid bugs, jackals, rats, goblins, mines inhabitants. They are a damage race the wizard loses in melee if the bot stands and trades hits. Later: liches, mind flayers, demons, the Wizard of Yendor. Elbereth, doors, corridors, and ranged spells are how a fragile character survives. A peaceful monster that the bot attacks can ruin the game. A pet that the bot kills is a resource thrown away.
+Early: grid bugs, jackals, rats, goblins, mines inhabitants. They are a damage race the wizard loses in melee if the bot stands and trades hits. Later: liches, mind flayers, demons, the Wizard of Yendor. Elbereth, a door, a corridor, or a ranged spell can keep a fragile character alive. That fact is not this edit. This run edits only the function that `experiments.md` names. A peaceful monster that the bot attacks can ruin the game. A pet that the bot kills is a resource thrown away.
 
 ## What a good change looks like
 
-One idea, and it has to be the action `fight2` picks. A number on a heatmap that still loses to the melee action is not a change. A wizard loses a fair melee. The gain has to show up in the short games, the ones under 10,000 turns. A game that already lasts about 20,000 turns is not the edit. Seed-specific branches do not count: the private seeds are different games. Restoring the parent is not a result.
+One idea, and it has to be the action `fight2` picks. A number on a heatmap that still loses to the melee action is not a change. Do not edit `exploration_logic.py`, `character.py`, or `movement_priority.py`. Do not edit the spell parser. Every other file matches the parent. A game under 10,000 turns that lasts longer raises the mean. A long game that gets shorter lowers the mean. A game that already lasts about 20,000 turns is not the edit. Seed-specific branches do not count: the private seeds are different games. Restoring the parent is not a result.
