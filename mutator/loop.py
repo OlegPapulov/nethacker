@@ -7,8 +7,9 @@ They are gitignored inside the seed, and this script never writes them back
 into the repo's `mutator/` directory. A new run starts from the blank
 templates.
 
-ponytail: one `evolve --iterations N` for the whole run, so the cold-start
-game happens once. The coding container is not killed from here.
+ponytail: one `evolve --iterations 1` per iteration, so the note for the
+next one can say what the previous tree did. The coding container is not
+killed from here.
 nethackers scores a tree only after the operator exits; a killed
 process is recorded as an operator error and is not measured.
 nethackers' own container ceiling is 8 hours. The Actions job stops
@@ -149,15 +150,15 @@ def _keep_win() -> str:
     """The 0.077 cap stays. The next edit has to cast, or the judge replays the parent."""
     return (
         "Leave the weak-hunger corpse walk capped at 20 squares. Do not edit it. "
-        "The last edit read the spell menu and then deleted the cast, so all 15 "
-        "games replayed the parent. Filling `known_spells` is not a change. "
-        "Call `parse_spellcast_view` once the role is known, and stop clearing "
-        "`known_spells` in `_parse`. In `emergency_strategy`, leave an uncommented "
-        "`self.cast('force bolt', ...)` that runs only when energy is at least 5 "
-        "and an adjacent monster makes `imminent_death_on_melee` true, and that "
-        "monster is not a pet and not in `WEAK_MONSTERS`. Do not cast at every "
-        "adjacent glyph. Do not delete that cast after a local game. "
-        "Do not hardcode a spell letter."
+        "Five games die on depth 1 by standing in a melee: a kobold zombie, a bat, "
+        "a coyote, a bat, and a newt. A wizard loses that trade. "
+        "In `emergency_strategy`, when `imminent_death_on_melee` is true for an "
+        "adjacent monster that is not a pet and not in `WEAK_MONSTERS`, leave an "
+        "uncommented `self.cast('force bolt', ...)` if energy is at least 5 and "
+        "the spell is known, and otherwise move toward a door or a corridor. "
+        "Do not cast at every adjacent glyph. Do not delete that cast. "
+        "Call `parse_spellcast_view` once the role is known so the letter is real, "
+        "and do not clear `known_spells` in `_parse`. Do not hardcode a spell letter."
     )
 
 
@@ -219,7 +220,33 @@ def saved_results(text: str) -> str:
     return "\n\n".join(chunks)
 
 
-def write_notes_from_evidence(notes: Path, evidence: dict, identity: str, earlier: str = "") -> None:
+def _carry(row: dict) -> str:
+    """What the next iteration is told about the tree that just finished."""
+    reason = str(row.get("reason") or "")
+    if row.get("code_unchanged") or "identical" in reason:
+        return (
+            "## Last iteration\n\n"
+            "The previous tree matched the parent. The gate does not score that, "
+            "so there is no result. These notes are not the edit. Change "
+            "`autoascend/` and leave the `self.cast` in the file."
+        )
+    score = row.get("dev_fitness")
+    if not isinstance(score, float):
+        return (
+            "## Last iteration\n\n"
+            f"The previous tree was not scored ({reason}). Change `autoascend/`."
+        )
+    kept = "kept" if row.get("improved") else "not kept"
+    return (
+        "## Last iteration\n\n"
+        f"The previous tree scored {score:.3f} and was {kept}. "
+        "Do not submit that same diff again."
+    )
+
+
+def write_notes_from_evidence(
+    notes: Path, evidence: dict, identity: str, earlier: str = "", carry: str = "",
+) -> None:
     """Fill both note files from one public-batch eval. Earlier experiment
     scores stay at the top of experiments.md. The agent implements the new
     hypothesis under them."""
@@ -260,9 +287,11 @@ def write_notes_from_evidence(notes: Path, evidence: dict, identity: str, earlie
     )
     prior = saved_results(earlier).strip()
     prior_text = f"{prior}\n\n" if prior else ""
+    carry_text = f"{carry.strip()}\n\n" if carry.strip() else ""
     (notes / "experiments.md").write_text(
         f"# Next experiment\n\n"
         f"{prior_text}"
+        f"{carry_text}"
         f"## Why it stopped\n\n"
         f"{cause} ({counts.get(cause, 0)} of {len(results)}).\n\n"
         f"## What is the problem\n\n"
@@ -380,9 +409,38 @@ def _metric_rows(workdir: Path) -> list[dict]:
     return [by_iteration[number] for number in sorted(by_iteration)]
 
 
+def _result_row(
+    number: int, metric: dict | None, tree: Path | None, proc_code: int,
+    before: str, seed: Path, parent_mean: float | None, identity: str,
+) -> dict:
+    scored = metric is not None and metric.get("dev_fitness") is not None
+    improved = metric is not None and metric.get("reason") == "registered"
+    ignored = True
+    if tree is not None:
+        after = "\n".join(
+            (tree / name).read_text() if (tree / name).is_file() else ""
+            for name in RUN_NOTES
+        )
+        ignored = not agent_rewrote(before, after)
+    unchanged = tree is None or _tree_digest(tree) == _tree_digest(seed)
+    return {
+        "identity": identity,
+        "iteration": number,
+        "exit_code": proc_code,
+        "scored": scored,
+        "improved": improved,
+        "dev_fitness": None if metric is None else metric.get("dev_fitness"),
+        "parent_mean": parent_mean,
+        "reason": "no-metrics" if metric is None else metric.get("reason"),
+        "hub_reason": None if metric is None else metric.get("hub_reason"),
+        "notes_ignored": ignored,
+        "code_unchanged": unchanged,
+    }
+
+
 def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
-    """One evolve call for every iteration. Score the bot once first and put
-    those notes in the seed. Leave the coding container until it exits."""
+    """One evolve per iteration. The next note says what the previous tree did.
+    Leave the coding container until it exits."""
     state.mkdir(parents=True, exist_ok=True)
     notes = state / "notes"
     parent = state / "parent"
@@ -397,53 +455,40 @@ def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
     parent_mean = evidence.get("mean_progress")
     if not isinstance(parent_mean, (int, float)):
         parent_mean = None
-    write_notes_from_evidence(
-        notes, evidence, identity, (MUTATOR / "experiments.md").read_text(),
-    )
-    before = _note_text(notes)
-    seed = state / "seed"
-    workdir = state / "work"
-    prepare_seed(bot, notes, seed, identity)
-    proc = subprocess.run(
-        evolve_command(seed, workdir, identity, iterations), text=True,
-    )
-    trees = {int(path.name.split("-", 1)[1]): path for path in _iter_dirs(workdir)}
-    parent_digest = _tree_digest(seed)
+    earlier = (MUTATOR / "experiments.md").read_text()
+    carry = ""
     results = []
+    current = bot
     last_improved: Path | None = None
-    for metric in _metric_rows(workdir):
-        number = int(metric.get("iteration") or 0)
-        tree = trees.get(number - 1) or trees.get(number)
-        scored = metric.get("dev_fitness") is not None
-        improved = metric.get("reason") == "registered"
-        if scored and tree is not None:
+    for number in range(1, iterations + 1):
+        write_notes_from_evidence(notes, evidence, identity, earlier, carry)
+        before = _note_text(notes)
+        slot = state / f"step-{number}"
+        seed = slot / "seed"
+        workdir = slot / "work"
+        prepare_seed(current, notes, seed, identity)
+        proc = subprocess.run(evolve_command(seed, workdir, identity, 1), text=True)
+        trees = {int(path.name.split("-", 1)[1]): path for path in _iter_dirs(workdir)}
+        metrics = _metric_rows(workdir)
+        metric = metrics[-1] if metrics else None
+        tree = None
+        if metric is not None:
+            raw = int(metric.get("iteration") or 0)
+            tree = trees.get(raw - 1) or trees.get(raw) or (trees and next(reversed(trees.values())))
+        elif trees:
+            tree = next(reversed(trees.values()))
+        if metric is not None and metric.get("dev_fitness") is not None and tree is not None:
             dest = state / "publish" / str(number)
             if dest.exists():
                 shutil.rmtree(dest)
             shutil.copytree(tree, dest, ignore=shutil.ignore_patterns(*NOTES, ".gitignore"))
-        if improved and tree is not None:
+        row = _result_row(number, metric, tree, proc.returncode, before, seed, parent_mean, identity)
+        results.append(row)
+        if row["improved"] and tree is not None:
             last_improved = tree
-        ignored = True
-        if tree is not None:
-            after = "\n".join(
-                (tree / name).read_text() if (tree / name).is_file() else ""
-                for name in RUN_NOTES
-            )
-            ignored = not agent_rewrote(before, after)
-        unchanged = tree is not None and _tree_digest(tree) == parent_digest
-        results.append({
-            "identity": identity,
-            "iteration": number,
-            "exit_code": proc.returncode,
-            "scored": scored,
-            "improved": improved,
-            "dev_fitness": metric.get("dev_fitness"),
-            "parent_mean": parent_mean,
-            "reason": metric.get("reason"),
-            "hub_reason": metric.get("hub_reason"),
-            "notes_ignored": ignored,
-            "code_unchanged": unchanged,
-        })
+            current = tree
+        carry = _carry(row)
+        earlier = (notes / "experiments.md").read_text()
     if last_improved is not None:
         _apply_code(last_improved, bot)
         # The pull lives under the run directory. The record step commits the checkout.
@@ -453,7 +498,7 @@ def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
         results.append({
             "identity": identity,
             "iteration": 0,
-            "exit_code": proc.returncode,
+            "exit_code": 0,
             "scored": False,
             "improved": False,
             "dev_fitness": None,
@@ -588,6 +633,14 @@ def self_check() -> None:
         assert "Do not hardcode a spell letter" in hungry_text
         assert "Do not delete that cast" in hungry_text
         assert "died of starvation (1 of 2)" in hungry_text
+        assert "door or a corridor" in hungry_text
+        assert "matched the parent" in _carry({
+            "code_unchanged": True, "reason": "gate:child identical to parent",
+        })
+        assert "scored 0.077" in _carry({
+            "dev_fitness": 0.077, "improved": False, "reason": "no-cell-improved",
+            "code_unchanged": False,
+        })
         same = root / "same-tree"
         (same / "autoascend").mkdir(parents=True)
         (same / "autoascend" / "agent.py").write_text("x\n")

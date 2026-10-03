@@ -2,7 +2,7 @@
 
 You are editing a bot that plays NetHack 3.6.6 through the NetHack Learning Environment. The public score for this run is `wiz-hum-cha-mal`: a chaotic male human wizard. The same code is later played as every legal character, so a trick that only works for this one character will lose on the private board.
 
-Read `experience.md` and `experiments.md` before you edit. Implement the single experiment in `experiments.md`. When you stop, rewrite both files. Those two files exist only inside this run.
+Read `experience.md` and `experiments.md`. Implement that one experiment as a change in `autoascend/`. The markdown is not the edit. If the code matches the parent, the gate throws the tree away and nothing is scored. Those two files exist only inside this run. After the code change is in place, add one line to `experiments.md` saying what you changed.
 
 ## Goal of the game
 
@@ -32,4 +32,4 @@ Early: grid bugs, jackals, rats, goblins, mines inhabitants. They are a damage r
 
 ## What a good change looks like
 
-One idea. It should show up as fewer deaths of the kind named in `experience.md`, on more than the seed you stared at. Seed-specific branches do not count: the private seeds are different games.
+One idea, and it has to change an action during a game. A wizard loses a fair melee. Elbereth, a door, a corridor, or a ranged spell is how this character survives. It should show up as fewer deaths of the kind named in `experience.md`, on more than the seed you stared at. Seed-specific branches do not count: the private seeds are different games. Restoring the parent is not a result.

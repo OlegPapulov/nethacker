@@ -246,47 +246,21 @@ Iteration 1 never edited `autoascend/`. Iteration 2 called `parse_spellcast_view
 
 The next note asks for a cast that stays in the file. Cast force bolt only when energy is at least 5 and an adjacent monster would make `imminent_death_on_melee` true, and that monster is not a pet and not in `WEAK_MONSTERS`. Do not cast at every adjacent glyph. Leave the 20-square corpse cap alone.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=gate:child identical to parent dev_fitness=None improved=False notes_ignored=True code_unchanged=True
+## Run 37110207188, wiz-hum-cha-mal, 1 iteration, identical tree
+
+[37110207188](https://github.com/OlegPapulov/nethacker/actions/runs/37110207188) finished green. The operator ran about 70 minutes and used 425,200 tokens. The gate then said `child identical to parent`. `dev_fitness` is empty. `autoascend/` did not change, and the notes did not change. No published commit. The parent stays at 0.077.
 
 ### Why it stopped
-gate:child identical to parent
+
+The gate hashes the solution and refuses to call the judge when the hash matches the parent. An identical tree is not a score of 0.077. It is no score.
 
 ### What is the problem
-# Playthrough
 
-Identity: `wiz-hum-cha-mal`
+The bot was not rewritten. Three instructions disagree about what finishing means. The seed header says leave a `self.cast` and do not restore the parent. `mutator/GAME_RULES.md` said the job is done when `experience.md` and `experiments.md` are rewritten. The operator brief, which this repo does not write, says to measure a sample and that a tree matching the parent is discarded. The operator left the parent in place. The notes were not rewritten either, so the game-rules line was not what it followed.
 
-## Why it stopped
-
-2 of 15 games stopped at killed by a soldier ant. Mean progress 0.077.
-
-| seed | progress | turns | stop |
-| --- | --- | --- | --- |
-| 0 | 0.07453595273884014 | 27750 | killed by an Uruk-hai |
-| 1 | 0.11704996473565571 | 21697 | killed by a fire ant |
-| 2 | 0.07453595273884014 | 24862 | killed by Mr. Guizengeard; the shopkeeper |
-| 3 | 0.07453595273884014 | 20368 | killed by a soldier ant |
-| 4 | 0.01847840456172601 | 2644 | killed by a kobold zombie |
-| 5 | 0.11704996473565571 | 29992 | killed by a giant beetle |
-| 6 | 0.07453595273884014 | 27825 | killed by a soldier ant |
-| 7 | 0.07453595273884014 | 24393 | killed by a wand |
-| 8 | 0.036887590648350246 | 9957 | killed by a newt |
-| 9 | 0.11704996473565571 | 26641 | killed by a white unicorn |
-| 10 | 0.024160136550546978 | 6746 | killed by a coyote |
-| 11 | 0.036887590648350246 | 9791 | killed by a bat |
-| 12 | 0.024160136550546978 | 4917 | killed by a bat |
-| 13 | 0.17909953770432294 | 36762 | killed by a rabid rat |
-| 14 | 0.11704996473565571 | 28988 | killed by a bolt of cold |
-
-## What is the problem
-
-The score is the mean of these games. 5 of 15 end at depth 1. The mean moves when a long game gets longer, and it falls when a long game gets shorter.
-
-## What might solve it
-
-See `experiments.md`.
+The note is also frozen for the whole `evolve` call. A later iteration is not told that the previous tree was identical and was thrown away.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+Say the same thing in the header and in `GAME_RULES.md`: the edit is an action in `autoascend/`, and an identical tree is not scored. Run one iteration at a time, and put the previous tree's result at the top of the next note. The survival edit is the fatal melee on depth 1: cast force bolt when `imminent_death_on_melee` is true for a hostile monster that is not weak, and otherwise step toward a door or a corridor.
 
