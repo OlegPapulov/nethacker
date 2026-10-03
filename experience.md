@@ -264,47 +264,23 @@ The note is also frozen for the whole `evolve` call. A later iteration is not to
 
 Say the same thing in the header and in `GAME_RULES.md`: the edit is an action in `autoascend/`, and an identical tree is not scored. Run one iteration at a time, and put the previous tree's result at the top of the next note. The survival edit is the fatal melee on depth 1: cast force bolt when `imminent_death_on_melee` is true for a hostile monster that is not weak, and otherwise step toward a door or a corridor.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.07737020128671113 improved=False notes_ignored=True code_unchanged=False
+## Run 37115352184, wiz-hum-cha-mal, 1 iteration, same 15 games
+
+[37115352184](https://github.com/OlegPapulov/nethacker/actions/runs/37115352184) finished green. The operator ran about 114 minutes and used 599,843 tokens. The judge scored 0.07737020128671113, the parent number. Every one of the 15 seeds matches the parent turn for turn. Not kept. `main` stays on the 0.077 bot.
+
+`70fae4d` is the same `autoascend/` as `a27b54a`, the spell-menu tree from the run before. It calls `parse_spellcast_view` at startup and has no `self.cast('force bolt')`. The smoke seed is 1,899 turns, the same smoke as that earlier tree. `code_unchanged` is false only because that tree differs from the 0.077 parent. The games do not.
 
 ### Why it stopped
-no-cell-improved
+
+A child is kept only when its mean is strictly above the parent. This mean is the parent.
 
 ### What is the problem
-# Playthrough
 
-Identity: `wiz-hum-cha-mal`
+The note asked for a cast and a step away from a fatal melee. The operator submitted the spell parser again. That parser does not take a turn, so the judge replays the parent. Asking for a cast in `emergency_strategy` keeps producing this diff, because the cast gets deleted and the parser remains.
 
-## Why it stopped
-
-2 of 15 games stopped at killed by a soldier ant. Mean progress 0.077.
-
-| seed | progress | turns | stop |
-| --- | --- | --- | --- |
-| 0 | 0.07453595273884014 | 27750 | killed by an Uruk-hai |
-| 1 | 0.11704996473565571 | 21697 | killed by a fire ant |
-| 2 | 0.07453595273884014 | 24862 | killed by Ms. Fleac; the shopkeeper |
-| 3 | 0.07453595273884014 | 20368 | killed by a soldier ant |
-| 4 | 0.01847840456172601 | 2644 | killed by a kobold zombie |
-| 5 | 0.11704996473565571 | 29992 | killed by a giant beetle |
-| 6 | 0.07453595273884014 | 27825 | killed by a soldier ant |
-| 7 | 0.07453595273884014 | 24393 | killed by a wand |
-| 8 | 0.036887590648350246 | 9957 | killed by a newt |
-| 9 | 0.11704996473565571 | 26641 | killed by a white unicorn |
-| 10 | 0.024160136550546978 | 6746 | killed by a coyote |
-| 11 | 0.036887590648350246 | 9791 | killed by a bat |
-| 12 | 0.024160136550546978 | 4917 | killed by a bat |
-| 13 | 0.17909953770432294 | 36762 | killed by a rabid rat |
-| 14 | 0.11704996473565571 | 28988 | killed by a bolt of cold |
-
-## What is the problem
-
-The score is the mean of these games. 5 of 15 end at depth 1. The mean moves when a long game gets longer, and it falls when a long game gets shorter.
-
-## What might solve it
-
-See `experiments.md`.
+In `draw_monster_priority_negative`, a fast monster that is already adjacent hits `pass`. A bat is fast. Seeds 11 and 12 die to a bat on depth 1. The bot does not step off that square.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+Name that one function and forbid `character.py`. When `imminent_death_on_melee` is true, draw the same negative ring for a fast adjacent monster that the code already draws for a slow one. Do not leave the `pass`.
 

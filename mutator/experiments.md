@@ -21,3 +21,4 @@ Results of earlier experiments stay in this file. Add the next hypothesis under 
 - iteration 1: 0.077 not kept (no-cell-improved). Does not change the mean (0.077). No code change.
 - iteration 2: 0.077 not kept (no-cell-improved). Does not change the mean (0.077). Read the spell menu and deleted the cast.
 - iteration 1: none not kept (gate:child identical to parent). The tree matched the parent, so the judge did not run.
+- iteration 1: 0.077 not kept (no-cell-improved). Does not change the mean (0.077). Resubmitted the spell-menu tree. The 15 seeds match the parent.

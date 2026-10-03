@@ -58,9 +58,9 @@ def _game_rules(identity: str) -> str:
     header = (
         f"# This gameplay\n\n"
         f"Identity: `{identity}`\n\n"
-        "Read `experiments.md` and make that one change in `autoascend/`. "
-        "The change has to be an action the bot takes during a game. "
-        "Leave an uncommented `self.cast` in the file when you exit. "
+        "Read `experiments.md` and edit only the function it names. "
+        "Do not edit `character.py`. Do not resubmit the spell-menu parser. "
+        "Leave the change in the file when you exit. "
         "Do not revert it and do not restore the parent. "
         "A local game is not the score. A tree that matches the parent is thrown away. "
         "Mark the change with a `# hypothesis:` comment. "
@@ -147,18 +147,16 @@ def _lead_cause(counts: dict[str, int]) -> str:
 
 
 def _keep_win() -> str:
-    """The 0.077 cap stays. The next edit has to cast, or the judge replays the parent."""
+    """The 0.077 cap stays. The next edit is the adjacent-fast pass."""
     return (
         "Leave the weak-hunger corpse walk capped at 20 squares. Do not edit it. "
-        "Five games die on depth 1 by standing in a melee: a kobold zombie, a bat, "
-        "a coyote, a bat, and a newt. A wizard loses that trade. "
-        "In `emergency_strategy`, when `imminent_death_on_melee` is true for an "
-        "adjacent monster that is not a pet and not in `WEAK_MONSTERS`, leave an "
-        "uncommented `self.cast('force bolt', ...)` if energy is at least 5 and "
-        "the spell is known, and otherwise move toward a door or a corridor. "
-        "Do not cast at every adjacent glyph. Do not delete that cast. "
-        "Call `parse_spellcast_view` once the role is known so the letter is real, "
-        "and do not clear `known_spells` in `_parse`. Do not hardcode a spell letter."
+        "Do not edit `character.py` or the spell parser. That tree was scored: "
+        "all 15 seeds match the parent, and the smoke seed is 1,899 turns. "
+        "In `draw_monster_priority_negative`, a fast monster that is already "
+        "adjacent is ignored (`pass`). That is the bot standing in the melee. "
+        "When `imminent_death_on_melee` is true, draw the same negative ring for "
+        "a fast adjacent monster that you already draw for a slow one. "
+        "Do not leave the `pass`. Edit only that function."
     )
 
 
@@ -627,13 +625,10 @@ def self_check() -> None:
         }, DEFAULT_IDENTITY)
         hungry_text = (hungry / "experiments.md").read_text()
         assert "20 squares" in hungry_text
-        assert "parse_spellcast_view" in hungry_text
-        assert "self.cast" in hungry_text
+        assert "draw_monster_priority_negative" in hungry_text
         assert "imminent_death_on_melee" in hungry_text
-        assert "Do not hardcode a spell letter" in hungry_text
-        assert "Do not delete that cast" in hungry_text
+        assert "Do not leave the `pass`" in hungry_text
         assert "died of starvation (1 of 2)" in hungry_text
-        assert "door or a corridor" in hungry_text
         assert "matched the parent" in _carry({
             "code_unchanged": True, "reason": "gate:child identical to parent",
         })
