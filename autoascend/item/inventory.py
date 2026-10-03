@@ -159,6 +159,15 @@ class Inventory:
                 return False
             assert 'What do you want to wear?' in self.agent.message, self.agent.message
             self.agent.type_text(letter)
+            if 'while wielding a two-handed weapon' in self.agent.message:
+                # A shield and a two-handed weapon want the same hand, and the game
+                # says so only after asking which item we meant. Whatever we were
+                # wearing when we picked the weapon up, we are not wearing it now.
+                return False
+            if 'You stop putting on' in self.agent.message:
+                # Something interrupted the dressing maneuver -- a nymph stealing the
+                # item we were told to wear, for instance. We did not end up wearing it.
+                return False
             assert 'You finish your dressing maneuver.' in self.agent.message or \
                    'You are now wearing ' in self.agent.message or \
                    'Your foot is trapped!' in self.agent.message, self.agent.message
