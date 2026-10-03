@@ -35,6 +35,11 @@ def from_name(name):
     return nh.GLYPH_MON_OFF + id_from_name(name)
 
 
+def is_valid_name(name):
+    """ Whether any monster in the game is actually called `name`. """
+    return any(nh.permonst(i).mname == name for i in range(nh.NUMMONS))
+
+
 @functools.lru_cache(nh.NUMMONS)
 def id_from_name(name):
     for i in range(nh.NUMMONS):

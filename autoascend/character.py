@@ -59,6 +59,17 @@ ALL_SPELL_CATEGORIES = [
     "matter",
 ]
 
+# One row of the cast menu, e.g.
+#     a - force bolt             1   attack         0%      100%
+# Longest name first so no spell name can shadow a longer one, the category is
+# matched as a bare word (this NetHack build prints categories the table above
+# doesn't list) and retention is deliberately not required: only the letter,
+# the name, the level, the category and the failure chance are used, and a row
+# that does not match exactly that is skipped rather than raising.
+SPELL_LINE_RE = (r'^([a-zA-Z]) - *(' +
+                 '|'.join(sorted(ALL_SPELL_NAMES, key=len, reverse=True)) +
+                 r') *([0-9]+) *([a-z]+) *([0-9]+) *%')
+
 
 class Property:
     def __init__(self, agent):
@@ -273,6 +284,15 @@ class Character:
         self.skill_levels = np.zeros(max(self.name_to_skill_type.values()) + 1, dtype=int)
         self.upgradable_skills = dict()
 
+        # hypothesis: a spellcaster that does not know its own spell list is just a
+        # weak melee fighter. These are the game's words, read back from the cast
+        # menu by parse_spellcast_view(); they are never guessed, because the letter
+        # for a given spell differs between roles, races and versions.
+        self.known_spells = dict()
+        self.spell_fail_chance = dict()
+        self.spell_level = dict()
+        self.spell_category = dict()
+
         self.is_lycanthrope = False
 
     def update(self):
@@ -322,41 +342,42 @@ class Character:
         self.alignment = self.name_to_alignment[alignment]
         self.race = self.name_to_race[race]
         self.gender = self.name_to_gender[gender]
-        # Initialize known spells
-        self.known_spells = dict()
-        self.spell_fail_chance = dict()
+        # Deliberately no longer re-initialising known_spells / spell_fail_chance
+        # here: this runs every time the character sheet is read, and wiping the
+        # spell list on every read threw away everything the cast menu told us.
+        # Re-reading the sheet says nothing new about spells; only the menu does.
 
     def parse_spellcast_view(self):
         # TODO: parse for other spellcaster classes
-        if self.role == self.WIZARD:
-            # Wizards know force bolt
-            if 'force bolt' not in self.known_spells:
-                self.known_spells['force bolt'] = 'f'
-                self.spell_fail_chance['force bolt'] = 0.05
         if self.role not in (self.HEALER, self.WIZARD):
             return
 
+        learned = dict()
         with self.agent.atom_operation():
-            self.agent.step(A.Command.CAST)
-            if not self.agent.popup:
-                self.known_spells[self.agent.message] = None
-                return
-            if self.agent.popup[0] not in ('Choose which spell to cast') or \
-                    not self.agent.popup[1].startswith('Name'):
-                raise ValueError(f'Invalid cast popup text format: {self.agent.popup}')
-            for line in self.agent.popup[2:]:
-                matches = re.findall(r'^([a-zA-Z]) - *' +
-                                     r'(' + '|'.join(ALL_SPELL_NAMES) + ') *' +
-                                     r'([0-9]*) *' +
-                                     r'(' + '|'.join(ALL_SPELL_CATEGORIES) + ') *' +
-                                     r'([0-9]*)\% *' +
-                                     r'([0-9]*\%|\(gone\))', line)
-                assert len(matches) == 1, (matches, line)
-                letter, spell_name, level, category, fail, retention = matches[0]
-                assert len(letter) == 1, letter
-                self.known_spells[spell_name] = letter
-                self.spell_fail_chance[spell_name] = int(fail) / 100
-        self.agent.step(A.Command.ESC)
+            try:
+                self.agent.step(A.Command.CAST)
+                if self.agent.popup and self.agent.popup[0] in ('Choose which spell to cast',
+                                                                  'Choose a spell to cast'):
+                    for line in self.agent.popup[1:]:
+                        matches = re.findall(SPELL_LINE_RE, line)
+                        if len(matches) != 1:
+                            # the column header, a blank line, or a spell this agent has
+                            # no name for. Skipping it keeps one unfamiliar row (or one
+                            # row this NetHack build spells differently) from losing the
+                            # whole list -- and never aborts the read.
+                            continue
+                        letter, spell_name, level, category, fail = matches[0]
+                        learned[spell_name] = (letter, int(level), category, int(fail) / 100)
+            finally:
+                # Always leave the menu the way we found it, whether we understood it
+                # or not, so a surprise here cannot strand the bot inside a menu.
+                self.agent.step(A.Command.ESC)
+
+        for spell_name, (letter, level, category, fail) in learned.items():
+            self.known_spells[spell_name] = letter
+            self.spell_fail_chance[spell_name] = fail
+            self.spell_level[spell_name] = level
+            self.spell_category[spell_name] = category
 
     def parse_enhance_view(self):
         with self.agent.atom_operation():

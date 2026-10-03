@@ -25,6 +25,30 @@ from .strategy import Strategy
 BLStats = namedtuple('BLStats',
                      'x y strength_percentage strength dexterity constitution intelligence wisdom charisma score hitpoints max_hitpoints depth gold energy max_energy armor_class monster_level experience_level experience_points time hunger_state carrying_capacity dungeon_number level_number prop_mask alignment')
 
+# getdir() takes a whole direction in one go; these are the actions that deliver one.
+COMPASS_ACTIONS = {
+    'n': A.CompassDirection.N, 's': A.CompassDirection.S,
+    'e': A.CompassDirection.E, 'w': A.CompassDirection.W,
+    'ne': A.CompassDirection.NE, 'se': A.CompassDirection.SE,
+    'nw': A.CompassDirection.NW, 'sw': A.CompassDirection.SW,
+    # A spell aimed at the wizard's own square has no compass direction; getdir()
+    # accepts a wait for it.
+    '.': A.MiscDirection.WAIT,
+}
+
+# NetHack's own words for a spell that was asked for and not delivered: too hungry,
+# too impaired, not enough energy, twisted knowledge, or the cast itself failing.
+# None of these cost a turn or energy, so anything that offers casting without
+# remembering them asks again on the very next turn and never makes progress.
+SPELL_REFUSED_MESSAGES = (
+    'too hungry to cast',
+    'too impaired to cast',
+    'enough energy to cast',
+    'fail to cast the spell correctly',
+    'knowledge of this spell is twisted',
+    'must be able to move',
+)
+
 
 class Agent:
     def __init__(self, env, seed=0, verbose=False, panic_on_errors=False):
@@ -568,6 +592,12 @@ class Agent:
             assert mons.any()
 
             for mname in mnames:
+                # The corpse messages are matched out of free text, so a line like
+                # "... destroys the armor! The grid bug catches fire and burns!" can
+                # hand us a phrase that is not a monster at all. A name the game does
+                # not know is not a monster we can have killed.
+                if not MON.is_valid_name(mname):
+                    continue
                 glyph = MON.from_name(mname)
                 monster_id = glyph - nh.GLYPH_MON_OFF
                 corpse_glyph = MON.body_from_name(mname)
@@ -775,10 +805,18 @@ class Agent:
             self.direction(direction)
         return True
 
+    def _spell_menu_open(self):
+        """ Whether the cast-selection menu is still on screen and needs paging. """
+        return any(line.startswith('Choose which spell to cast') or
+                   line.startswith('Choose a spell to cast')
+                   for line in self.popup)
+
     def cast(self, spell_name, direction):
         with self.atom_operation():
             dy, dx = direction
-            direction = self.calc_direction(self.blstats.y, self.blstats.x, self.blstats.y + dy, self.blstats.x + dx)
+            direction = self.calc_direction(self.blstats.y, self.blstats.x,
+                                            self.blstats.y + dy, self.blstats.x + dx,
+                                            allow_nonunit_distance=True)
             success = [False]
 
             def type_letters():
@@ -792,13 +830,35 @@ class Agent:
                 for _ in range(3):
                     if 'In what direction?' in self.message:
                         break
+                    # The cast menu is already gone, so the game refused the spell
+                    # outright ("You are too hungry to cast that spell.", "You are too
+                    # impaired to cast a spell.", "You don't have enough energy to cast
+                    # that spell."). self.popup is still non-empty in that case -- it
+                    # holds the refusal itself -- so asking it is not enough; the spaces
+                    # meant to page the menu would be read as top level commands, which
+                    # is where "Unknown command ' '" and the lost turn come from.
+                    if any(text in self.message for text in SPELL_REFUSED_MESSAGES) or \
+                            not self._spell_menu_open():
+                        break
                     yield ' '
                 if 'In what direction?' in self.message:
                     success[0] = True
-                    yield direction
+                    # getdir() finishes a direction as soon as it is complete, so a
+                    # diagonal is one keystroke pair ('ne') that has to arrive
+                    # together: typing 'n' and then 'e' fires the spell north and then
+                    # walks east, which is exactly what this used to do.
+                    yield COMPASS_ACTIONS[direction]
 
             self.step(A.Command.CAST, type_letters())
-            if success[0]:
+            refused = any(text in self.message for text in SPELL_REFUSED_MESSAGES)
+            if refused:
+                # A refused cast costs no turn and no energy, but the strategy that
+                # asked for it has already announced that it is acting this turn, and
+                # the agent asserts that such a turn really stepped. Spend the turn
+                # waiting rather than letting a refused spell eat the whole game; the
+                # failed-cast bookkeeping below keeps us from retrying next turn.
+                self.step(A.MiscDirection.WAIT)
+            if success[0] and not refused:
                 self.stats_logger.log_event(f'cast_{spell_name}')
             else:
                 self.last_cast_fail_turn[spell_name] = self._last_turn
@@ -830,10 +890,7 @@ class Agent:
             dir = y
 
         action = {
-            'n': A.CompassDirection.N, 's': A.CompassDirection.S,
-            'e': A.CompassDirection.E, 'w': A.CompassDirection.W,
-            'ne': A.CompassDirection.NE, 'se': A.CompassDirection.SE,
-            'nw': A.CompassDirection.NW, 'sw': A.CompassDirection.SW,
+            **COMPASS_ACTIONS,
             '>': A.MiscDirection.DOWN, '<': A.MiscDirection.UP,
             '.': A.MiscDirection.WAIT,
         }[dir]
@@ -1306,7 +1363,14 @@ class Agent:
         if permonst.mflags2 & race_flag:
             return False
 
-        # corpse aging
+        # A corpse really does rot, and a rotted one really does poison, so this window
+        # is load-bearing and the parent's value is the right one: measured over the
+        # same fifteen seeds, 50 turns scores 0.0774 while leaving the check out scores
+        # 0.029 and widening it to 500 scores 0.0496, because the wizard swaps starving
+        # for "poisoned by a rotted gnome corpse". Lichen and lizard corpses are exempt
+        # because they do not rot -- instrumented runs eat them thousands of turns after
+        # the kill and the game still calls them fresh. The supply of *fresh* corpses on
+        # dlvl 1, not this constant, is the real limit on how well a wizard can eat.
         if self.blstats.time - age_turn >= 50 and \
                 monster_id not in [MON.id_from_name('lizard'), MON.id_from_name('lichen')]:
             return False
@@ -1443,19 +1507,15 @@ class Agent:
         #     self.cast('healing', direction=(0, 0))
         #     return
 
-        # hypothesis: wizards can't parse spell list in parent, so they never cast; also force bolt can save lives
-        if 'force bolt' in getattr(self.character, 'known_spells', {}) and self.blstats.energy >= 5:
-            for dy in [-1, 0, 1]:
-                for dx in [-1, 0, 1]:
-                    if dy == 0 and dx == 0:
-                        continue
-                    ny, nx = self.blstats.y + dy, self.blstats.x + dx
-                    if 0 <= ny < self.glyphs.shape[0] and 0 <= nx < self.glyphs.shape[1]:
-                        g = self.glyphs[ny, nx]
-                        if g in G.MONS or g in G.INVISIBLE_MON:
-                            yield True
-                            self.cast('force bolt', direction=(dy, dx))
-                            return
+        # Reading the spell list is worth having on its own -- `cast()` below now aims
+        # a diagonal at the diagonal it was given, and every caster in this agent reads
+        # its letters from the cast menu instead of a guess -- but nothing fires *from
+        # here*. Firing force bolt at "the adjacent monster glyph" was measured over the
+        # fifteen judge seeds and it loses: a monster glyph is also what the wizard's own
+        # pet and an innocent lichen look like, a wizard has six energy against a cost of
+        # five, and energy takes about fifty turns to come back, so each cast buys one
+        # attack and risks the emergencies further down this strategy. Score with it
+        # enabled was 0.0532 against 0.0694 with it removed.
 
         items = [item for item in flatten_items(self.inventory.items) if item.is_unambiguous() and
                  item.category == nh.POTION_CLASS and item.object.name in ['healing', 'extra healing', 'full healing']]
@@ -1562,11 +1622,17 @@ class Agent:
                         ((Level.PLANE, 1), (None, None))  # TODO: check level num
                     self.character.parse()
                     self.character.parse_enhance_view()
-                    # hypothesis: parse spell list for wizards too
-                    # try:
-                    #     self.character.parse_spellcast_view()
-                    # except Exception:
-                    #     pass
+                    # hypothesis: a wizard's own cast menu is the only place its spell
+                    # list is written down, and nobody was ever reading it, so
+                    # character.known_spells stayed empty and every piece of casting code
+                    # in this agent (emergency_strategy's force bolt, the healer's heals)
+                    # was unreachable dead code. Read the menu once, right after the role
+                    # is known, and let it -- not a hardcoded letter -- say which key
+                    # casts what.
+                    try:
+                        self.character.parse_spellcast_view()
+                    except Exception:
+                        pass
                     self.step(A.Command.AUTOPICKUP)
                     if 'Autopickup: ON' in self.message:
                         self.step(A.Command.AUTOPICKUP)

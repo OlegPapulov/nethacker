@@ -4,9 +4,7 @@ Identity: `wiz-hum-cha-mal`
 
 ## Why it stopped
 
-2 of 15 games stopped at killed by a soldier ant. Mean progress 0.077. This is the parent tree
-(`/refs/parent`), re-measured this iteration: all 15 seeds came back identical to
-`/refs/parent-eval.json`, mean 0.077370.
+2 of 15 games stopped at killed by a soldier ant. Mean progress 0.077.
 
 | seed | progress | turns | stop |
 | --- | --- | --- | --- |
@@ -30,16 +28,6 @@ Identity: `wiz-hum-cha-mal`
 
 The score is the mean of these games. 5 of 15 end at depth 1. The mean moves when a long game gets longer, and it falls when a long game gets shorter.
 
-Watching the messages of the weak seeds (4, 8, 10, 11, 12) shows a second, quieter problem: the
-wizard runs out of food. `You faint from lack of food` shows up repeatedly, and on seed 14 the
-wizard starves to death next to corpses it never picks up. The pet makes it worse - the kitten
-eats the jackal corpses the wizard kills. It is still not the biggest lever on the mean: of the
-four variants tried this iteration, the ones that fed the weak seeds best (0.066) still lost more
-on the long seeds than they gained, because every extra corpse in the pack costs arrange steps
-and every corpse eaten costs 3-5 turns of standing still.
-
 ## What might solve it
 
-See `experiments.md`. The short version: a corpse taints with age wherever it is, so there is no
-pack-based larder, and the useful next levers are the pet stealing corpses and the dead spell
-parser.
+See `experiments.md`.

@@ -2,29 +2,36 @@
 
 ## Result
 
-- iteration 1: 0.045 not kept. Decreases the mean by 0.032 (from 0.077 to 0.045). Packed fresh edible corpses into the pack and ate them from there. 4 of the 15 games ended in `poisoned by a rotted X corpse`.
-- iteration 2: 0.046 not kept. Same idea with a hard cap of 3 corpses in the pack and a 1/3-capacity weight limit. Still 4 poisonings by rotted corpses.
-- iteration 3: 0.066 not kept. Same idea plus an age gate: a packed corpse is only eaten while its recorded kill turn is less than 50 turns old. Poisonings gone, but the mean is still 0.011 below the parent.
-- iteration 4: 0.077 not kept. Same as iteration 3, but the reserve is only packed when the pack holds no other food at all. The weak seeds improved less and the mean fell to 0.051.
-
-No code change is kept. The tree matches `/refs/parent`; the judge table for it is 0.077370.
+- iteration 1: 0.063 not kept (no-cell-improved). Decreases the mean by 0.001 (from 0.064 to 0.063). Moved the weak-hunger eat step to the front of the strategy list.
+- iteration 2: 0.060 not kept (no-cell-improved). Decreases the mean by 0.003 (from 0.063 to 0.060). Lowered that threshold from weak to hungry.
+- iteration 1: 0.064 not kept (no-cell-improved). Does not change the mean (0.064). Added a corpse-distance cap that the weak-hunger gate never reaches.
+- iteration 2: 0.063 not kept (no-cell-improved). Decreases the mean by 0.002 (from 0.064 to 0.063). Raised several flee and Elbereth thresholds and ate more corpses from the pack.
+- iteration 1: 0.064 not kept (no-cell-improved). Does not change the mean (0.064). No code change. The tree matches the seed.
+- iteration 2: 0.064 not kept (no-cell-improved). Does not change the mean (0.064). No code change. The agent wrote a notebook and left the parent in place.
+- iteration 1: 0.077 kept (registered). Increases the mean by 0.013 (from 0.064 to 0.077). Capped a weak-hunger corpse walk at 20 squares.
+- iteration 2: 0.077 not kept (no-cell-improved). Does not change the mean (0.077). The judge table matches iteration 1.
 
 ## Why it stopped
 
-killed by a soldier ant (2 of 15), as in the parent.
+killed by a soldier ant (2 of 15).
 
 ## What is the problem
 
-Mean progress is 0.077. The bot is kept only if the next mean is strictly higher on `wiz-hum-cha-mal`. 5 of 15 games still die on depth 1, so the mean is set by a handful of long games.
+Mean progress is 0.077. The bot is kept only if the next mean is strictly higher on `wiz-hum-cha-mal`.
 
 ## What might solve it
 
-The corpse-larder idea is dead, and the traces say why.
-
-1. **A pack is not a larder.** A corpse taints with age no matter where it is. `eatcorpse` computes `rotted = (monstermoves - age) / (10 + rn2(20))` and anything above 5 is tainted, so a corpse needs roughly 60-170 turns to become dangerous. Carrying it only hides it. The existing `_is_corpse_editable` 50-turn check for corpses on the floor is already on the safe side of that, which is why the parent is not poisoned. Any future corpse change must carry a kill-turn record with the corpse, the way `level.corpses_to_eat` does, or it will poison us.
-2. **Starvation is real but the fix is not "carry corpses".** Traces show `You faint from lack of food` and seed 14 starving to death, but the deaths that cost the most were not food deaths: seed 14 went 0.117 -> 0.021 and seeds 6, 7, 9 dropped one or two XP levels purely because extra pack management and extra eating turns slowed the bot down.
-3. **The pet eats the food.** On seed 14 the wizard's kitten eats the jackal corpses the bot kills (`The kitten eats a jackal corpse`), so the bot starves next to fresh corpses. Nothing in `ItemPriority` looks at `has_pet` when it decides what to pick up.
-4. **Choking is a real cost of eating.** `choked on a food ration` and `choked on a lichen corpse` both end games, and eating one corpse costs 3-5 turns. Any "eat more" change has to pay for those turns.
-5. **Spell parsing is still untried.** `parse_spellcast_view` is never called and `_parse` sets `known_spells` to an empty dict, so the force bolt block never runs. The wizard starts without a spellbook on these seeds (`CAST` answers `Never mind.`), so this only pays off once a spellbook is picked up, but the parser itself is still dead code and remains the cheapest untested lever. Leave the weak-hunger corpse walk capped at 20 squares; that cap raised the mean from 0.064 to 0.077.
+The usual stop is killed by a soldier ant. Leave the weak-hunger corpse walk capped at 20 squares. That cap raised the mean from 0.064 to 0.077. Do not edit it. `parse_spellcast_view` is never called, and `_parse` sets `known_spells` to an empty dict, so the force bolt block does not run. Call `parse_spellcast_view` once the role is known, and stop clearing `known_spells` inside `_parse`. Do not hardcode a spell letter. Leave that edit in the tree. Do not revert it.
 
 Edit `autoascend/` and exit. The judge measures that tree.
+- iteration 3: 0.077 not kept (no-cell-improved). Does not change the mean (0.077). Called `parse_spellcast_view()` after the role is known and stopped `_parse` clearing `known_spells`; the spell list is now read from the cast menu instead of a hardcoded letter. Fixed `cast()` so a diagonal is one compass action, not two letters (getdir completes on the first key, so 'ne' used to fire the spell north and then walk east). Score is unchanged at 0.077 because nothing casts yet; the edit is kept as prescribed.
+- iteration 4: 0.077 not kept (no-cell-improved). Does not change the mean (0.077). Wired force bolt into `emergency_strategy` for the first time and measured 0.0532 against 0.0694 without it. The block targets "any adjacent monster glyph", which is also the wizard's own pet and an innocent lichen; a wizard has six energy against a cost of five and energy takes ~50 turns to return. Reverted, keeping only the refusal handling and the fixed aim.
+- iteration 5: 0.077 not kept (no-cell-improved). Does not change the mean (0.077). Handled a refused cast (no turn is spent, so the strategy must wait) and two dressing/wear crashes. Zero errors across all fifteen seeds; the score is the parent's 0.077370 exactly.
+
+## What the food investigation found
+
+The wizard's worst losses are still `You faint from lack of food`, and instrumentation showed it eating nothing in 2,644 turns while standing next to corpses it had already found. The 50-turn rot window in `_is_corpse_editable` looks like the culprit, so it was measured: no check at all scores 0.029, a 500-turn window scores 0.0496, a 150-turn window scores 0.0572, and the parent's 50 scores 0.0774. Removing or widening it does not fix the starvation -- it just swaps fainting for `poisoned by a rotted gnome corpse`, because the wizard then eats corpses the game has already turned.
+
+One trap worth recording: an early version of that experiment also dropped the parent's lizard/lichen exemption, which is load-bearing. Lichen corpses do not rot -- instrumented runs eat them thousands of turns after the kill and the game still reports them fresh -- and confusing that with the rot clock made the wizard throw away its safest food. The food path in `eat_corpses_from_ground` is now byte-identical to the parent.
+
+The real limit is the supply of *fresh* corpses on dlvl 1, not the constant.
