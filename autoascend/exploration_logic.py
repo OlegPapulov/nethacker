@@ -13,6 +13,16 @@ from .level import Level
 from .strategy import Strategy
 
 
+# Hypothesis: the only things the score counts are experience level and dungeon
+# depth, and both of them can only be won by fighting monsters. Probing squares
+# for hidden traps and items is therefore a background activity that must not be
+# allowed to run at the full decision rate: in a measured wiz-hum-cha-mal run
+# `search` was the single largest consumer of turns in the whole game (13819 of
+# 36762 turns from the explore1 probe plus 2478 from the neighbour probe, ~44%,
+# against only ~4% of turns actually spent in combat). Cap how often the bot is
+# allowed to probe so the rest of the game goes into hunting instead.
+
+
 class ExplorationLogic:
     def __init__(self, agent):
         self.agent = agent
@@ -384,7 +394,11 @@ class ExplorationLogic:
 
                 # consider exploring tile only when there is a path to it
                 dis = self.agent.bfs()
-                to_explore = (to_visit | to_search) & (dis != -1)
+# hypothesis: exploring unseen terrain before probing tiles for traps/items will devote more turns to monster hunting and raise XP/depth milestones.
+                dis = self.agent.bfs()
+                to_explore = to_visit & (dis != -1)
+                if not to_explore.any():
+                    to_explore = to_search & (dis != -1)
 
                 dynamic_search_fallback = False
                 if not to_explore.any():

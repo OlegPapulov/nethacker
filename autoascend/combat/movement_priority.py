@@ -88,8 +88,12 @@ def draw_monster_priority_negative(agent, monster, priority, walkable):
             _draw_around(priority, y, x, -10, radius=1)
         else:
             if adjacent((agent.blstats.y, agent.blstats.x), (y, x)):
-                # no point in running -- monster is fast
-                pass
+                # hypothesis: a fast monster that is already adjacent still has to be kept at
+                # range -- it follows us, so waiting to run only means taking free hits while
+                # we stand there.  Draw the same negative ring that is drawn for a fast
+                # monster that is not adjacent yet, instead of ignoring where we are standing.
+                _draw_around(priority, y, x, -5, radius=1)
+                _draw_around(priority, y, x, -10, radius=2)
             else:
                 _draw_around(priority, y, x, -10, radius=2)
                 _draw_around(priority, y, x, -5, radius=1)
