@@ -49,6 +49,31 @@ SPELL_REFUSED_MESSAGES = (
     'must be able to move',
 )
 
+# NetHack's own words for the one prayer answer that charges the wizard for asking and
+# feeds it nothing: "Thou art arrogant, mortal." is what a god whose alignment has
+# stopped matching the wizard's answers with, and it costs an experience level *and*
+# 30% of the wizard's maximum HP. Progress is scored purely off the highest experience
+# level ever reached (Xp:10 is 0.179, Xp:11 0.255), so one of these throws away a
+# milestone the wizard can only re-earn by climbing the whole curve again -- 5121 XP
+# buys level 10, which is 41000 turns of farming. A god that has already answered this
+# way is only ever a source of damage, so leave it alone. The answer has to be matched
+# on this phrase alone: the "You feel foolish!" that follows it is not unique to
+# prayer ("You feel foolish! You haven't been paying attention." turns up mid-fight on
+# seed 1 at turn 29427), and matching it there cuts the run's last eight successful
+# prayers and drops the seed from Xp:10 (0.179) to Xp:9 (0.117).
+SCORNED_PRAYER_MESSAGES = (
+    'Thou art arrogant',
+)
+
+# How long to leave a god alone once it has answered that way. Prayer is this
+# character's only reliable food -- "Your stomach feels content." is what keeps the
+# wizard off the fainting floor for 46000 turns on seed 1 -- so this is a back-off
+# and not a ban: the ordinary 400-500 turn gap between prayers is replaced by this
+# one, which stops the back-to-back scorns (seed 4 was answered "arrogant" at turn
+# 2252 and again at 2656) while still letting the relationship recover on a later
+# run of the alignment.
+SCORNED_PRAYER_COOLDOWN = 2000
+
 
 class Agent:
     def __init__(self, env, seed=0, verbose=False, panic_on_errors=False):
@@ -82,6 +107,7 @@ class Agent:
         self.last_bfs_dis = None
         self.last_bfs_step = None
         self.last_prayer_turn = None
+        self._prayer_scorned = False
         self._previous_glyphs = None
         self._last_turn = -1
         self._inactivity_counter = 0
@@ -449,6 +475,7 @@ class Agent:
 
         self._is_reading_message_or_popup = False
         self._message_history.append(self.message)
+        self._check_scorned_prayer()
 
         # should_update = True
 
@@ -761,10 +788,28 @@ class Agent:
             return self.message
 
     def is_safe_to_pray(self, limit=500):
+        if self._prayer_scorned:
+            limit = max(limit, SCORNED_PRAYER_COOLDOWN)
         return (
                 (self.last_prayer_turn is None and self.blstats.time > 300) or
                 (self.last_prayer_turn is not None and self.blstats.time - self.last_prayer_turn > limit)
         )
+
+    def _check_scorned_prayer(self):
+        # hypothesis: the wizard keeps praying to the same god for food after that god
+        # has started answering with "Thou art arrogant, mortal" -- two of the five
+        # instrumented seeds (4 and 10) were answered that way, seed 4 twice, each time
+        # at hunger 4 and each time for nothing but "Goodbye level N" and a 30% cut to
+        # max HP: seed 10 lost 29 -> 22 max HP at 7 HP and died 667 turns later, seed 4
+        # lost a second level and the run. Note what the answer is *not*: on seed 1 the
+        # wizard levels to 10 at turn 41262 with a full 5121 XP, so the run is not
+        # simply too short to afford a lost level -- the loss is what kills it, and it
+        # arrives with a third of its hit points gone.
+        scorned = any(text in self.message for text in SCORNED_PRAYER_MESSAGES)
+        if scorned:
+            self._prayer_scorned = True
+            self.stats_logger.log_event('prayer_scorned')
+        return scorned
 
     def pray(self):
         self.step(A.Command.PRAY)
