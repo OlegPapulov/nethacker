@@ -440,32 +440,27 @@ The harness brief tells the operator to play seeds and to wait up to 600000 ms. 
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.08065773574577405 improved=False notes_ignored=False code_unchanged=False
+## Run 37233060279, wiz-hum-cha-mal, 1 iteration, difficulty gate
+
+[37233060279](https://github.com/OlegPapulov/nethacker/actions/runs/37233060279) finished green. The job ran 33 minutes, from 21:13 UTC to 21:46 UTC. The judge scored 0.08065773574577405. The child was not kept. `main` stays on the 0.114 bot.
+
+The operator ran for 1,695 seconds and used 339,606 tokens. The judge ran for 232 seconds. The brief patch step succeeded. The notes were rewritten.
+
+The cold-start table matches `524d774` on every seed. That tree is an unkept 0.114 program. `best_public` keeps the first row when the score ties, because the test is `>`. The checkout is the kept bot. The seed was not the checkout.
+
+The only new lines versus `524d774` are in `melee_monster_priority`. The operator did not copy the depth-1 block. The new test is `getattr(mon, 'difficulty', 21) <= experience_level`. An unseen monster gets 21, so it never gets the bonus.
+
+Seed 8 rose from 0.037 to 0.179. Seed 0 rose from 0.117 to 0.179. Seed 11 rose from 0.075 to 0.117. Seed 9 fell from 0.255 to 0.029, and from 69,906 turns to 3,041. Seeds 1, 3, 5, 6, and 13 fell from 0.179. Seeds 4, 10, and 12 kept the same turn count. The mean turn count is 25,073.
 
 ### Why it stopped
-no-cell-improved
+
+A child is kept only when its mean is strictly above the parent. This mean is below the parent.
 
 ### What is the problem
-# Playthrough
 
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-0 of 0 games stopped at no finished games. Mean progress unknown.
-
-| seed | progress | turns | stop |
-| --- | --- | --- | --- |
-
-## What is the problem
-
-The score is the mean of these games. 0 of 0 end at depth 1. A game under 10,000 turns that lasts longer raises the mean. A long game that gets shorter lowers the mean.
-
-## What might solve it
-
-See `experiments.md`.
+The task showed the exact block and also said "do not add 15". The operator wrote a different condition. That condition applies on every depth. Seed 9, the only Xp:11 game, died at Xp:5. The rise on seed 8 does not cover that fall. Three of the four short games did not move.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+See `experiments.md`. Do not edit `mutator/` until a human approves it.
 

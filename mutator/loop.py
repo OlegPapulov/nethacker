@@ -165,9 +165,8 @@ def _keep_win() -> str:
         "Do not edit `global_logic.py` or `exploration_logic.py`. "
         "Seeds 4, 8, 10, and 12 stop at Xp:2, Xp:6, Xp:4, and Xp:5. "
         "Those four games die under 10,000 turns. "
-        "In `melee_monster_priority`, replace these lines and no other line. "
-        "When `blstats.depth` is 1 and the monster is not in `INSECTS`, do not add 15. "
-        "A soldier ant keeps the bonus.\n"
+        "In `melee_monster_priority`, copy the second block over the first. "
+        "Change no other line.\n"
         "```python\n"
         "    ret = 1\n"
         "    if agent.blstats.hitpoints > 8 or is_monster_faster(agent, monster):\n"
@@ -355,8 +354,13 @@ def agent_rewrote(before: str, after: str) -> bool:
 
 
 def best_public(programs: list[dict], identity: str) -> tuple[str, float] | None:
-    """Highest public progression this owner has registered for one identity."""
+    """The unique highest commit for one identity.
+
+    A tie returns None. The caller then keeps the checkout. The first hub
+    row is not a winner when another row has the same score.
+    """
     best: tuple[str, float] | None = None
+    tied = False
     for program in programs:
         commit = (program.get("reference") or {}).get("commit")
         if not commit:
@@ -369,7 +373,20 @@ def best_public(programs: list[dict], identity: str) -> tuple[str, float] | None
                 continue
             if best is None or score > best[1]:
                 best = (str(commit), float(score))
+                tied = False
+            elif score == best[1] and str(commit) != best[0]:
+                tied = True
+    if tied or best is None:
+        return None
     return best
+
+
+def _has_public_score(programs: list[dict], identity: str) -> bool:
+    for program in programs:
+        for row in program.get("identities") or []:
+            if row.get("identity") == identity and isinstance(row.get("progression"), (int, float)):
+                return True
+    return False
 
 
 def public_programs(owner: str) -> list[dict]:
@@ -390,10 +407,13 @@ def pull_commit(commit: str, dest: Path) -> None:
     )
 
 
-def parent_tree(dest: Path, identity: str, programs: list[dict] | None = None) -> str:
-    """The seed for this identity: the owner's best public commit, or the
-    AutoAscend import when that identity has no public score."""
-    picked = best_public(programs if programs is not None else public_programs(OWNER), identity)
+def parent_tree(dest: Path, identity: str, programs: list[dict] | None = None) -> str | None:
+    """The seed commit to pull. None means the top score is tied, so the
+    checkout stays. The AutoAscend import is only for an identity with no score."""
+    rows = public_programs(OWNER) if programs is None else programs
+    if best_public(rows, identity) is None and _has_public_score(rows, identity):
+        return None
+    picked = best_public(rows, identity)
     commit = picked[0] if picked else BASELINE_COMMIT
     pull_commit(commit, dest)
     return commit
@@ -472,8 +492,8 @@ def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
     parent = state / "parent"
     checkout = bot
     try:
-        parent_tree(parent, identity)
-        bot = parent
+        if parent_tree(parent, identity) is not None:
+            bot = parent
     except (OSError, subprocess.CalledProcessError):
         pass
     # ponytail: the judge plays the 15 seeds. A second batch here only repeats them.
@@ -656,7 +676,9 @@ def self_check() -> None:
         assert "melee_monster_priority" in hungry_text
         assert "blstats.depth" in hungry_text
         assert "INSECTS" in hungry_text
-        assert "do not add 15" in hungry_text
+        assert "do not add 15" not in hungry_text
+        assert "copy the second block" in hungry_text
+        assert "difficulty" not in hungry_text
         assert "ret += 15" in hungry_text
         assert "ret -= 6" not in hungry_text
         assert "bonus = False" in hungry_text
@@ -714,6 +736,23 @@ def self_check() -> None:
             ]},
         ], "wiz-hum-cha-mal") == ("aaa", 0.064)
         assert best_public([], "val-dwa-law-fem") is None
+        assert best_public([
+            {"reference": {"commit": "aaa"}, "identities": [
+                {"identity": "wiz-hum-cha-mal", "progression": 0.114},
+            ]},
+            {"reference": {"commit": "bbb"}, "identities": [
+                {"identity": "wiz-hum-cha-mal", "progression": 0.114},
+            ]},
+        ], "wiz-hum-cha-mal") is None
+        assert parent_tree(root / "unused-parent", DEFAULT_IDENTITY, [
+            {"reference": {"commit": "aaa"}, "identities": [
+                {"identity": DEFAULT_IDENTITY, "progression": 0.114},
+            ]},
+            {"reference": {"commit": "bbb"}, "identities": [
+                {"identity": DEFAULT_IDENTITY, "progression": 0.114},
+            ]},
+        ]) is None
+        assert not (root / "unused-parent").exists()
         assert agent_rewrote("same", "same") is False
         assert agent_rewrote("same", "rewritten playthrough") is True
         assert agent_rewrote("same", "This file is empty at the start of a run") is False
