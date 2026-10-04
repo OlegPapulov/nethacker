@@ -358,3 +358,25 @@ Seeds 0, 1, 3, 5, 6, 7, 9, and 13 rose. Seed 9 went from 0.179 to 0.255. Seeds 4
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
+## Run 37169391861, wiz-hum-cha-mal, 2 iterations, cancelled
+
+[37169391861](https://github.com/OlegPapulov/nethacker/actions/runs/37169391861) was cancelled at the six-hour limit. `main` stays on the 0.114 bot.
+
+Iteration 1 scored the parent mean. Every seed matches the parent turn for turn. The child was not kept. The tree is `ba748d8`. The operator used about 700,799 tokens.
+
+The operator did not remove the 15-point bonus. The edit changes the launcher penalty. The parent subtracts 6 when the bot holds a ranged weapon. The child subtracts 6 only when hit points are below half. The 15 games do not move.
+
+Iteration 2 started at 04:24 UTC and had no score when the job stopped at 07:54 UTC.
+
+### Why it stopped
+
+The Actions job stops at 360 minutes. Two operator runs do not finish inside that limit.
+
+### What is the problem
+
+The note said "do not add 15". The operator edited the neighbor line, `ret -= 6`. A wizard rarely holds a ranged weapon, so that line does not run.
+
+### What might solve it
+
+See `experiments.md`. Do not edit `mutator/` until a human approves it.
+

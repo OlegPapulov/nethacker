@@ -155,19 +155,19 @@ def _lead_cause(counts: dict[str, int]) -> str:
 
 
 def _keep_win() -> str:
-    """The 0.114 gate stays. The next edit is the depth-1 melee bonus."""
+    """The 0.114 gate stays. The next edit is the ret += 15 line."""
     return (
         "Leave the weak-hunger corpse walk capped at 20 squares. Do not edit it. "
         "Leave `_xp_farm_level` in place. Do not edit it. "
         "Leave `experience_level >= 12` in place. Do not raise it. "
-        "That gate scored 0.114. Seed 14 fell from 0.117 to 0.075. "
         "Do not edit `global_logic.py` or `exploration_logic.py`. "
+        "Do not edit the `ret -= 6` line. That launcher change scored 0.114. "
+        "The 15 seeds match the parent. "
         "Seeds 4, 8, 10, and 12 die under 10,000 turns. "
-        "The gate does not run in those games. "
-        "Every other file matches the parent. "
-        "In `melee_monster_priority`, do not add 15 when `blstats.depth` is 1 "
-        "and the monster is not in `INSECTS`. A soldier ant keeps the bonus. "
-        "Deeper levels keep the current bonus. Edit only that function."
+        "In `melee_monster_priority`, the line is `ret += 15` after "
+        "`hitpoints > 8 or is_monster_faster`. When `blstats.depth` is 1 and "
+        "the monster is not in `INSECTS`, do not add 15. "
+        "A soldier ant keeps the bonus. Edit only that line."
     )
 
 
@@ -643,6 +643,8 @@ def self_check() -> None:
         assert "blstats.depth" in hungry_text
         assert "INSECTS" in hungry_text
         assert "do not add 15" in hungry_text
+        assert "ret += 15" in hungry_text
+        assert "ret -= 6" in hungry_text
         assert "exploration_logic.py" in hungry_text
         assert "under 10,000 turns" in hungry_text
         play = (hungry / "experience.md").read_text()
