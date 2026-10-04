@@ -59,7 +59,7 @@ def _game_rules(identity: str) -> str:
         f"# This gameplay\n\n"
         f"Identity: `{identity}`\n\n"
         "Read `experiments.md` and edit only the function it names. "
-        "Do not edit `character.py`, `movement_priority.py`, `exploration_logic.py`, or `global_logic.py`. "
+        "Do not edit `agent.py`, `character.py`, `movement_priority.py`, `exploration_logic.py`, or `global_logic.py`. "
         "Do not resubmit the spell parser or the negative ring. "
         "Leave the change in the file when you exit. "
         "Do not revert it and do not restore the parent. "

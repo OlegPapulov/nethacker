@@ -398,32 +398,25 @@ The note says "Do not edit the `ret -= 6` line. That launcher change scored 0.11
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.11444300565928403 improved=False notes_ignored=True code_unchanged=False
+## Run 37201393031, wiz-hum-cha-mal, 1 iteration, launcher line and prayer wait
+
+[37201393031](https://github.com/OlegPapulov/nethacker/actions/runs/37201393031) finished green. The job ran 70 minutes, from 12:21 UTC to 13:31 UTC. The judge scored 0.11444300565928403. The child was not kept. `main` stays on the 0.114 bot.
+
+The operator ran for 3,645 seconds and used 422,458 tokens. The judge ran for 467 seconds. Setup before the operator clock was about 70 seconds. The previous one-iteration job ran 82 minutes.
+
+The tree is `524d774`. It changes `ret -= 6` the same way as `ba748d8`. The `ret += 15` line stays. It also adds a 2,000-turn wait in `agent.py` after the message `Thou art arrogant`. The notes were not rewritten.
+
+Seed 4 went from 2,742 turns to 2,694. Seed 10 went from 6,313 turns to 6,435. Every seed has the same progress as the parent. The mean turn count is 36,653. The parent mean turn count is 36,648.
 
 ### Why it stopped
-no-cell-improved
+
+A child is kept only when its mean is strictly above the parent. This mean is the parent.
 
 ### What is the problem
-# Playthrough
 
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-0 of 0 games stopped at no finished games. Mean progress unknown.
-
-| seed | progress | turns | stop |
-| --- | --- | --- | --- |
-
-## What is the problem
-
-The score is the mean of these games. 0 of 0 end at depth 1. A game under 10,000 turns that lasts longer raises the mean. A long game that gets shorter lowers the mean.
-
-## What might solve it
-
-See `experiments.md`.
+The note says "Leave `ret -= 6` unchanged." The operator edits that line. This is the third judged copy of the launcher edit. The header does not forbid `agent.py`, so the operator also adds the prayer wait. The `ret += 15` line stays.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
