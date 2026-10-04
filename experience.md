@@ -440,3 +440,32 @@ The harness brief tells the operator to play seeds and to wait up to 600000 ms. 
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
+## Run wiz-hum-cha-mal (1 iteration(s))
+- iteration 1: reason=no-cell-improved dev_fitness=0.08065773574577405 improved=False notes_ignored=False code_unchanged=False
+
+### Why it stopped
+no-cell-improved
+
+### What is the problem
+# Playthrough
+
+Identity: `wiz-hum-cha-mal`
+
+## Why it stopped
+
+0 of 0 games stopped at no finished games. Mean progress unknown.
+
+| seed | progress | turns | stop |
+| --- | --- | --- | --- |
+
+## What is the problem
+
+The score is the mean of these games. 0 of 0 end at depth 1. A game under 10,000 turns that lasts longer raises the mean. A long game that gets shorter lowers the mean.
+
+## What might solve it
+
+See `experiments.md`.
+
+### What might solve it
+See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
