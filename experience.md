@@ -380,47 +380,21 @@ The note said "do not add 15". The operator edited the neighbor line, `ret -= 6`
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.11444300565928403 improved=False notes_ignored=True code_unchanged=False
+## Run 37190939148, wiz-hum-cha-mal, 1 iteration, same launcher edit
+
+[37190939148](https://github.com/OlegPapulov/nethacker/actions/runs/37190939148) finished green. The job ran about 82 minutes. The judge scored 0.11444300565928403. The mean turn count is 36,648. The child was not kept. `main` stays on the 0.114 bot.
+
+The operator ran for 4,019 seconds and used 355,484 tokens. The tree `323884d` matches `ba748d8`. Both change `ret -= 6`. The `ret += 15` line stays.
 
 ### Why it stopped
-no-cell-improved
+
+A child is kept only when its mean is strictly above the parent. This mean is the parent.
 
 ### What is the problem
-# Playthrough
 
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-2 of 15 games stopped at poisoned by an orcish arrow. Mean progress 0.114.
-
-| seed | progress | turns | stop |
-| --- | --- | --- | --- |
-| 0 | 0.11704996473565571 | 50145 | poisoned by an orcish arrow |
-| 1 | 0.17909953770432294 | 46006 | killed by a killer bee |
-| 2 | 0.07453595273884014 | 34154 | killed by a bolt of fire |
-| 3 | 0.17909953770432294 | 57042 | poisoned by an orcish arrow |
-| 4 | 0.01847840456172601 | 2742 | killed by a goblin |
-| 5 | 0.17909953770432294 | 55705 | killed by a giant bat |
-| 6 | 0.17909953770432294 | 73840 | killed by a plains centaur |
-| 7 | 0.11704996473565571 | 34611 | killed by a vampire bat |
-| 8 | 0.036887590648350246 | 9957 | killed by a newt |
-| 9 | 0.25480449090205187 | 69906 | killed by an invisible Mordor orc |
-| 10 | 0.024160136550546978 | 6313 | killed by a kitten |
-| 11 | 0.07453595273884014 | 23577 | killed by a pony |
-| 12 | 0.029108986017138745 | 5011 | killed by a kobold lord |
-| 13 | 0.17909953770432294 | 48694 | killed by a dwarf lord |
-| 14 | 0.07453595273884014 | 32018 | killed by a bolt of cold |
-
-## What is the problem
-
-The score is the mean of these games. 6 of 15 end at depth 1. A game under 10,000 turns that lasts longer raises the mean. A long game that gets shorter lowers the mean.
-
-## What might solve it
-
-See `experiments.md`.
+The note says "Do not edit the `ret -= 6` line. That launcher change scored 0.114." The parent score is 0.114. The sentence reads like the launcher edit reaches the current best. The operator submitted that edit again, with the same comment.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+See `experiments.md`. Do not edit `mutator/` until a human approves it.
 

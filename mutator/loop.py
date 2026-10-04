@@ -63,6 +63,8 @@ def _game_rules(identity: str) -> str:
         "Do not resubmit the spell parser or the negative ring. "
         "Leave the change in the file when you exit. "
         "Do not revert it and do not restore the parent. "
+        "Do not run `python -m nethackers.arena.run`. Do not wait on a local game. "
+        "The judge plays the seeds after you exit. "
         "A local game is not the score. A tree that matches the parent is thrown away. "
         "Mark the change with a `# hypothesis:` comment. "
         "Do not tour the tree. "
@@ -161,8 +163,8 @@ def _keep_win() -> str:
         "Leave `_xp_farm_level` in place. Do not edit it. "
         "Leave `experience_level >= 12` in place. Do not raise it. "
         "Do not edit `global_logic.py` or `exploration_logic.py`. "
-        "Do not edit the `ret -= 6` line. That launcher change scored 0.114. "
-        "The 15 seeds match the parent. "
+        "Leave `ret -= 6` unchanged. A judged change to that line matched "
+        "the parent on all 15 seeds. "
         "Seeds 4, 8, 10, and 12 die under 10,000 turns. "
         "In `melee_monster_priority`, the line is `ret += 15` after "
         "`hitpoints > 8 or is_monster_faster`. When `blstats.depth` is 1 and "
@@ -462,11 +464,9 @@ def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
         bot = parent
     except (OSError, subprocess.CalledProcessError):
         pass
-    evidence = eval_identity(bot, identity)
-    (state / "parent-eval.json").write_text(json.dumps(evidence))
-    parent_mean = evidence.get("mean_progress")
-    if not isinstance(parent_mean, (int, float)):
-        parent_mean = None
+    # ponytail: the judge plays the 15 seeds. A second batch here only repeats them.
+    evidence = {"mean_progress": None, "results": []}
+    parent_mean = None
     earlier = (MUTATOR / "experiments.md").read_text()
     carry = ""
     results = []
@@ -494,6 +494,8 @@ def run(iterations: int, bot: Path, state: Path, identity: str) -> list[dict]:
             if dest.exists():
                 shutil.rmtree(dest)
             shutil.copytree(tree, dest, ignore=shutil.ignore_patterns(*NOTES, ".gitignore"))
+        if parent_mean is None and metric is not None and isinstance(metric.get("parent_mean"), (int, float)):
+            parent_mean = float(metric["parent_mean"])
         row = _result_row(number, metric, tree, proc.returncode, before, seed, parent_mean, identity)
         results.append(row)
         if row["improved"] and tree is not None:
@@ -653,6 +655,7 @@ def self_check() -> None:
         assert "exploration_logic.py" in game
         assert "Edit only the function" in game
         assert "ASD-STE100" in game
+        assert "arena.run" in game
         assert "_xp_farm_level" in hungry_text
         assert "experience_level >= 12" in hungry_text
         assert "died of starvation (1 of 2)" in hungry_text
