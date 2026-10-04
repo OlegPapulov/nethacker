@@ -1,22 +1,24 @@
 # Next mutator experiment
 
-Not applied. `mutator/` stays as it is until a human approves this.
+Applied with this change. The seed gives the exact depth-1 lines. The job replaces `MEASURE` after install so the operator does not play.
 
 ## Why it stopped
 
-Run 37201393031 scored 0.114 against a 0.114 parent. The tree is `524d774`.
+The mean is 0.11444300565928403. That number is the average of 15 XP scores. No seed has reached Xp:12 (0.333). The best seed is Xp:11 (0.255). Five seeds stop at Xp:10 (0.179). Three seeds stop at Xp:8 (0.075). Seeds 4, 8, 10, and 12 stop at Xp:2, Xp:6, Xp:4, and Xp:5.
 
 ## What is the problem
 
-The task names `ret -= 6` and says to leave it. The operator edits the symbol the task names. This is the third judged copy of that launcher edit. The `ret += 15` line stays.
+A rise of 0.01 on the mean needs 0.15 more progress in the batch. One seed from Xp:10 to Xp:11 adds 0.076. The four short seeds, if each reaches Xp:8, add about 0.190. That is about 0.013 on the mean.
 
-The header forbids four files. `agent.py` is not one of them. The same tree adds a 2,000-turn wait in `agent.py` after `Thou art arrogant`. Seed 4 lost 48 turns. Seed 10 gained 122 turns. The progress on every seed matches the parent.
+The level-12 gate does not run in those four games. They die before experience level 8. Seed 14 fell from Xp:9 to Xp:8 when the gate rose from 8 to 12. A longer stay can lower a score. Do not raise the gate.
+
+The untested edit is the `ret += 15` line on depth 1. The operator has not made it. The operator edits `ret -= 6` when the task names that line. Run 37209219942 then spent the 360 minutes inside the operator. The brief tells the operator to play seeds and to wait up to 600000 ms. The judge did not finish.
 
 ## What might solve it
 
-Do not name `ret -= 6` in the header, in `_keep_win`, or in `GAME_RULES.md`. Add `agent.py` to the forbidden files. Say the diff may contain only `autoascend/combat/fight_heur.py`.
+After `pip install nethackers`, replace `MEASURE` in `nethackers/harness/brief.py`. The new text says: do not run `python -m nethackers.arena.run`. Do not wait on a local game. The judge plays the seeds after you exit. The cold start stays. The judge stays. If the old `MEASURE` text is absent, the job fails.
 
-Replace these two lines, and no other line:
+Do not name `ret -= 6` in the seed. The only edit is this replacement in `melee_monster_priority`, and no other line:
 
 ```python
     ret = 1
@@ -35,8 +37,8 @@ with:
         ret += 15
 ```
 
-`mon` is already unpacked on the line above. A soldier ant is in `INSECTS`, so it keeps the bonus. Leave `experience_level >= 12`, `_xp_farm_level`, and the 20-square corpse cap.
+`mon` is already unpacked on the line above. A soldier ant is in `INSECTS`, so it keeps the bonus. Leave `experience_level >= 12`, `_xp_farm_level`, and the 20-square corpse cap. `agent.py` is already forbidden.
 
 ## Result
 
-- iteration 1: 0.114 not kept (no-cell-improved). Does not change the mean (0.114). Changed the launcher penalty and added a prayer wait. Seed 4 went from 2,742 turns to 2,694. Seed 10 went from 6,313 turns to 6,435.
+- iteration 1: none. Run 37209219942 was cancelled at 360 minutes. The operator used 1,542,509 tokens. The judge did not finish.

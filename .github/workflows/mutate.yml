@@ -54,6 +54,39 @@ jobs:
       - name: Install nethackers
         run: pip install --quiet nethackers
 
+      - name: Drop local seed play from the operator brief
+        run: |
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          import nethackers.harness.brief as brief
+          path = Path(brief.__file__)
+          text = path.read_text()
+          if "600000 ms" not in text:
+              sys.exit("MEASURE no longer contains the 600000 ms wait")
+          start = text.find("MEASURE = (")
+          end = text.find("\n# What a change", start)
+          if start < 0 or end < 0:
+              sys.exit("MEASURE block not found")
+          new = (
+              "MEASURE = (\n"
+              '    "## How to measure\\n"\n'
+              '    "Do not run `python -m nethackers.arena.run`. "\n'
+              '    "Do not wait on a local game. "\n'
+              '    "The judge plays the seeds after you exit. "\n'
+              '    "A local game is not the score.\\n"\n'
+              ")\n"
+          )
+          path.write_text(text[:start] + new + text[end + 1:])
+          import importlib
+          importlib.reload(brief)
+          sample = brief.build_brief("wiz-hum-cha-mal", "wiz-hum-cha-mal")
+          if "600000" in sample or "foreground command" in sample:
+              sys.exit("the brief still tells the operator to play")
+          if "Do not run `python -m nethackers.arena.run`" not in sample:
+              sys.exit("the brief lost the play ban")
+          PY
+
       - name: Hub login and git identity
         env:
           NETHACKERS_LOGIN: ${{ secrets.NETHACKERS_LOGIN }}

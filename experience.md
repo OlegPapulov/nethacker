@@ -420,3 +420,23 @@ The note says "Leave `ret -= 6` unchanged." The operator edits that line. This i
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
+## Run 37209219942, wiz-hum-cha-mal, 1 iteration, cancelled
+
+[37209219942](https://github.com/OlegPapulov/nethacker/actions/runs/37209219942) was cancelled at the 360-minute limit. The job ran from 14:25 UTC to 20:26 UTC. There is no child score. `main` stays on `b2f353e`.
+
+The operator finished. The operator used 1,542,509 tokens. The clock at that line is 21,304 seconds. The one-cell cold start took 578 seconds. The judge started the 15-seed batch and did not finish. The smoke seed scored 0.021.
+
+The cold-start table matches `524d774` on every seed. The mean is 0.114. The mean turn count is 36,653. The log does not show the operator diff.
+
+### Why it stopped
+
+The Actions job stops at 360 minutes. The operator used the whole window. The judge had no time left.
+
+### What is the problem
+
+The harness brief tells the operator to play seeds and to wait up to 600000 ms. The seed header says not to play. The log does not show which text the operator followed. The token rate was 74 per second, close to the shorter runs. The count is high because the operator stayed open.
+
+### What might solve it
+
+See `experiments.md`. Do not edit `mutator/` until a human approves it.
+
