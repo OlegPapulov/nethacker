@@ -16,6 +16,7 @@ class StatsLogger:
             "triggered_undetected_trap": 0,
             "allow_walk_traps": 0,
             "allow_attack_all": 0,
+            "prayer_scorned": 0,
             "sokoban_dropped": 0,
             "wait_in_fight": 0,
             "melee_gas_spore": 0,
