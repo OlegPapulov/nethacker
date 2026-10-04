@@ -17,7 +17,12 @@ def melee_monster_priority(agent, monsters, monster):
     ret = 1
     if agent.blstats.hitpoints > 8 or is_monster_faster(agent, monster):
         ret += 15
-    if wielding_ranged_weapon(agent) and not is_monster_faster(agent, monster):
+    # hypothesis: the wizard needs a launcher only when its health makes a trade
+    # dangerous. The bot keeps the launcher penalty below half health and drops it at
+    # full health. It spends the saved turn on the kill instead of a weapon swap.
+    launcher_penalty = wielding_ranged_weapon(agent) and \
+        agent.blstats.hitpoints < agent.blstats.max_hitpoints / 2
+    if launcher_penalty and not is_monster_faster(agent, monster):
         ret -= 6
     if mon.mname in EXPLODING_MONSTERS:
         ret -= 17
