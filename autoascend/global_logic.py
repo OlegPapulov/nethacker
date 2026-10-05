@@ -561,6 +561,14 @@ class GlobalLogic:
                         self._xp_farm_level = 2
                 if self._xp_farm_level is not None:
                     level = (Level.DUNGEONS_OF_DOOM, self._xp_farm_level)
+                # hypothesis: The starvation latch drops a weak wizard into Doom level two.
+                # Level two monsters kill a wizard below level six before it banks a level.
+                # That wizard stays on level one until it reaches level six.
+                # Every descending run that survived reached level eight or more first, and
+                # the three runs that died on level two died there at levels two, four and
+                # five, so the latch buys those runs nothing and costs them the whole game.
+                if self.agent.blstats.experience_level < 6 and level[1] > 1:
+                    level = (Level.DUNGEONS_OF_DOOM, 1)
 
             elif self.milestone == Milestone.FIND_SOKOBAN:
                 condition = lambda: self.agent.current_level().dungeon_number == Level.SOKOBAN
