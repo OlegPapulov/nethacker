@@ -464,33 +464,29 @@ The task showed the exact block and also said "do not add 15". The operator wrot
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
-## Run wiz-hum-cha-mal (2 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.07877540225284915 improved=False notes_ignored=False code_unchanged=False
-- iteration 2: reason=no-cell-improved dev_fitness=0.06537336057393453 improved=False notes_ignored=False code_unchanged=False
+## Run 37238643759, wiz-hum-cha-mal, 2 iterations, two new bonuses
+
+[37238643759](https://github.com/OlegPapulov/nethacker/actions/runs/37238643759) finished green. The job ran from 22:05 UTC to 03:01 UTC. That is 4 hours 57 minutes. Neither child was kept. `main` stays on the 0.114 bot.
+
+Iteration 1 scored 0.07877540225284915. The operator ran for 10,561 seconds and used 827,938 tokens. Iteration 2 scored 0.06537336057393453. The operator ran for 6,359 seconds and used 422,813 tokens. The notes were rewritten both times.
+
+Both cold-start tables have 36,648 mean turns. That is the checkout. The tie rule kept `524d774` out. Iteration 2 also started from the checkout, because iteration 1 was not kept.
+
+The `ret += 15` lines stay in both trees. Both diffs insert code before `return ret`. Iteration 1 adds a bonus from monster difficulty and speed. Iteration 2 adds a bonus from the melee roll and armor class when two monsters stand adjacent.
+
+Seeds 4, 10, and 12 keep 2,742, 6,313, and 5,011 turns in both children. In iteration 1, seed 6 rose from 0.179 to 0.255, seed 7 rose from 0.117 to 0.179, and seed 8 rose from 0.037 to 0.075. Seed 9 fell from 0.255 to 0.029. In iteration 2, seed 2 rose from 0.075 to 0.117. Seed 9 fell from 0.255 to 0.117. Seeds 1, 3, and 13 fell to 0.037.
 
 ### Why it stopped
-no-cell-improved
+
+A child is kept only when its mean is strictly above the parent. Both means are below 0.114.
 
 ### What is the problem
-# Playthrough
 
-Identity: `wiz-hum-cha-mal`
+The task said to copy the second block over the first. The operator wrote a new bonus at the end of the function. A new bonus picks a different target. It does not remove the step into melee. The short games stay short. Seed 9, the only Xp:11 game, fell in both iterations.
 
-## Why it stopped
-
-0 of 0 games stopped at no finished games. Mean progress unknown.
-
-| seed | progress | turns | stop |
-| --- | --- | --- | --- |
-
-## What is the problem
-
-The score is the mean of these games. 0 of 0 end at depth 1. A game under 10,000 turns that lasts longer raises the mean. A long game that gets shorter lowers the mean.
-
-## What might solve it
-
-See `experiments.md`.
+The kept gains in this repo came from the corpse cap, the food latch, and the level-12 gate. Those edits left `melee_monster_priority` alone. The recent edits inside that function scored 0.114, 0.081, 0.079, and 0.065.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+See `experiments.md`. Do not edit `mutator/` until a human approves it.
 

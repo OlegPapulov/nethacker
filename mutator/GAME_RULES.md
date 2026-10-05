@@ -33,7 +33,7 @@ Most items start unidentified. Price, appearance, and one careful use tell them 
 These facts explain a death. They are not a second edit. Edit only the function that `experiments.md` names.
 
 - A fight in a doorway lets one monster hit. A fight in a corridor lets one monster hit. An open room lets several monsters hit.
-- Elbereth on the floor stops many monsters. Some monsters still attack. Elbereth is not this edit.
+- Elbereth on the floor stops many monsters. Some monsters still attack.
 - A faster monster takes a turn before the wizard takes a turn. A few hits kill the wizard.
 - A pet is a resource. An attack on a peaceful monster can ruin the game.
 - Eat before a faint. A faint next to a monster is a death.
@@ -44,9 +44,9 @@ These facts explain a death. They are not a second edit. Edit only the function 
 
 ## What a good change looks like
 
-One change. The change is the function that `experiments.md` names. A number that does not change the action the bot takes is not a change.
+One change. The change is the function that `experiments.md` names. That function is `emergency_strategy`. A number that does not change the action the bot takes is not a change.
 
-Do not edit `agent.py`, `exploration_logic.py`, `character.py`, `movement_priority.py`, or `global_logic.py`. Do not edit the spell parser. Do not resubmit the negative ring.
+Do not edit `fight_heur.py`, `exploration_logic.py`, `character.py`, `movement_priority.py`, or `global_logic.py`. Do not edit the spell parser. Do not resubmit the negative ring.
 
 Leave `_xp_farm_level` in place. Leave `experience_level >= 12` in place. Do not raise it. Every other file matches the parent.
 

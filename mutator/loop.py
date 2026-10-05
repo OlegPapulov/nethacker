@@ -59,7 +59,7 @@ def _game_rules(identity: str) -> str:
         f"# This gameplay\n\n"
         f"Identity: `{identity}`\n\n"
         "Read `experiments.md` and edit only the function it names. "
-        "Do not edit `agent.py`, `character.py`, `movement_priority.py`, `exploration_logic.py`, or `global_logic.py`. "
+        "Do not edit `fight_heur.py`, `character.py`, `movement_priority.py`, `exploration_logic.py`, or `global_logic.py`. "
         "Do not resubmit the spell parser or the negative ring. "
         "Leave the change in the file when you exit. "
         "Do not revert it and do not restore the parent. "
@@ -157,30 +157,16 @@ def _lead_cause(counts: dict[str, int]) -> str:
 
 
 def _keep_win() -> str:
-    """The 0.114 gate stays. The next edit is the exact depth-1 bonus block."""
+    """The 0.114 gate stays. The next edit uncomments Elbereth."""
     return (
         "Leave the weak-hunger corpse walk capped at 20 squares. Do not edit it. "
         "Leave `_xp_farm_level` in place. Do not edit it. "
         "Leave `experience_level >= 12` in place. Do not raise it. "
-        "Do not edit `global_logic.py` or `exploration_logic.py`. "
-        "Seeds 4, 8, 10, and 12 stop at Xp:2, Xp:6, Xp:4, and Xp:5. "
-        "Those four games die under 10,000 turns. "
-        "In `melee_monster_priority`, copy the second block over the first. "
-        "Change no other line.\n"
-        "```python\n"
-        "    ret = 1\n"
-        "    if agent.blstats.hitpoints > 8 or is_monster_faster(agent, monster):\n"
-        "        ret += 15\n"
-        "```\n"
-        "with:\n"
-        "```python\n"
-        "    ret = 1\n"
-        "    bonus = agent.blstats.hitpoints > 8 or is_monster_faster(agent, monster)\n"
-        "    if agent.blstats.depth == 1 and mon.mname not in INSECTS:\n"
-        "        bonus = False\n"
-        "    if bonus:\n"
-        "        ret += 15\n"
-        "```"
+        "Do not edit `fight_heur.py`, `global_logic.py`, or `exploration_logic.py`. "
+        "Seeds 4, 10, and 12 die under 10,000 turns. "
+        "Those games stop at Xp:2, Xp:4, and Xp:5. "
+        "In `emergency_strategy`, remove the comment marks from the Elbereth block. "
+        "Change no other line."
     )
 
 
@@ -673,15 +659,12 @@ def self_check() -> None:
         }, DEFAULT_IDENTITY)
         hungry_text = (hungry / "experiments.md").read_text()
         assert "20 squares" in hungry_text
-        assert "melee_monster_priority" in hungry_text
-        assert "blstats.depth" in hungry_text
-        assert "INSECTS" in hungry_text
+        assert "emergency_strategy" in hungry_text
+        assert "Elbereth" in hungry_text
+        assert "fight_heur.py" in hungry_text
         assert "do not add 15" not in hungry_text
-        assert "copy the second block" in hungry_text
         assert "difficulty" not in hungry_text
-        assert "ret += 15" in hungry_text
         assert "ret -= 6" not in hungry_text
-        assert "bonus = False" in hungry_text
         assert "exploration_logic.py" in hungry_text
         assert "under 10,000 turns" in hungry_text
         play = (hungry / "experience.md").read_text()
