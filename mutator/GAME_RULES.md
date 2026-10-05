@@ -44,10 +44,10 @@ These facts explain a death. They are not a second edit. Edit only the function 
 
 ## What a good change looks like
 
-One change. The change is the function that `experiments.md` names. That function is `emergency_strategy`. A number that does not change the action the bot takes is not a change.
+One change. The change is the function that `experiments.md` names. That function is `emergency_strategy`. The file you may change is `agent.py`. Every other file matches the parent.
+
+The score is the mean of the 15 judge seeds. A game under 10,000 turns that lasts longer raises the mean. A long game that gets shorter lowers the mean. A local game is not the score.
 
 Do not edit `fight_heur.py`, `exploration_logic.py`, `character.py`, `movement_priority.py`, or `global_logic.py`. Do not edit the spell parser. Do not resubmit the negative ring.
 
-Leave `_xp_farm_level` in place. Leave `experience_level >= 12` in place. Do not raise it. Every other file matches the parent.
-
-A game under 10,000 turns that lasts longer raises the mean. A long game that gets shorter lowers the mean. A game that already lasts about 20,000 turns is not the edit. Restoring the parent is not a result. Do not run a local game. The judge plays the seeds after you exit.
+Leave `_xp_farm_level` in place. Leave `experience_level >= 12` in place. Do not raise it. Do not remove the comment marks on the Elbereth block. That block rests for 8 turns. Do not call `direction('.')`. Do not run a local game. The judge plays the seeds after you exit.

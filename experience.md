@@ -490,32 +490,25 @@ The kept gains in this repo came from the corpse cap, the food latch, and the le
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.11444300565928403 improved=False notes_ignored=True code_unchanged=False
+## Run 37286220190, wiz-hum-cha-mal, 1 iteration, Elbereth not uncommented
+
+[37286220190](https://github.com/OlegPapulov/nethacker/actions/runs/37286220190) finished green. The job ran from 08:51 UTC to 11:15 UTC. The judge scored 0.11444300565928403. The child was not kept. `main` stays on the 0.114 bot.
+
+The operator ran for 7,953 seconds and used 818,133 tokens. The judge ran for about 10 minutes. The cold-start mean turns are 36,648. The child mean turns are 36,648. The notes were not rewritten.
+
+`autoascend/` matches the parent. The Elbereth block stays commented. The tree adds `nle.ttyrec3.bz2`. `fight_heur.py` was not edited.
 
 ### Why it stopped
-no-cell-improved
+
+A child is kept only when its mean is strictly above the parent. This mean is the parent.
 
 ### What is the problem
-# Playthrough
 
-Identity: `wiz-hum-cha-mal`
+The task said to remove the comment marks in `emergency_strategy`. The operator did not edit that function. The bot then plays the parent games. The score cannot rise.
 
-## Why it stopped
-
-0 of 0 games stopped at no finished games. Mean progress unknown.
-
-| seed | progress | turns | stop |
-| --- | --- | --- | --- |
-
-## What is the problem
-
-The score is the mean of these games. 0 of 0 end at depth 1. A game under 10,000 turns that lasts longer raises the mean. A long game that gets shorter lowers the mean.
-
-## What might solve it
-
-See `experiments.md`.
+The commented block is still the wrong next edit if someone uncomments it as written. `emergency_strategy` is the outer preempt, so it runs before `fight2`. The test is hit points below 5, or below one fifth of the maximum. A new wizard meets that test. The engrave takes a turn while the monster is already adjacent. The block then rests for up to 8 turns. A monster that ignores Elbereth hits during those rests. When `can_engrave` is false, the block does not run, and the short games stay short.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+See `experiments.md`. Do not edit `mutator/` until a human approves it.
 

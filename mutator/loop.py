@@ -59,25 +59,22 @@ def _game_rules(identity: str) -> str:
         f"# This gameplay\n\n"
         f"Identity: `{identity}`\n\n"
         "Read `experiments.md` and edit only the function it names. "
+        "The file you may change is the file that contains that function. "
+        "Every other file matches the parent. "
         "Do not edit `fight_heur.py`, `character.py`, `movement_priority.py`, `exploration_logic.py`, or `global_logic.py`. "
         "Do not resubmit the spell parser or the negative ring. "
         "Leave the change in the file when you exit. "
         "Do not revert it and do not restore the parent. "
         "Do not run `python -m nethackers.arena.run`. Do not wait on a local game. "
-        "The judge plays the seeds after you exit. "
-        "A local game is not the score. A tree that matches the parent is thrown away. "
-        "Mark the change with a `# hypothesis:` comment. "
-        "Do not tour the tree. "
-        "Write that comment and the line in `experiments.md` in ASD-STE100 style. "
-        "Use one topic in each sentence. "
-        "Use the active voice and name the actor. "
-        "Put a condition before the result. "
-        "Use at most 25 words in a description sentence. "
-        "Do not use an -ing form. "
-        "Use one word for one thing. "
-        "The judge scores the tree after this process exits. "
-        "Private Dungeons are scored by their verifier after that registration. "
-        "You do not have those seeds, and a local game is not a private result.\n\n"
+        "The judge plays the 15 seeds after you exit. "
+        "A local game is not the score. "
+        "The score is the mean of those seeds. "
+        "A game under 10,000 turns that lasts longer raises the mean. "
+        "A long game that gets shorter lowers the mean. "
+        "A tree that matches the parent is thrown away. "
+        "Mark the change with a `# hypothesis:` comment in ASD-STE100 style. "
+        "Use one topic in each sentence. Use the active voice and name the actor. "
+        "Put a condition before the result. Use at most 25 words. Do not use an -ing form.\n\n"
     )
     return header + body
 
@@ -157,38 +154,42 @@ def _lead_cause(counts: dict[str, int]) -> str:
 
 
 def _keep_win() -> str:
-    """The 0.114 gate stays. The next edit uncomments Elbereth."""
+    """One score rule. One edit. The Elbereth rest loop stays commented."""
     return (
+        "The score is the mean of the 15 judge seeds. "
+        "A game under 10,000 turns that lasts longer raises the mean. "
+        "A long game that gets shorter lowers the mean. "
         "Leave the weak-hunger corpse walk capped at 20 squares. Do not edit it. "
         "Leave `_xp_farm_level` in place. Do not edit it. "
         "Leave `experience_level >= 12` in place. Do not raise it. "
         "Do not edit `fight_heur.py`, `global_logic.py`, or `exploration_logic.py`. "
         "Seeds 4, 10, and 12 die under 10,000 turns. "
         "Those games stop at Xp:2, Xp:4, and Xp:5. "
-        "In `emergency_strategy`, remove the comment marks from the Elbereth block. "
-        "Change no other line."
+        "Do not remove the comment marks on the Elbereth block. "
+        "That block rests for 8 turns. "
+        "In `emergency_strategy`, engrave Elbereth once when `blstats.depth` is 1, "
+        "hit points are below 6, and a monster is adjacent. "
+        "Do not call `direction('.')`. "
+        "The file you may change is `agent.py`. "
+        "Every other file matches the parent."
     )
 
 
 def _hypothesis(cause: str, shallow: int, total: int, causes: list[str] | None = None) -> str:
     blob = " ".join([cause, *(causes or [])]).lower()
     if any(word in blob for word in ("starv", "hunger", "faint")):
-        lead = "One game still starves. Do not edit hunger or hit-point cuts. "
+        lead = "One game still starves. Do not edit the corpse walk. "
     elif "poison" in blob:
         lead = (
             "Treat poison as a reason to leave, not a hit to trade. A wizard "
             "dies to it with no hit points in reserve. "
         )
-    elif total and shallow * 2 >= total:
-        lead = (
-            f"Most games end at depth 1, usually {cause}. A chaotic human wizard "
-            "loses a melee. "
-        )
+    elif not total:
+        lead = ""
+    elif shallow * 2 >= total:
+        lead = f"Most games end at depth 1, usually {cause}. "
     else:
-        lead = (
-            "A game under 10,000 turns that lasts longer raises the mean. "
-            "A long game that gets shorter lowers the mean. "
-        )
+        lead = ""
     return lead + _keep_win()
 
 
@@ -282,17 +283,32 @@ def write_notes_from_evidence(
         )
     table = "\n".join(lines)
     hypothesis = _hypothesis(cause, shallow, len(results), list(counts))
+    if results:
+        why = (
+            f"{counts.get(cause, 0)} of {len(results)} games stopped at {cause}. "
+            f"Mean progress {mean_text}.\n\n"
+            f"{table}\n\n"
+            f"## What is the problem\n\n"
+            f"The score is the mean of these games. {shallow} of {len(results)} "
+            f"end at depth 1. A game under 10,000 turns that lasts longer raises "
+            f"the mean. A long game that gets shorter lowers the mean.\n\n"
+        )
+        stopped = f"{cause} ({counts.get(cause, 0)} of {len(results)})."
+    else:
+        why = (
+            "The parent batch is not in this note. "
+            "The judge plays the 15 seeds after you exit.\n\n"
+            "## What is the problem\n\n"
+            "The score is the mean of those seeds. "
+            "A game under 10,000 turns that lasts longer raises the mean. "
+            "A long game that gets shorter lowers the mean.\n\n"
+        )
+        stopped = "The parent batch is not in this note."
     (notes / "experience.md").write_text(
         f"# Playthrough\n\n"
         f"Identity: `{identity}`\n\n"
         f"## Why it stopped\n\n"
-        f"{counts.get(cause, 0)} of {len(results)} games stopped at {cause}. "
-        f"Mean progress {mean_text}.\n\n"
-        f"{table}\n\n"
-        f"## What is the problem\n\n"
-        f"The score is the mean of these games. {shallow} of {len(results)} "
-        f"end at depth 1. A game under 10,000 turns that lasts longer raises "
-        f"the mean. A long game that gets shorter lowers the mean.\n\n"
+        f"{why}"
         f"## What might solve it\n\n"
         f"See `experiments.md`.\n"
     )
@@ -304,7 +320,7 @@ def write_notes_from_evidence(
         f"{prior_text}"
         f"{carry_text}"
         f"## Why it stopped\n\n"
-        f"{cause} ({counts.get(cause, 0)} of {len(results)}).\n\n"
+        f"{stopped}\n\n"
         f"## What is the problem\n\n"
         f"Mean progress is {mean_text}. The bot is kept only if the next mean "
         f"is strictly higher on `{identity}`.\n\n"

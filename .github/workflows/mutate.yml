@@ -64,6 +64,19 @@ jobs:
           text = path.read_text()
           if "600000 ms" not in text:
               sys.exit("MEASURE no longer contains the 600000 ms wait")
+          for old, repl in (
+              (
+                  "One idea, any amount of code.",
+                  "One edit in the function experiments.md names. Change no other file.",
+              ),
+              (
+                  "You have live Python + NLE and the current bot as your starting point.",
+                  "Do not play a local game. The judge plays the seeds after you exit.",
+              ),
+          ):
+              if old not in text:
+                  sys.exit(f"missing brief sentence: {old}")
+              text = text.replace(old, repl, 1)
           start = text.find("MEASURE = (")
           end = text.find("\n# What a change", start)
           if start < 0 or end < 0:
@@ -85,6 +98,8 @@ jobs:
               sys.exit("the brief still tells the operator to play")
           if "Do not run `python -m nethackers.arena.run`" not in sample:
               sys.exit("the brief lost the play ban")
+          if "any amount of code" in sample or "live Python + NLE" in sample:
+              sys.exit("the brief still allows a large rewrite or a local game")
           PY
 
       - name: Hub login and git identity
