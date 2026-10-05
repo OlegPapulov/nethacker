@@ -1569,6 +1569,49 @@ class Agent:
             self.pray()
             return
 
+        # hypothesis: The fight code keeps full melee priority for any fast monster, even at one hit point.
+        # A hurt level ten wizard then trades blows with a bat, a bee or a cat, and five judge seeds die that way.
+        # When the hero holds under a third of its hit points, this strategy steps away from an adjacent killer.
+        # The hero picks the neighbour with the fewest monsters and the most space.
+        # Weak monsters and Elbereth squares keep their current handling.
+        # When no neighbour scores better, this strategy yields and the fight code takes over.
+        retreat_to = None
+        try:
+            monsters = self.get_visible_monsters()
+            harmless = combat.monster_utils.WEAK_MONSTERS + \
+                combat.monster_utils.ONLY_RANGED_SLOW_MONSTERS
+            here_y, here_x = self.blstats.y, self.blstats.x
+            adjacent_monsters = [m for m in monsters if utils.adjacent((here_y, here_x), (m[1], m[2]))]
+            if monsters and adjacent_monsters and \
+                    self.blstats.hitpoints * 3 <= self.blstats.max_hitpoints and \
+                    any(m[3].mname not in harmless for m in adjacent_monsters) and \
+                    (self.inventory.engraving_below_me or '').lower() != 'elbereth':
+                dis = self.bfs()
+                here_score = (sum(1 for m in monsters if utils.adjacent((here_y, here_x), (m[1], m[2]))),
+                              -min(max(abs(here_y - m[1]), abs(here_x - m[2])) for m in monsters))
+                for dy in (-1, 0, 1):
+                    for dx in (-1, 0, 1):
+                        if not (dy or dx):
+                            continue
+                        y, x = here_y + dy, here_x + dx
+                        if not (0 <= y < dis.shape[0] and 0 <= x < dis.shape[1]) or dis[y, x] != 1:
+                            continue
+                        score = (sum(1 for m in monsters if utils.adjacent((y, x), (m[1], m[2]))),
+                                 -min(max(abs(y - m[1]), abs(x - m[2])) for m in monsters))
+                        if score < here_score:
+                            retreat_to = (y, x)
+                            break
+                    if retreat_to is not None:
+                        break
+        except Exception:
+            retreat_to = None
+
+        if retreat_to is not None:
+            yield True
+            with contextlib.suppress(Exception):
+                self.move(*retreat_to)
+            return
+
         # if self.inventory.engraving_below_me.lower() != 'elbereth' and self.can_engrave() and \
         #         (self.blstats.hitpoints < 1 / 5 * self.blstats.max_hitpoints or self.blstats.hitpoints < 5):
         #     yield True
