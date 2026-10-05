@@ -610,3 +610,29 @@ Seed 4 stays at 0.018. Its turns go from 2,742 to 2,644, and it dies on depth 1.
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
+## Run wiz-hum-cha-mal (1 iteration(s))
+- iteration 1: reason=no-cell-improved dev_fitness=0.04561779964972383 improved=False notes_ignored=False code_unchanged=False
+
+### Why it stopped
+no-cell-improved
+
+### What is the problem
+# Playthrough
+
+Identity: `wiz-hum-cha-mal`
+
+## Why it stopped
+
+The parent batch is not in this note. The judge plays the 15 seeds after you exit.
+
+## What is the problem
+
+The score is the mean of those seeds. A game under 10,000 turns that lasts longer raises the mean. A long game that gets shorter lowers the mean.
+
+## What might solve it
+
+See `experiments.md`.
+
+### What might solve it
+See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
