@@ -49,8 +49,25 @@ SPELL_REFUSED_MESSAGES = (
     'must be able to move',
 )
 
+# Ranged attack for a character whose only other option is to walk into the
+# fight. The spell itself is not named here: the cast menu prints a category for
+# every spell it lists and "attack" is the game's own word for the damaging
+# ones, so the choice never depends on a hardcoded letter or an assumed name.
+
 
 class Agent:
+    # Distance 1 is left to melee on purpose -- a spell next door trades a scarce
+    # resource for an attack the knife already provides.
+    OFFENSIVE_SPELL_CATEGORY = 'attack'
+    OFFENSIVE_SPELL_MAX_FAIL = 0.15
+    OFFENSIVE_SPELL_MIN_DISTANCE = 2
+    OFFENSIVE_SPELL_MAX_DISTANCE = 6
+    # How often the cast menu may be re-read when a cast is wanted but
+    # unaffordable. Two turns each time, and a wizard is only ever short of
+    # energy because it just spent some, so a few hundred turns of spacing keeps
+    # this off the scoreboard.
+    SPELL_LIST_REREAD_INTERVAL = 200
+
     def __init__(self, env, seed=0, verbose=False, panic_on_errors=False):
         self.env = env
         self.verbose = verbose
@@ -101,6 +118,10 @@ class Agent:
         self._allow_attack_all_turn = -float('inf')
 
         self.last_cast_fail_turn = defaultdict(lambda: -float('inf'))
+
+        # Casting is new behaviour here: the spell menu is read once, at turn 0,
+        # and this remembers how often it has been read again.
+        self._last_spell_list_read_turn = -float('inf')
 
         self.stats_logger = StatsLogger()
 
@@ -1488,6 +1509,85 @@ class Agent:
 
         if not yielded:
             yield False
+
+    def best_offensive_spell(self):
+        """Cheapest attack spell this character knows, or None.
+
+        The cast menu prints a category next to every known spell and "attack"
+        is the game's own word for "this one hurts a monster", so the choice is
+        read out of the menu -- never a hardcoded letter and never a guessed
+        name. Cheapest first (`spell_level` ascending): magical energy is the
+        scarcest thing a spellcaster has and a level-1 spell costs a handful of
+        it, so the cheap spell buys more kills over a run than the dear one.
+        """
+        candidates = []
+        for spell_name, category in self.character.spell_category.items():
+            if category != self.OFFENSIVE_SPELL_CATEGORY:
+                continue
+            if self.character.spell_fail_chance.get(spell_name, 1.0) > self.OFFENSIVE_SPELL_MAX_FAIL:
+                continue
+            candidates.append((self.character.spell_level.get(spell_name, 1), spell_name))
+        for level, spell_name in sorted(candidates):
+            if self.blstats.energy >= max(3, level + 4):
+                return spell_name
+        return None
+
+    @utils.debug_log('cast_at_monsters')
+    @Strategy.wrap
+    def cast_at_monsters(self):
+        """Damage the nearest monster from where the wizard already stands.
+
+        A wizard that walks next to what is killing it dies to the first thing
+        it meets: it has three to forty hit points, one knife, and no identified
+        healing potion to drink. The other half of the answer is that a spell
+        hurts from outside the reach of the monsters that are killing it, and
+        the wizard has never cast one. This fires only when a monster is two to
+        six squares off, which is precisely the situation in which the parent
+        has nothing to do but close the distance and start the trade -- so the
+        turn is spent on damage instead of on walking into it.
+        """
+        monsters = self.get_visible_monsters()
+        if not monsters:
+            yield False
+            return
+        dis, target_y, target_x, mon, _ = monsters[0]
+        # Anything next door is a melee fight fight2 already knows how to run
+        # with a free knife; a spell there would only spend energy.
+        if not self.OFFENSIVE_SPELL_MIN_DISTANCE <= dis <= self.OFFENSIVE_SPELL_MAX_DISTANCE:
+            yield False
+            return
+        # Floating eyes and molds never close, so a cast at one buys nothing.
+        if mon.mname in combat.monster_utils.ONLY_RANGED_SLOW_MONSTERS:
+            yield False
+            return
+        dy, dx = target_y - self.blstats.y, target_x - self.blstats.x
+        # calc_direction() asserts its target is one straight line away and
+        # getdir() takes one direction per cast, so an off-axis monster is not
+        # a target this spell can reach.
+        if dy != 0 and dx != 0 and abs(dy) != abs(dx):
+            yield False
+            return
+
+        spell_name = self.best_offensive_spell()
+        if spell_name is None:
+            # Nothing to pay for the cast with. A wizard is taught a spell every
+            # level or two and the menu was read once at turn 0, so re-read it
+            # -- but only when a cast is actually wanted, and never more than
+            # once every few hundred turns, so the two turns the read costs are
+            # not spent on a floor that has no use for them.
+            if self._last_turn - self._last_spell_list_read_turn < self.SPELL_LIST_REREAD_INTERVAL:
+                yield False
+                return
+            self._last_spell_list_read_turn = self._last_turn
+            yield True
+            try:
+                self.character.parse_spellcast_view()
+            except Exception:
+                pass
+            return
+
+        yield True
+        self.cast(spell_name, (dy, dx))
 
     def should_cast_heal(self):
         # TODO: consider casting for other classes

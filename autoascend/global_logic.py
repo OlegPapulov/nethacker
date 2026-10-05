@@ -685,6 +685,13 @@ class GlobalLogic:
                 self.follow_guard(),
             ])
             .preempt(self.agent, [
+                # a spell hurts a monster from further away than its own reach, and
+                # when a monster is two to six squares off this agent has nothing to
+                # do but walk up and start trading hit points for experience -- which
+                # is how a three-to-forty hit point wizard dies to a newt. Spending
+                # that walk on a cast instead is the same turn for damage rather than
+                # for closing. Melee keeps priority at distance one.
+                self.agent.cast_at_monsters(),
                 self.agent.fight2(),
             ])
             .preempt(self.agent, [
