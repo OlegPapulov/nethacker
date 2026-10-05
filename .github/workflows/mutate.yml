@@ -85,7 +85,7 @@ jobs:
                   "Based on `experiments.md`, change the bot. "
                   "When `experience.md` or `experiments.md` does not exist yet, create it. "
                   "Do not run `python -m nethackers.arena.run`. "
-                  "The judge plays the 15 seeds after you exit.\n"
+                  "The judge plays the 15 seeds after you exit." + chr(10)
               )
           ''')
           path.write_text(text)
