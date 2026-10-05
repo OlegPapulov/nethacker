@@ -1569,6 +1569,24 @@ class Agent:
             self.pray()
             return
 
+        # hypothesis: The wizard inscribes Elbereth when a monster stands next to it below six
+        # hit points, because a trade of hits then loses the game.
+        # fight2 ranks Elbereth under a melee trade, so this branch has to claim the turn first.
+        # Undead, demons and golems ignore the name. The early Doom floors hold the rest.
+        if self.blstats.depth <= 3 \
+                and self.blstats.hitpoints < 6 \
+                and (self.inventory.engraving_below_me or '').lower() != 'elbereth' \
+                and self.can_engrave():
+            adjacent_monster = any(
+                utils.adjacent((monster_y, monster_x), (self.blstats.y, self.blstats.x)) and
+                not getattr(permonst, 'mflags2', 0) & (MON.M2_UNDEAD | MON.M2_DEMON) and
+                not getattr(permonst, 'mflags1', 0) & MON.M1_MINDLESS
+                for _dis, monster_y, monster_x, permonst, _glyph in self.get_visible_monsters())
+            if adjacent_monster:
+                yield True
+                self.engrave('Elbereth')
+                return
+
         # if self.inventory.engraving_below_me.lower() != 'elbereth' and self.can_engrave() and \
         #         (self.blstats.hitpoints < 1 / 5 * self.blstats.max_hitpoints or self.blstats.hitpoints < 5):
         #     yield True
