@@ -646,29 +646,15 @@ A child is kept only when its mean is strictly above the parent. This mean is lo
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.06642128837653834 improved=False notes_ignored=False code_unchanged=False
+## Run 37383680703, wiz-hum-cha-mal, 1 iteration, cast before fight2
+
+[37383680703](https://github.com/OlegPapulov/nethacker/actions/runs/37383680703) finished green. The judge scored 0.06642128837653834. The table printed 0.067. The child was not kept. `main` stays on the 0.114 bot.
+
+The operator ran for 1,409 seconds and used 196,708 tokens. The cold-start mean is 0.114 and 36,648 turns. The child mean is 0.067 and 22,878 turns.
+
+The operator added `cast_at_monsters` and called it before `fight2`. The spell is an attack spell at distance 2 to 6.
 
 ### Why it stopped
-no-cell-improved
 
-### What is the problem
-# Playthrough
-
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. Progress is the highest milestone a game reaches.
-
-## What might solve it
-
-See `experiments.md`.
-
-### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+A child is kept only when its mean is strictly above the parent. This mean is lower.
 
