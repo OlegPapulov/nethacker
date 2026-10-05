@@ -590,29 +590,23 @@ The tie-break runs only when two melee actions have the same priority. Seed 4 ne
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.10209517981729713 improved=False notes_ignored=False code_unchanged=False
+## Run 37355608122, wiz-hum-cha-mal, 1 iteration, latch waits for level 5
+
+[37355608122](https://github.com/OlegPapulov/nethacker/actions/runs/37355608122) finished green. The job ran from 18:23 UTC to 18:47 UTC. The judge scored 0.10209517981729713. The child was not kept. `main` stays on the 0.114 bot.
+
+The operator ran for 781 seconds and used 42,794 tokens. The cold-start mean is 0.114 and 36,648 turns. The child mean is 0.102 and 33,792 turns. The notes were rewritten.
+
+The only bot change is the fainting test in `current_strategy`. It now requires `experience_level >= 5` before it sets `_xp_farm_level` to 2. `experience_level >= 12` stays. `fight2` and `emergency_strategy` stay as the parent wrote them.
 
 ### Why it stopped
-no-cell-improved
+
+A child is kept only when its mean is strictly above the parent. This mean is lower.
 
 ### What is the problem
-# Playthrough
 
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. A game under 10,000 turns that lasts longer raises the mean. A long game that gets shorter lowers the mean.
-
-## What might solve it
-
-See `experiments.md`.
+Seed 4 stays at 0.018. Its turns go from 2,742 to 2,644, and it dies on depth 1. Seed 12 falls from 0.029 to 0.024. Seed 9 falls from 0.255 to 0.075. That is Xp:11 to Xp:8. Its turns fall from 69,906 to 26,819. That one seed is the mean.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+See `experiments.md`. Do not edit `mutator/` until a human approves it.
 

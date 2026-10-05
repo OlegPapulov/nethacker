@@ -168,8 +168,9 @@ def _keep_win() -> str:
         "Do not edit `emergency_strategy`. Do not add `search`, `move`, `engrave`, or a loop there. "
         "Do not edit `fight2`. A melee tie-break there left seed 4 at 2,742 turns and lowered seed 9 from Xp:11 to Xp:10. "
         "The function you may change is `current_strategy` in `global_logic.py`. "
-        "On the fainting test that sets `_xp_farm_level` to 2, also require `experience_level >= 5`. "
-        "A wizard at Xp:2 must stay on dungeon level 1. "
+        "Leave the fainting test that sets `_xp_farm_level` to 2 unchanged. It stays hunger fainting and no edible corpse in reach. "
+        "After that test, when `experience_level >= 11`, set `level` to dungeon level 2. "
+        "Seed 9 dies on depth 3 at Xp:11. "
         "Do not add an engrave. "
         "Do not remove the comment marks on the Elbereth block. "
         "The file you may change is `global_logic.py`. "
@@ -682,7 +683,8 @@ def self_check() -> None:
         assert "Do not add an engrave" in hungry_text
         assert "fight2" in hungry_text
         assert "current_strategy" in hungry_text
-        assert "experience_level >= 5" in hungry_text
+        assert "experience_level >= 11" in hungry_text
+        assert "Leave the fainting test that sets `_xp_farm_level` to 2 unchanged" in hungry_text
         assert "Do not edit `emergency_strategy`" in hungry_text
         assert "2,742" in hungry_text
         assert "Xp:11" in hungry_text

@@ -50,4 +50,4 @@ The score is the mean of the 15 judge seeds. A game under 10,000 turns that last
 
 Do not edit `fight_heur.py`, `exploration_logic.py`, `character.py`, `movement_priority.py`, `fight2`, or `emergency_strategy`. Do not edit the spell parser. Do not resubmit the negative ring.
 
-Leave the corpse walk capped at 20 squares. Leave `experience_level >= 12` in place. Do not raise it. Seed 4 dies at 2,742 turns and stops at Xp:2. On the fainting test that sets `_xp_farm_level` to 2, also require `experience_level >= 5`. A wizard at Xp:2 must stay on dungeon level 1. Do not run a local game. The judge plays the seeds after you exit.
+Leave the corpse walk capped at 20 squares. Leave `experience_level >= 12` in place. Do not raise it. Leave the fainting test that sets `_xp_farm_level` to 2 unchanged. It stays hunger fainting and no edible corpse in reach. After that test, when `experience_level >= 11`, set `level` to dungeon level 2. Seed 9 dies on depth 3 at Xp:11. Do not run a local game. The judge plays the seeds after you exit.
