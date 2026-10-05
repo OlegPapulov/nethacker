@@ -11,7 +11,6 @@ from .monster_utils import is_monster_faster, is_dangerous_monster, \
 from .movement_priority import draw_monster_priority_positive, draw_monster_priority_negative
 from .utils import wielding_ranged_weapon, line_dis_from, inside
 
-
 def melee_monster_priority(agent, monsters, monster):
     _, y, x, mon, _ = monster
     ret = 1
@@ -43,6 +42,16 @@ def melee_monster_priority(agent, monsters, monster):
                     return ret
             agent.stats_logger.log_event('melee_gas_spore')
             return 1  # a priority higher than random moving around
+
+    # hypothesis: a wizard beside several monsters swings at whichever one the
+    # tracker lists first. When a second monster stands close, the swing goes
+    # to the one that costs the most hit points a round.
+    difficulty = getattr(mon, 'difficulty', None)
+    if difficulty is not None:
+        mmove = getattr(mon, 'mmove', 6)
+        attacks = 2.0 if mmove > 18 else 1.5 if mmove > 12 else 1.0
+        hit_points_a_round = attacks * (1.0 + 0.4 * difficulty)
+        ret += int(2 * hit_points_a_round)
 
     return ret
 
