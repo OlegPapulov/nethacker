@@ -1522,6 +1522,52 @@ class Agent:
     @Strategy.wrap
     def emergency_strategy(self):
 
+        # Standing still is a turn like any other -- the monsters still get theirs --
+        # but it is also the only way this character can repair hitpoints without
+        # spending a potion or a prayer, and NetHack repairs hitpoints quickly from
+        # experience level 10 up. Nothing else in the agent ever waits on purpose:
+        # every other strategy either moves, fights, or eats, so a wizard that comes
+        # out of one fight at half hitpoints walks straight into the next one at half
+        # hitpoints, and dies there instead of winning and then healing. The four
+        # seeds that die before experience level 7 (a goblin at turn 2742, a kitten at
+        # 6313, a kobold lord at 5011, a newt at 9957) are exactly the runs that never
+        # get a chance to heal, and the score is a monotone function of the experience
+        # level the run banks, so those runs are worth ~0.03 each where a healed run
+        # is worth ~0.18.
+        #
+        # hypothesis: waiting in place until hitpoints recover, whenever no hostile
+        # monster is close enough to interrupt, raises the experience level the run
+        # reaches by carrying the wizard into its next fight at full strength.
+        rest_monster_free_radius = 3
+        rest_max_turns = 25
+
+        def hostile_monster_within(radius):
+            """ Is a monster that would rather be hitting us than looked at within `radius`? """
+            mask = self.monster_tracker.monster_mask & ~self.monster_tracker.peaceful_monster_mask
+            if not mask.any():
+                return False
+            y, x = self.blstats.y, self.blstats.x
+            return bool(mask[max(0, y - radius):y + radius + 1,
+                             max(0, x - radius):x + radius + 1].any())
+
+        def worth_resting():
+            if self.blstats.hitpoints >= self.blstats.max_hitpoints:
+                return False
+            # A hungry wizard has to go and find food, and every food strategy in
+            # `global_strategy` sits *below* this one, so yielding True here would
+            # starve it in the one state where it cannot afford to waste turns.
+            if self.blstats.hunger_state >= Hunger.HUNGRY:
+                return False
+            # Blind, confused and stunned characters cannot see what is walking up on
+            # them, a hallucinating one cannot trust monster_mask, and a swallowed one
+            # does not even take a turn per action -- none of them should stand still.
+            prop = self.character.prop
+            if prop.blind or prop.stun or prop.confusion or prop.hallu or prop.polymorph:
+                return False
+            if utils.any_in(self.glyphs, G.SWALLOW):
+                return False
+            return not hostile_monster_within(rest_monster_free_radius)
+
         # if self.should_cast_extra_heal():
         #     yield True
         #     self.cast('extra healing', direction=(0, 0))
@@ -1567,6 +1613,19 @@ class Agent:
         ):
             yield True
             self.pray()
+            return
+
+        # Standing still for one turn is what heals, and searching is how this agent
+        # already spends a turn in place (see fight_heur.wait_action): it is a legal
+        # move the monsters still react to, and unlike `rest` it cannot put this
+        # character to sleep halfway through the wait. The floor is re-read after
+        # every single turn, so the first monster to come within reach ends the wait.
+        if worth_resting():
+            yield True
+            for _ in range(rest_max_turns):
+                if not worth_resting():
+                    break
+                self.search()
             return
 
         # if self.inventory.engraving_below_me.lower() != 'elbereth' and self.can_engrave() and \
