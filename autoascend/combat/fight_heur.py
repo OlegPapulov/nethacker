@@ -44,6 +44,19 @@ def melee_monster_priority(agent, monsters, monster):
             agent.stats_logger.log_event('melee_gas_spore')
             return 1  # a priority higher than random moving around
 
+    # hypothesis: two neighbours in reach score the same, so the swing lands on
+    # whichever the visible-monster sort reaches first, which is the nearest and
+    # usually the armoured humanoid the dagger cannot touch. Compare our roll
+    # with the armor class we face and give the neighbour we can actually land on
+    # a bounded nudge, so a fight ends on the soft one first while the cap keeps
+    # every single-neighbour turn exactly as it scored before.
+    if sum(1 for m in monsters
+           if adjacent((m[1], m[2]), (agent.blstats.y, agent.blstats.x))) > 1:
+        weapon = agent.inventory.get_best_melee_weapon()
+        roll, _damage = agent.character.get_melee_bonus(weapon)
+        armor = getattr(mon, 'ac', 6)
+        ret += min(5, max(0, roll - armor))
+
     return ret
 
 
