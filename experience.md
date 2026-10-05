@@ -536,29 +536,27 @@ The instruction said `blstats.depth` is 1. The operator used `depth <= 3`. The o
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.10213461846666004 improved=False notes_ignored=True code_unchanged=False
+## Run 37331933484, wiz-hum-cha-mal, 1 iteration, Elbereth with no monster adjacent
+
+[37331933484](https://github.com/OlegPapulov/nethacker/actions/runs/37331933484) finished green. The job ran from 15:19 UTC to 15:48 UTC. The judge scored 0.10213461846666004. The child was not kept. `main` stays on the 0.114 bot.
+
+The operator ran for 1,097 seconds and used 115,296 tokens. The cold-start mean is 0.114 and 36,648 turns. The child mean is 0.102 and 34,637 turns. The notes were not rewritten.
+
+The only bot change is 29 lines in `emergency_strategy`. The condition is depth 1, hit points below 6, `can_engrave()`, the word is not already there, and no monster is adjacent. The rest loop stays commented. The branch does not call `direction('.')`. `fight_heur.py` was not edited.
 
 ### Why it stopped
-no-cell-improved
+
+A child is kept only when its mean is strictly above the parent. This mean is lower.
 
 ### What is the problem
-# Playthrough
 
-Identity: `wiz-hum-cha-mal`
+Seed 4 rose from 0.018 to 0.051. That is Xp:2 to Xp:7. Its turns rose from 2,742 to 19,961. Seed 8 rose from 0.037 to 0.075. That is Xp:6 to Xp:8. Its turns rose from 9,957 to 36,419.
 
-## Why it stopped
+Seed 3 fell from 0.179 to 0.029. That is Xp:10 to Xp:5. Its turns fell from 57,042 to 5,338. Seed 13 fell from 0.179 to 0.075. That is Xp:10 to Xp:8. Its turns fell from 48,694 to 27,349.
 
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. A game under 10,000 turns that lasts longer raises the mean. A long game that gets shorter lowers the mean.
-
-## What might solve it
-
-See `experiments.md`.
+After the word is on the floor, `fight_heur.py` subtracts 100 from melee, ranged, and zap. `wait_action` then scores about 30. The bot stands on the word.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+See `experiments.md`. Do not edit `mutator/` until a human approves it.
 

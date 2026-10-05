@@ -33,7 +33,7 @@ Most items start unidentified. Price, appearance, and one careful use tell them 
 These facts explain a death. They are not a second edit. Edit only the function that `experiments.md` names.
 
 - A fight in a doorway lets one monster hit. A fight in a corridor lets one monster hit. An open room lets several monsters hit.
-- Elbereth on the floor stops many monsters. Some monsters still attack.
+- Elbereth on the floor makes this bot wait. Melee, ranged, and zap then lose priority. A long game gets shorter.
 - A faster monster takes a turn before the wizard takes a turn. A few hits kill the wizard.
 - A pet is a resource. An attack on a peaceful monster can ruin the game.
 - Eat before a faint. A faint next to a monster is a death.
@@ -50,4 +50,4 @@ The score is the mean of the 15 judge seeds. A game under 10,000 turns that last
 
 Do not edit `fight_heur.py`, `exploration_logic.py`, `character.py`, `movement_priority.py`, or `global_logic.py`. Do not edit the spell parser. Do not resubmit the negative ring.
 
-Leave `_xp_farm_level` in place. Leave `experience_level >= 12` in place. Do not raise it. Do not remove the comment marks on the Elbereth block. That block rests for 8 turns. In `emergency_strategy`, engrave Elbereth once when depth is 1, hit points are below 6, `can_engrave()` is true, and no monster is adjacent. Do not call `direction('.')`. Do not run a local game. The judge plays the seeds after you exit.
+Leave `_xp_farm_level` in place. Leave `experience_level >= 12` in place. Do not raise it. Seed 4 dies at 2,742 turns and stops at Xp:2. Seed 3 is at Xp:10. Seed 9 is at Xp:11. Those long games must keep that progress. Do not add an engrave in `emergency_strategy`. Do not remove the comment marks on the Elbereth block. That block rests for 8 turns. Do not call `direction('.')`. Do not run a local game. The judge plays the seeds after you exit.

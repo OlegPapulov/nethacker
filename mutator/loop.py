@@ -163,12 +163,13 @@ def _keep_win() -> str:
         "Leave `_xp_farm_level` in place. Do not edit it. "
         "Leave `experience_level >= 12` in place. Do not raise it. "
         "Do not edit `fight_heur.py`, `global_logic.py`, or `exploration_logic.py`. "
-        "Seeds 4, 10, and 12 die under 10,000 turns. "
-        "Those games stop at Xp:2, Xp:4, and Xp:5. "
+        "Seed 4 dies at 2,742 turns and stops at Xp:2. "
+        "Seeds 10 and 12 die under 10,000 turns and stop at Xp:4 and Xp:5. "
+        "Seed 3 is at Xp:10. Seed 9 is at Xp:11. Those games must keep that progress. "
+        "Do not add an engrave in `emergency_strategy`. "
         "Do not remove the comment marks on the Elbereth block. "
         "That block rests for 8 turns. "
-        "In `emergency_strategy`, engrave Elbereth once when `blstats.depth` is 1, "
-        "hit points are below 6, `can_engrave()` is true, and no monster is adjacent. "
+        "When the floor says Elbereth, the bot waits, and a long game gets shorter. "
         "Do not call `direction('.')`. "
         "The file you may change is `agent.py`. "
         "Every other file matches the parent."
@@ -677,8 +678,10 @@ def self_check() -> None:
         assert "20 squares" in hungry_text
         assert "emergency_strategy" in hungry_text
         assert "Elbereth" in hungry_text
-        assert "no monster is adjacent" in hungry_text
-        assert "a monster is adjacent" not in hungry_text
+        assert "Do not add an engrave" in hungry_text
+        assert "2,742" in hungry_text
+        assert "Xp:11" in hungry_text
+        assert "no monster is adjacent" not in hungry_text
         assert "fight_heur.py" in hungry_text
         assert "do not add 15" not in hungry_text
         assert "difficulty" not in hungry_text
