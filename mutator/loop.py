@@ -58,23 +58,15 @@ def _game_rules(identity: str) -> str:
     header = (
         f"# This gameplay\n\n"
         f"Identity: `{identity}`\n\n"
-        "Read `experiments.md` and edit only the function it names. "
-        "The file you may change is the file that contains that function. "
-        "Every other file matches the parent. "
-        "Do not edit `fight_heur.py`, `character.py`, `movement_priority.py`, `exploration_logic.py`, `fight2`, or `emergency_strategy`. "
-        "Do not resubmit the spell parser or the negative ring. "
-        "Leave the change in the file when you exit. "
-        "Do not revert it and do not restore the parent. "
-        "Do not run `python -m nethackers.arena.run`. Do not wait on a local game. "
-        "The judge plays the 15 seeds after you exit. "
-        "A local game is not the score. "
-        "The score is the mean of the 15 judge seeds. "
-        "Seed 9 is at Xp:11. A new function changes that game. "
-        "Do not add a function. Change one existing assignment. "
-        "A tree that matches the parent is thrown away. "
-        "Mark the change with a `# hypothesis:` comment in ASD-STE100 style. "
-        "Use one topic in each sentence. Use the active voice and name the actor. "
-        "Put a condition before the result. Use at most 25 words. Do not use an -ing form.\n\n"
+        "You develop a bot to play NetHack 3.6.6. "
+        "The rules and nuances of the game are in this file. "
+        "Progress is the highest milestone a game reaches. "
+        "The judge score is the mean of 15 seeds. "
+        "Describe the games in `experience.md`. "
+        "Propose the change in `experiments.md`. "
+        "Change the bot from that proposal. "
+        "Do not run `python -m nethackers.arena.run`. "
+        "The judge plays the 15 seeds after you exit.\n\n"
     )
     return header + body
 
@@ -154,27 +146,20 @@ def _lead_cause(counts: dict[str, int]) -> str:
 
 
 def _keep_win() -> str:
-    """One score rule. One edit. The Elbereth rest loop stays commented."""
+    """Facts for the note. The operator proposes the change."""
     return (
         "The score is the mean of the 15 judge seeds. "
-        "Seed 9 is at Xp:11. A new function changes that game. "
-        "Do not add a function. Do not add a stair. "
-        "Leave the weak-hunger corpse walk capped at 20 squares. Do not edit it. "
-        "Leave `experience_level >= 12` in place. Do not raise it. "
-        "Do not edit `fight_heur.py`, `fight2`, `emergency_strategy`, or `exploration_logic.py`. "
+        "Progress is the highest milestone a game reaches. "
+        "Experience level moves that score. "
+        "Seed 9 is at Xp:11. "
         "Seed 4 dies at 2,742 turns and stops at Xp:2. "
-        "Seeds 10 and 12 die under 10,000 turns and stop at Xp:4 and Xp:5. "
-        "Seed 3 is at Xp:10. Seed 9 is at Xp:11. Those games must keep that progress. "
-        "Do not edit `emergency_strategy`. Do not add `search`, `move`, `engrave`, or a loop there. "
-        "Do not edit `fight2`. A melee tie-break there left seed 4 at 2,742 turns and lowered seed 9 from Xp:11 to Xp:10. "
-        "The function you may change is `current_strategy` in `global_logic.py`. "
-        "Leave the fainting test that sets `_xp_farm_level` to 2 unchanged. It stays hunger fainting and no edible corpse in reach. "
-        "After that test, add only this assignment. "
-        "When `experience_level >= 11` and `level[1] > 2`, set `level = (Level.DUNGEONS_OF_DOOM, 2)`. "
-        "Do not add an engrave. "
-        "Do not remove the comment marks on the Elbereth block. "
-        "The file you may change is `global_logic.py`. "
-        "Every other file matches the parent."
+        "Seeds 10 and 12 die under 10,000 turns. "
+        "Leave the weak-hunger corpse walk capped at 20 squares. "
+        "Leave `_xp_farm_level` as it is. "
+        "Leave `experience_level >= 12` as it is. "
+        "Describe the games in `experience.md`. "
+        "Propose one change in this file, in accordance with the game rules. "
+        "Change the bot from that proposal."
     )
 
 
@@ -293,8 +278,7 @@ def write_notes_from_evidence(
             f"{table}\n\n"
             f"## What is the problem\n\n"
             f"The score is the mean of these games. {shallow} of {len(results)} "
-            f"end at depth 1. Do not add a function. "
-            f"Seed 9 is at Xp:11.\n\n"
+            f"end at depth 1. Progress is the highest milestone a game reaches.\n\n"
         )
         stopped = f"{cause} ({counts.get(cause, 0)} of {len(results)})."
     else:
@@ -303,7 +287,7 @@ def write_notes_from_evidence(
             "The judge plays the 15 seeds after you exit.\n\n"
             "## What is the problem\n\n"
             "The score is the mean of those seeds. "
-            "Do not add a function. Seed 9 is at Xp:11.\n\n"
+            "Progress is the highest milestone a game reaches.\n\n"
         )
         stopped = "The parent batch is not in this note."
     (notes / "experience.md").write_text(
@@ -328,7 +312,7 @@ def write_notes_from_evidence(
         f"is strictly higher on `{identity}`.\n\n"
         f"## What might solve it\n\n"
         f"{hypothesis}\n\n"
-        "Edit only the function named above. The judge measures that tree.\n"
+        "Change the bot from the proposal above. The judge measures that tree.\n"
     )
 
 
@@ -642,8 +626,8 @@ def self_check() -> None:
         assert command[command.index("--iterations") + 1] == "3"
         assert command[command.index("--effort") + 1] == "medium"
         assert "killed after" not in game
-        assert "# hypothesis:" in game
-        assert "Do not revert" in game
+        assert "highest milestone" in game
+        assert "experiments.md" in game
         bare = root / "bare-notes"
         bare.mkdir()
         seed_bare = root / "seed-bare"
@@ -677,30 +661,23 @@ def self_check() -> None:
         }, DEFAULT_IDENTITY)
         hungry_text = (hungry / "experiments.md").read_text()
         assert "20 squares" in hungry_text
-        assert "emergency_strategy" in hungry_text
-        assert "Elbereth" in hungry_text
-        assert "Do not add an engrave" in hungry_text
-        assert "fight2" in hungry_text
-        assert "current_strategy" in hungry_text
-        assert "experience_level >= 11" in hungry_text
-        assert "Leave the fainting test that sets `_xp_farm_level` to 2 unchanged" in hungry_text
-        assert "Do not edit `emergency_strategy`" in hungry_text
-        assert "2,742" in hungry_text
+        assert "highest milestone" in hungry_text
         assert "Xp:11" in hungry_text
-        assert "no monster is adjacent" not in hungry_text
-        assert "fight_heur.py" in hungry_text
+        assert "2,742" in hungry_text
+        assert "under 10,000 turns" in hungry_text
+        assert "_xp_farm_level" in hungry_text
+        assert "experience_level >= 12" in hungry_text
+        assert "Propose one change" in hungry_text
         assert "do not add 15" not in hungry_text
         assert "difficulty" not in hungry_text
         assert "ret -= 6" not in hungry_text
-        assert "exploration_logic.py" in hungry_text
-        assert "under 10,000 turns" in hungry_text
         play = (hungry / "experience.md").read_text()
-        assert "Do not add a function" in play
+        assert "highest milestone" in play
         assert "when a long game gets longer" not in play
         assert "exploration_logic.py" in game
-        assert "Edit only the function" in game
-        assert "ASD-STE100" in game
+        assert "Propose one change" in game
         assert "arena.run" in game
+        assert "NetHack 3.6.6" in game
         assert "_xp_farm_level" in hungry_text
         assert "experience_level >= 12" in hungry_text
         assert "died of starvation (1 of 2)" in hungry_text

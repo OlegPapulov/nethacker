@@ -2,7 +2,7 @@
 
 You edit a bot that plays NetHack 3.6.6. The public score is `wiz-hum-cha-mal`: a chaotic male human wizard. The same code later plays every legal character. A trick that works for only this character loses on the private board.
 
-Read `experience.md` and `experiments.md`. Edit only the function that `experiments.md` names. The markdown is not the edit. When the code matches the parent, the gate throws the tree away. After the code change is in place, add one line to `experiments.md`. Say what you changed.
+Read `experience.md` and `experiments.md`. Describe the games in `experience.md`. Propose one change in `experiments.md`. Change the bot from that proposal. When the code matches the parent, the gate throws the tree away.
 
 ## Goal
 
@@ -30,7 +30,7 @@ Most items start unidentified. Price, appearance, and one careful use tell them 
 
 ## Tips
 
-These facts explain a death. They are not a second edit. Edit only the function that `experiments.md` names.
+These facts explain a death. They are not a second edit. Propose one change in `experiments.md`.
 
 - A fight in a doorway lets one monster hit. A fight in a corridor lets one monster hit. An open room lets several monsters hit.
 - Elbereth on the floor makes this bot wait. Melee, ranged, and zap then lose priority. A long game gets shorter.
@@ -44,10 +44,8 @@ These facts explain a death. They are not a second edit. Edit only the function 
 
 ## What a good change looks like
 
-One change. The change is the function that `experiments.md` names. That function is `current_strategy`. The file you may change is `global_logic.py`. Every other file matches the parent. Do not edit `fight2` or `emergency_strategy`.
+Progress is the highest milestone a game reaches. The judge score is the mean of 15 seeds. Experience level moves that score. A down stair is not, by itself, progress.
 
-The score is the mean of the 15 judge seeds. Seed 9 is at Xp:11. A new function changes that game. Do not add a function. Change one existing assignment. A local game is not the score.
+Leave the corpse walk capped at 20 squares. Leave `experience_level >= 12` in place. Leave the fainting test that sets `_xp_farm_level` to 2 as it is. Do not edit `fight_heur.py`, `exploration_logic.py`, `fight2`, or `emergency_strategy`.
 
-Do not edit `fight_heur.py`, `exploration_logic.py`, `character.py`, `movement_priority.py`, `fight2`, or `emergency_strategy`. Do not edit the spell parser. Do not resubmit the negative ring.
-
-Leave the corpse walk capped at 20 squares. Leave `experience_level >= 12` in place. Do not raise it. Leave the fainting test that sets `_xp_farm_level` to 2 unchanged. It stays hunger fainting and no edible corpse in reach. Do not add a stair. After that test, add only this assignment. When `experience_level >= 11` and `level[1] > 2`, set `level = (Level.DUNGEONS_OF_DOOM, 2)`. Do not run a local game. The judge plays the seeds after you exit.
+Describe the games in `experience.md`. Propose one change in `experiments.md`. Change the bot from that proposal. Do not run a local game. The judge plays the seeds after you exit.

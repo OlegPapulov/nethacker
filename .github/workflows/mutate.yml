@@ -62,66 +62,49 @@ jobs:
           import nethackers.harness.brief as brief
           path = Path(brief.__file__)
           text = path.read_text()
-          if "600000 ms" not in text:
-              sys.exit("MEASURE no longer contains the 600000 ms wait")
-          for old, repl in (
-              (
-                  "drastic rewrite, whatever the idea needs. One idea, any amount of code.",
-                  "Change one existing assignment. Do not add a function.",
-              ),
-              (
-                  "may take a large change",
-                  "is one assignment",
-              ),
-              (
-                  "raises its score.",
-                  "changes one existing assignment. Do not add a function.",
-              ),
-              (
-                  "survives, descends, and advances. Higher is better.",
-                  "banks experience. A down stair is not the score.",
-              ),
-              (
-                  "You have live Python + NLE and the current bot as your starting point.",
-                  "Do not play a local game. The judge plays the seeds after you exit.",
-              ),
-              (
-                  ". Raise \"",
-                  ". Change one existing assignment. Do not add a function. \"",
-              ),
-              (
-                  'f"its score.{score}"',
-                  'f"{score}"',
-              ),
-          ):
-              if old not in text:
-                  sys.exit(f"missing brief sentence: {old}")
-              text = text.replace(old, repl, 1)
-          start = text.find("MEASURE = (")
-          end = text.find("\n# What a change", start)
-          if start < 0 or end < 0:
-              sys.exit("MEASURE block not found")
-          new = (
-              "MEASURE = (\n"
-              '    "## How to measure\\n"\n'
-              '    "Do not run `python -m nethackers.arena.run`. "\n'
-              '    "Do not wait on a local game. "\n'
-              '    "The judge plays the seeds after you exit. "\n'
-              '    "A local game is not the score.\\n"\n'
-              ")\n"
-          )
-          path.write_text(text[:start] + new + text[end + 1:])
+          if "def build_brief(" not in text:
+              sys.exit("build_brief not found")
+          text += '''
+
+def build_brief(objective_name, character, **_kwargs):
+    """The operator prompt. The published sections stay in the file and are not used."""
+    identity = character or objective_name
+    return (
+        "You develop a bot to play NetHack 3.6.6. "
+        "The rules and nuances of the game are in `GAME_RULES.md`. "
+        "Your task is to write a bot that progresses further in the game. "
+        "Progress is the highest milestone a game reaches. "
+        "The judge score is the mean of 15 seeds. "
+        "Experience level is the milestone that moves this score. "
+        f"The identity you are trying to improve is `{identity}`. "
+        "You receive the ends of played games. "
+        "Describe those games in `experience.md`. "
+        "Analyze why the bot lost. "
+        "Propose the changes in `experiments.md`, in accordance with the game rules. "
+        "Based on `experiments.md`, change the bot. "
+        "When `experience.md` or `experiments.md` does not exist yet, create it. "
+        "Do not run `python -m nethackers.arena.run`. "
+        "The judge plays the 15 seeds after you exit.\\n"
+    )
+'''
+          path.write_text(text)
           import importlib
           importlib.reload(brief)
           sample = brief.build_brief("wiz-hum-cha-mal", "wiz-hum-cha-mal")
-          if "600000" in sample or "foreground command" in sample:
-              sys.exit("the brief still tells the operator to play")
-          if "Do not run `python -m nethackers.arena.run`" not in sample:
-              sys.exit("the brief lost the play ban")
-          if "any amount of code" in sample or "live Python + NLE" in sample:
-              sys.exit("the brief still allows a large rewrite or a local game")
-          if "raises its score" in sample or "Raise its score" in sample or "descends, and advances" in sample:
-              sys.exit("the brief still says to raise the score by descending")
+          for item in (
+              "NetHack 3.6.6",
+              "GAME_RULES.md",
+              "wiz-hum-cha-mal",
+              "experience.md",
+              "experiments.md",
+              "highest milestone",
+              "Do not run `python -m nethackers.arena.run`",
+          ):
+              if item not in sample:
+                  sys.exit(f"brief missing: {item}")
+          for bad in ("600000", "any amount of code", "Raise its score", "descends, and advances", "foreground command"):
+              if bad in sample:
+                  sys.exit(f"brief still has: {bad}")
           PY
 
       - name: Hub login and git identity
