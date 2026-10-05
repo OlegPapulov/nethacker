@@ -1579,6 +1579,35 @@ class Agent:
         #         self.direction('.')
         #     return
 
+        # hypothesis: this wizard farms Doom dlvl 1 for tens of thousands of turns and almost
+        # every one of its deaths is a monster reaching melee range while it is nearly dead --
+        # and by then the healing potion, the fruit juice and the prayer above have all been
+        # spent, so `emergency_strategy` has literally nothing left to do but watch it die. A
+        # wizard cannot fight and cannot cast, but it can still write: Elbereth frightens the
+        # monsters that can see it and they will not stay on the floor with it, so engraving it
+        # turns a level that is killing the run every few hundred turns into one the wizard can
+        # walk away from -- which is worth score here, because progress is monotone in the
+        # highest experience level ever banked and a wizard that survives its farm floor keeps
+        # farming it. The four worst seeds (2.7k-10k turns, Xp:2-Xp:6) die exactly this way,
+        # while the long runs all sit on Xp:9-Xp:10 and die to the same thing.
+        # Only depth 1, where the farming is, and only below 6 hitpoints, where nothing else
+        # applies; and only with no monster next to us, because a 12-turn engraving is worse
+        # than nothing if something is already swinging. Engrave it once (the engraving below
+        # us is the guard against re-engraving) and return -- no 8-turn rest afterwards: the
+        # fight code already prefers to wait on the engraving while a monster is still in
+        # sight, and that behaviour is reached on the very next turn of this same strategy.
+        my, mx = self.blstats.y, self.blstats.x
+        if (
+                self.blstats.depth == 1
+                and self.blstats.hitpoints < 6
+                and self.can_engrave()
+                and (self.inventory.engraving_below_me or '').lower() != 'elbereth'
+                and not any(utils.adjacent((my, mx), (y, x)) for _, y, x, *_ in self.get_visible_monsters())
+        ):
+            yield True
+            self.engrave('Elbereth')
+            return
+
         yield False
 
     @utils.debug_log('eat_from_inventory')
