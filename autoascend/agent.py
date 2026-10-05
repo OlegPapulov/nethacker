@@ -1159,6 +1159,8 @@ class Agent:
     def fight2(self):
         yielded = False
         wait_counter = 0
+        if not hasattr(self, '_fight2_last_target'):
+            self._fight2_last_target = None
         while 1:
             monsters = self.get_visible_monsters()
             allow_attack_all = self._last_turn - self._allow_attack_all_turn < 3
@@ -1205,6 +1207,29 @@ class Agent:
                 assert 0, 'No possible action available during fight2'
 
             priority, best_action = max(actions, key=lambda x: x[0]) if actions else None
+
+            # hypothesis: When several monsters stand beside the wizard, the wizard spends
+            # every swing on one, because each extra monster deals another hit per turn.
+            # hypothesis: When the wizard starts a new target, the wizard picks the faster
+            # or the deadlier monster, because that monster acts before the wizard.
+            if best_action[0] == 'melee':
+                tied_melee = [a for a in actions if a[0] == priority and a[1][0] == 'melee']
+                if len(tied_melee) > 1:
+                    monsters_by_pos = {(monster[1], monster[2]): monster for monster in monsters}
+
+                    def target_rank(priority_action):
+                        dy, dx = priority_action[1][1:]
+                        pos = (self.blstats.y + dy, self.blstats.x + dx)
+                        monster = monsters_by_pos.get(pos)
+                        if pos == self._fight2_last_target:
+                            return 2
+                        if monster is not None and (combat.monster_utils.is_monster_faster(self, monster) or
+                                                    combat.monster_utils.is_dangerous_monster(monster)):
+                            return 1
+                        return 0
+
+                    best_action = max(tied_melee, key=target_rank)[1]
+                    self._fight2_last_target = (self.blstats.y + best_action[1], self.blstats.x + best_action[2])
 
             with self.env.debug_tiles(move_priority_heatmap, color='turbo', is_heatmap=True):
                 actions_str = '|'.join([combat.utils.action_str(self, a) for a in sorted(actions, key=lambda x: x[0])])
