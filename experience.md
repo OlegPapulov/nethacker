@@ -560,3 +560,30 @@ After the word is on the floor, `fight_heur.py` subtracts 100 from melee, ranged
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
+## Run wiz-hum-cha-mal (2 iteration(s))
+- iteration 1: reason=no-cell-improved dev_fitness=0.0835879839759868 improved=False notes_ignored=True code_unchanged=False
+- iteration 2: reason=no-cell-improved dev_fitness=0.07432499773456397 improved=False notes_ignored=False code_unchanged=False
+
+### Why it stopped
+no-cell-improved
+
+### What is the problem
+# Playthrough
+
+Identity: `wiz-hum-cha-mal`
+
+## Why it stopped
+
+The parent batch is not in this note. The judge plays the 15 seeds after you exit.
+
+## What is the problem
+
+The score is the mean of those seeds. A game under 10,000 turns that lasts longer raises the mean. A long game that gets shorter lowers the mean.
+
+## What might solve it
+
+See `experiments.md`.
+
+### What might solve it
+See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
