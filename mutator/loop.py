@@ -168,7 +168,7 @@ def _keep_win() -> str:
         "Do not remove the comment marks on the Elbereth block. "
         "That block rests for 8 turns. "
         "In `emergency_strategy`, engrave Elbereth once when `blstats.depth` is 1, "
-        "hit points are below 6, and a monster is adjacent. "
+        "hit points are below 6, `can_engrave()` is true, and no monster is adjacent. "
         "Do not call `direction('.')`. "
         "The file you may change is `agent.py`. "
         "Every other file matches the parent."
@@ -677,6 +677,8 @@ def self_check() -> None:
         assert "20 squares" in hungry_text
         assert "emergency_strategy" in hungry_text
         assert "Elbereth" in hungry_text
+        assert "no monster is adjacent" in hungry_text
+        assert "a monster is adjacent" not in hungry_text
         assert "fight_heur.py" in hungry_text
         assert "do not add 15" not in hungry_text
         assert "difficulty" not in hungry_text

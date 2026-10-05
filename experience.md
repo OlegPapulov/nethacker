@@ -512,29 +512,27 @@ The commented block is still the wrong next edit if someone uncomments it as wri
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.11101507289173372 improved=False notes_ignored=False code_unchanged=False
+## Run 37310611617, wiz-hum-cha-mal, 1 iteration, one Elbereth engrave
+
+[37310611617](https://github.com/OlegPapulov/nethacker/actions/runs/37310611617) finished green. The job ran from 12:35 UTC to 13:02 UTC. The judge scored 0.11101507289173372. The child was not kept. `main` stays on the 0.114 bot.
+
+The operator ran for 1,174 seconds and used 162,960 tokens. The cold-start mean is 0.114 and 36,648 turns. The child mean is 0.111 and 35,028 turns. The notes were rewritten.
+
+The only bot change is 18 lines in `emergency_strategy`. The commented rest loop stays commented. The new branch does not call `direction('.')`. `fight_heur.py` was not edited. The tree has no ttyrec.
 
 ### Why it stopped
-no-cell-improved
+
+A child is kept only when its mean is strictly above the parent. This mean is lower.
 
 ### What is the problem
-# Playthrough
 
-Identity: `wiz-hum-cha-mal`
+Seed 4 rose from 0.018 to 0.117. Its turns rose from 2,742 to 29,415. Seed 3 fell from 0.179 to 0.029. Its turns fell from 57,042 to 5,383. The gain on seed 4 is smaller than the loss on seed 3.
 
-## Why it stopped
+The instruction said `blstats.depth` is 1. The operator used `depth <= 3`. The operator also skipped undead, demons, and mindless monsters. Seed 3 died at depth 1.
 
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. A game under 10,000 turns that lasts longer raises the mean. A long game that gets shorter lowers the mean.
-
-## What might solve it
-
-See `experiments.md`.
+`emergency_strategy` is the outer preempt, so this branch runs before `fight2`. Prayer and a healing potion run first. When those do not fire, the new branch writes Elbereth with the fingers. `engrave()` takes that turn. The word is on the floor after the turn. The adjacent monster attacks during the turn. A small hit lets the word finish, and later attacks stop. That is seed 4. A killing hit ends a game that used to fight through the same dip. That is seed 3.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+See `experiments.md`. Do not edit `mutator/` until a human approves it.
 

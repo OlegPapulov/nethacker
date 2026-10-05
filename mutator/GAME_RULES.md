@@ -50,4 +50,4 @@ The score is the mean of the 15 judge seeds. A game under 10,000 turns that last
 
 Do not edit `fight_heur.py`, `exploration_logic.py`, `character.py`, `movement_priority.py`, or `global_logic.py`. Do not edit the spell parser. Do not resubmit the negative ring.
 
-Leave `_xp_farm_level` in place. Leave `experience_level >= 12` in place. Do not raise it. Do not remove the comment marks on the Elbereth block. That block rests for 8 turns. Do not call `direction('.')`. Do not run a local game. The judge plays the seeds after you exit.
+Leave `_xp_farm_level` in place. Leave `experience_level >= 12` in place. Do not raise it. Do not remove the comment marks on the Elbereth block. That block rests for 8 turns. In `emergency_strategy`, engrave Elbereth once when depth is 1, hit points are below 6, `can_engrave()` is true, and no monster is adjacent. Do not call `direction('.')`. Do not run a local game. The judge plays the seeds after you exit.
