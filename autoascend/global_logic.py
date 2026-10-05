@@ -549,14 +549,14 @@ class GlobalLogic:
                 # local behaviour change can fix it. Once the wizard is getting hungry with no
                 # edible corpse anywhere near, the only remaining food and XP is one level down,
                 # so keep farming dlvl 2 until the milestone is reached. The choice is latched
-                # (`_xp_farm_level`) so the bot cannot oscillate between the two levels.
+                # (`_xp_farm_level`) so the bot cannot oscillate between the two levels, and it
+                # waits for experience level 5 because a fainting wizard that descends earlier
+                # meets stronger monsters before it banks the XP that the descent is meant to buy.
                 if self._xp_farm_level is None:
-                    # hypothesis: on dlvl 1 the wizard starves to death on an exhausted floor
-                    # when no edible corpses remain in reach. When starvation becomes severe
-                    # (FAINTING), the only viable food/XP source may be one level down; latch
-                    # to DL2 to continue farming there if reachable. This preserves good
-                    # DL1 runs while rescuing food-starved cases.
-                    if (self.agent.blstats.hunger_state >= Hunger.FAINTING and
+                    # hypothesis: When the wizard reaches experience level 5, it descends to
+                    # dungeon level 2 while fainting. Below level 5, it stays on dungeon level 1.
+                    if (self.agent.blstats.experience_level >= 5 and
+                            self.agent.blstats.hunger_state >= Hunger.FAINTING and
                             not self.agent.has_edible_corpse_in_reach()):
                         self._xp_farm_level = 2
                 if self._xp_farm_level is not None:
