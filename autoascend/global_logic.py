@@ -515,6 +515,13 @@ class GlobalLogic:
     @Strategy.wrap
     def current_strategy(self):
         yield True
+        # `__init__` is out of scope for this change, so the XP farm latches start here.
+        # `_deep_farm_level` remembers the deepest floor the farm has committed to.
+        # `_dry_since_turn` remembers when the current floor ran out of monsters.
+        if not hasattr(self, '_deep_farm_level'):
+            self._deep_farm_level = None
+        if not hasattr(self, '_dry_since_turn'):
+            self._dry_since_turn = None
         while 1:
             explore_stairs_condition = lambda: False
             if self.milestone == Milestone.BE_ON_FIRST_LEVEL:
@@ -561,6 +568,10 @@ class GlobalLogic:
                         self._xp_farm_level = 2
                 if self._xp_farm_level is not None:
                     level = (Level.DUNGEONS_OF_DOOM, self._xp_farm_level)
+                # hypothesis: when a farm floor holds no monster and no fresh corpse, the wizard takes the down stair, because dead floors grant no experience.
+                # `_deep_farm_level` only grows, so the faint latch above cannot pull the wizard back up.
+                if self._deep_farm_level is not None:
+                    level = (Level.DUNGEONS_OF_DOOM, max(level[1], self._deep_farm_level))
 
             elif self.milestone == Milestone.FIND_SOKOBAN:
                 condition = lambda: self.agent.current_level().dungeon_number == Level.SOKOBAN
@@ -633,10 +644,59 @@ class GlobalLogic:
                     .until(self.agent, lambda: (self.agent.blstats.y, self.agent.blstats.x) == (y, x))
                 )
 
+            def descend_dry_floor():
+                # A dry floor offers neither experience nor food, so the wizard leaves it.
+                # `dis` and `seen` tell the wizard whether unexplored ground borders what it knows.
+                # A vault can hide the frontier, so a long quiet spell also marks the floor dry.
+                target = None
+                level = self.agent.current_level()
+                dis = self.agent.bfs()
+                dry = not self.agent.get_visible_monsters() and \
+                      not self.agent.has_edible_corpse_in_reach()
+                if dry:
+                    if self._dry_since_turn is None:
+                        self._dry_since_turn = self.agent.blstats.time
+                    explored = level.walkable & (dis != -1)
+                    frontier_left = bool((utils.dilate(explored) & ~level.seen).any())
+                    stale = self.agent.blstats.time - self._dry_since_turn >= 1000
+                    if level.dungeon_number == Level.DUNGEONS_OF_DOOM and \
+                            level.level_number < 5 and (not frontier_left or stale):
+                        candidates = []
+                        for (y, x), destination in level.get_stairs(down=True).items():
+                            if dis[y, x] == -1 or self.agent.monster_tracker.monster_mask[y, x]:
+                                continue
+                            if destination is not None and destination[0] != Level.DUNGEONS_OF_DOOM:
+                                continue
+                            candidates.append((dis[y, x], y, x))
+                        for _, y, x in sorted(candidates):
+                            if (self.agent.blstats.y, self.agent.blstats.x) == (y, x) and \
+                                    self.agent.glyphs[y, x] not in G.STAIR_DOWN:
+                                continue
+                            target = (y, x)
+                            break
+                else:
+                    self._dry_since_turn = None
+
+                if target is None:
+                    yield False
+
+                yield True
+
+                if (self.agent.blstats.y, self.agent.blstats.x) != target:
+                    self.agent.go_to(*target)
+                    return
+
+                self.agent.move('>')
+                self._dry_since_turn = None
+                arrived = self.agent.current_level()
+                self._deep_farm_level = arrived.level_number if \
+                    arrived.dungeon_number == Level.DUNGEONS_OF_DOOM else None
+
             (
                 self.agent.exploration.go_to_level_strategy(*level, go_to_strategy, exploration_strategy(None))
                 .before(exploration_strategy(None))#.before(self.agent.exploration.patrol())
                 .preempt(self.agent, [
+                    Strategy(descend_dry_floor, {'strategy': 'descend_dry_floor'}),
                     exploration_strategy(0),
                     exploration_strategy(None).until(
                         self.agent, lambda: self.agent.blstats.hitpoints >= 0.8 * self.agent.blstats.max_hitpoints)
