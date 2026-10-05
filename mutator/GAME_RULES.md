@@ -46,8 +46,8 @@ These facts explain a death. They are not a second edit. Edit only the function 
 
 One change. The change is the function that `experiments.md` names. That function is `current_strategy`. The file you may change is `global_logic.py`. Every other file matches the parent. Do not edit `fight2` or `emergency_strategy`.
 
-The score is the mean of the 15 judge seeds. A game under 10,000 turns that lasts longer raises the mean. A long game that gets shorter lowers the mean. A local game is not the score.
+The score is the mean of the 15 judge seeds. Seed 9 is at Xp:11. A new function changes that game. Do not add a function. Change one existing assignment. A local game is not the score.
 
 Do not edit `fight_heur.py`, `exploration_logic.py`, `character.py`, `movement_priority.py`, `fight2`, or `emergency_strategy`. Do not edit the spell parser. Do not resubmit the negative ring.
 
-Leave the corpse walk capped at 20 squares. Leave `experience_level >= 12` in place. Do not raise it. Leave the fainting test that sets `_xp_farm_level` to 2 unchanged. It stays hunger fainting and no edible corpse in reach. After that test, when `experience_level >= 11`, set `level` to dungeon level 2. Seed 9 dies on depth 3 at Xp:11. Do not run a local game. The judge plays the seeds after you exit.
+Leave the corpse walk capped at 20 squares. Leave `experience_level >= 12` in place. Do not raise it. Leave the fainting test that sets `_xp_farm_level` to 2 unchanged. It stays hunger fainting and no edible corpse in reach. Do not add a stair. After that test, add only this assignment. When `experience_level >= 11` and `level[1] > 2`, set `level = (Level.DUNGEONS_OF_DOOM, 2)`. Do not run a local game. The judge plays the seeds after you exit.

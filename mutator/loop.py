@@ -68,9 +68,9 @@ def _game_rules(identity: str) -> str:
         "Do not run `python -m nethackers.arena.run`. Do not wait on a local game. "
         "The judge plays the 15 seeds after you exit. "
         "A local game is not the score. "
-        "The score is the mean of those seeds. "
-        "A game under 10,000 turns that lasts longer raises the mean. "
-        "A long game that gets shorter lowers the mean. "
+        "The score is the mean of the 15 judge seeds. "
+        "Seed 9 is at Xp:11. A new function changes that game. "
+        "Do not add a function. Change one existing assignment. "
         "A tree that matches the parent is thrown away. "
         "Mark the change with a `# hypothesis:` comment in ASD-STE100 style. "
         "Use one topic in each sentence. Use the active voice and name the actor. "
@@ -157,8 +157,8 @@ def _keep_win() -> str:
     """One score rule. One edit. The Elbereth rest loop stays commented."""
     return (
         "The score is the mean of the 15 judge seeds. "
-        "A game under 10,000 turns that lasts longer raises the mean. "
-        "A long game that gets shorter lowers the mean. "
+        "Seed 9 is at Xp:11. A new function changes that game. "
+        "Do not add a function. Do not add a stair. "
         "Leave the weak-hunger corpse walk capped at 20 squares. Do not edit it. "
         "Leave `experience_level >= 12` in place. Do not raise it. "
         "Do not edit `fight_heur.py`, `fight2`, `emergency_strategy`, or `exploration_logic.py`. "
@@ -169,8 +169,8 @@ def _keep_win() -> str:
         "Do not edit `fight2`. A melee tie-break there left seed 4 at 2,742 turns and lowered seed 9 from Xp:11 to Xp:10. "
         "The function you may change is `current_strategy` in `global_logic.py`. "
         "Leave the fainting test that sets `_xp_farm_level` to 2 unchanged. It stays hunger fainting and no edible corpse in reach. "
-        "After that test, when `experience_level >= 11`, set `level` to dungeon level 2. "
-        "Seed 9 dies on depth 3 at Xp:11. "
+        "After that test, add only this assignment. "
+        "When `experience_level >= 11` and `level[1] > 2`, set `level = (Level.DUNGEONS_OF_DOOM, 2)`. "
         "Do not add an engrave. "
         "Do not remove the comment marks on the Elbereth block. "
         "The file you may change is `global_logic.py`. "
@@ -293,8 +293,8 @@ def write_notes_from_evidence(
             f"{table}\n\n"
             f"## What is the problem\n\n"
             f"The score is the mean of these games. {shallow} of {len(results)} "
-            f"end at depth 1. A game under 10,000 turns that lasts longer raises "
-            f"the mean. A long game that gets shorter lowers the mean.\n\n"
+            f"end at depth 1. Do not add a function. "
+            f"Seed 9 is at Xp:11.\n\n"
         )
         stopped = f"{cause} ({counts.get(cause, 0)} of {len(results)})."
     else:
@@ -303,8 +303,7 @@ def write_notes_from_evidence(
             "The judge plays the 15 seeds after you exit.\n\n"
             "## What is the problem\n\n"
             "The score is the mean of those seeds. "
-            "A game under 10,000 turns that lasts longer raises the mean. "
-            "A long game that gets shorter lowers the mean.\n\n"
+            "Do not add a function. Seed 9 is at Xp:11.\n\n"
         )
         stopped = "The parent batch is not in this note."
     (notes / "experience.md").write_text(
@@ -696,7 +695,7 @@ def self_check() -> None:
         assert "exploration_logic.py" in hungry_text
         assert "under 10,000 turns" in hungry_text
         play = (hungry / "experience.md").read_text()
-        assert "under 10,000 turns" in play
+        assert "Do not add a function" in play
         assert "when a long game gets longer" not in play
         assert "exploration_logic.py" in game
         assert "Edit only the function" in game

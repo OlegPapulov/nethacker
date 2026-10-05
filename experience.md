@@ -610,29 +610,23 @@ Seed 4 stays at 0.018. Its turns go from 2,742 to 2,644, and it dies on depth 1.
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.04561779964972383 improved=False notes_ignored=False code_unchanged=False
+## Run 37362877624, wiz-hum-cha-mal, 1 iteration, descend on a dry floor
+
+[37362877624](https://github.com/OlegPapulov/nethacker/actions/runs/37362877624) finished green. The job ran from 19:21 UTC to 20:14 UTC. The judge scored 0.04561779964972383. The child was not kept. `main` stays on the 0.114 bot.
+
+The operator ran for 2,387 seconds and used 367,470 tokens. The cold-start mean is 0.114 and 36,648 turns. The child mean is 0.046 and 18,573 turns. The notes were rewritten.
+
+The only bot change is 60 lines in `current_strategy`. The fainting latch stays. The new branch walks to a down stair when the floor has no visible monster and no edible corpse, down through dungeon level 5. `_deep_farm_level` only increases, so the latch cannot pull the wizard back up. The `experience_level >= 11` line is absent.
 
 ### Why it stopped
-no-cell-improved
+
+A child is kept only when its mean is strictly above the parent. This mean is lower.
 
 ### What is the problem
-# Playthrough
 
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. A game under 10,000 turns that lasts longer raises the mean. A long game that gets shorter lowers the mean.
-
-## What might solve it
-
-See `experiments.md`.
+Seed 4 stays at 2,742 turns and 0.018. Seed 10 rises from 0.024 to 0.037. Seed 12 rises from 0.029 to 0.037. Seed 2 rises from 0.075 to 0.117. Seed 9 falls from 0.255 to 0.051. Its turns fall from 69,906 to 7,581, and it dies on depth 4. Seed 0 falls from 0.117 to 0.021. Seed 6 falls from 0.179 to 0.029.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
