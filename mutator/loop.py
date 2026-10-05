@@ -166,11 +166,18 @@ def _keep_win() -> str:
         "Seed 4 dies at 2,742 turns and stops at Xp:2. "
         "Seeds 10 and 12 die under 10,000 turns and stop at Xp:4 and Xp:5. "
         "Seed 3 is at Xp:10. Seed 9 is at Xp:11. Those games must keep that progress. "
-        "Do not add an engrave in `emergency_strategy`. "
+        "Do not edit `emergency_strategy`. "
+        "Do not add `search`, `move`, `engrave`, or a loop there. "
+        "That function runs before `fight2`. "
+        "A search there raised seed 4 and lowered seed 9 from Xp:11 to Xp:10. "
+        "A step away there left seed 4 at 2,742 turns and lowered seed 3 from 0.179 to 0.021. "
+        "The function you may change is `fight2`. "
+        "When a monster is adjacent, the action is melee. "
+        "Do not call `search` in that case. Do not call `move` in that case. "
+        "Do not add an engrave. "
         "Do not remove the comment marks on the Elbereth block. "
         "That block rests for 8 turns. "
         "When the floor says Elbereth, the bot waits, and a long game gets shorter. "
-        "Do not call `direction('.')`. "
         "The file you may change is `agent.py`. "
         "Every other file matches the parent."
     )
@@ -679,6 +686,8 @@ def self_check() -> None:
         assert "emergency_strategy" in hungry_text
         assert "Elbereth" in hungry_text
         assert "Do not add an engrave" in hungry_text
+        assert "fight2" in hungry_text
+        assert "Do not edit `emergency_strategy`" in hungry_text
         assert "2,742" in hungry_text
         assert "Xp:11" in hungry_text
         assert "no monster is adjacent" not in hungry_text
