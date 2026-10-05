@@ -44,10 +44,10 @@ These facts explain a death. They are not a second edit. Edit only the function 
 
 ## What a good change looks like
 
-One change. The change is the function that `experiments.md` names. That function is `fight2`. The file you may change is `agent.py`. Every other file matches the parent. Do not edit `emergency_strategy`.
+One change. The change is the function that `experiments.md` names. That function is `current_strategy`. The file you may change is `global_logic.py`. Every other file matches the parent. Do not edit `fight2` or `emergency_strategy`.
 
 The score is the mean of the 15 judge seeds. A game under 10,000 turns that lasts longer raises the mean. A long game that gets shorter lowers the mean. A local game is not the score.
 
-Do not edit `fight_heur.py`, `exploration_logic.py`, `character.py`, `movement_priority.py`, or `global_logic.py`. Do not edit the spell parser. Do not resubmit the negative ring.
+Do not edit `fight_heur.py`, `exploration_logic.py`, `character.py`, `movement_priority.py`, `fight2`, or `emergency_strategy`. Do not edit the spell parser. Do not resubmit the negative ring.
 
-Leave `_xp_farm_level` in place. Leave `experience_level >= 12` in place. Do not raise it. Seed 4 dies at 2,742 turns and stops at Xp:2. Seed 3 is at Xp:10. Seed 9 is at Xp:11. Those long games must keep that progress. Do not edit `emergency_strategy`. Do not add `search`, `move`, `engrave`, or a loop there. In `fight2`, when a monster is adjacent, the action is melee. Do not call `search` in that case. Do not call `move` in that case. Do not remove the comment marks on the Elbereth block. That block rests for 8 turns. Do not run a local game. The judge plays the seeds after you exit.
+Leave the corpse walk capped at 20 squares. Leave `experience_level >= 12` in place. Do not raise it. Seed 4 dies at 2,742 turns and stops at Xp:2. On the fainting test that sets `_xp_farm_level` to 2, also require `experience_level >= 5`. A wizard at Xp:2 must stay on dungeon level 1. Do not run a local game. The judge plays the seeds after you exit.

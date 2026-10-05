@@ -61,7 +61,7 @@ def _game_rules(identity: str) -> str:
         "Read `experiments.md` and edit only the function it names. "
         "The file you may change is the file that contains that function. "
         "Every other file matches the parent. "
-        "Do not edit `fight_heur.py`, `character.py`, `movement_priority.py`, `exploration_logic.py`, or `global_logic.py`. "
+        "Do not edit `fight_heur.py`, `character.py`, `movement_priority.py`, `exploration_logic.py`, `fight2`, or `emergency_strategy`. "
         "Do not resubmit the spell parser or the negative ring. "
         "Leave the change in the file when you exit. "
         "Do not revert it and do not restore the parent. "
@@ -160,25 +160,19 @@ def _keep_win() -> str:
         "A game under 10,000 turns that lasts longer raises the mean. "
         "A long game that gets shorter lowers the mean. "
         "Leave the weak-hunger corpse walk capped at 20 squares. Do not edit it. "
-        "Leave `_xp_farm_level` in place. Do not edit it. "
         "Leave `experience_level >= 12` in place. Do not raise it. "
-        "Do not edit `fight_heur.py`, `global_logic.py`, or `exploration_logic.py`. "
+        "Do not edit `fight_heur.py`, `fight2`, `emergency_strategy`, or `exploration_logic.py`. "
         "Seed 4 dies at 2,742 turns and stops at Xp:2. "
         "Seeds 10 and 12 die under 10,000 turns and stop at Xp:4 and Xp:5. "
         "Seed 3 is at Xp:10. Seed 9 is at Xp:11. Those games must keep that progress. "
-        "Do not edit `emergency_strategy`. "
-        "Do not add `search`, `move`, `engrave`, or a loop there. "
-        "That function runs before `fight2`. "
-        "A search there raised seed 4 and lowered seed 9 from Xp:11 to Xp:10. "
-        "A step away there left seed 4 at 2,742 turns and lowered seed 3 from 0.179 to 0.021. "
-        "The function you may change is `fight2`. "
-        "When a monster is adjacent, the action is melee. "
-        "Do not call `search` in that case. Do not call `move` in that case. "
+        "Do not edit `emergency_strategy`. Do not add `search`, `move`, `engrave`, or a loop there. "
+        "Do not edit `fight2`. A melee tie-break there left seed 4 at 2,742 turns and lowered seed 9 from Xp:11 to Xp:10. "
+        "The function you may change is `current_strategy` in `global_logic.py`. "
+        "On the fainting test that sets `_xp_farm_level` to 2, also require `experience_level >= 5`. "
+        "A wizard at Xp:2 must stay on dungeon level 1. "
         "Do not add an engrave. "
         "Do not remove the comment marks on the Elbereth block. "
-        "That block rests for 8 turns. "
-        "When the floor says Elbereth, the bot waits, and a long game gets shorter. "
-        "The file you may change is `agent.py`. "
+        "The file you may change is `global_logic.py`. "
         "Every other file matches the parent."
     )
 
@@ -687,6 +681,8 @@ def self_check() -> None:
         assert "Elbereth" in hungry_text
         assert "Do not add an engrave" in hungry_text
         assert "fight2" in hungry_text
+        assert "current_strategy" in hungry_text
+        assert "experience_level >= 5" in hungry_text
         assert "Do not edit `emergency_strategy`" in hungry_text
         assert "2,742" in hungry_text
         assert "Xp:11" in hungry_text
