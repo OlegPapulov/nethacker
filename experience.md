@@ -560,56 +560,33 @@ After the word is on the floor, `fight_heur.py` subtracts 100 from melee, ranged
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
-## Run wiz-hum-cha-mal (2 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.0835879839759868 improved=False notes_ignored=True code_unchanged=False
-- iteration 2: reason=no-cell-improved dev_fitness=0.07432499773456397 improved=False notes_ignored=False code_unchanged=False
+## Run 37337111283, wiz-hum-cha-mal, 2 iterations, search then retreat
+
+[37337111283](https://github.com/OlegPapulov/nethacker/actions/runs/37337111283) failed after both scores. The hub read timed out on the second register. The job ran from 15:58 UTC to 17:12 UTC. Neither child was kept.
+
+Iteration 1 scored 0.0835879839759868. It searches for up to 25 turns in `emergency_strategy`. Seed 4 rose from 0.018 to 0.029. Seed 9 fell from 0.255 to 0.179.
+
+Iteration 2 scored 0.07432499773456397. It steps away when hit points are at most one third of the maximum. Seed 4 stays at 2,742 turns. Seed 3 fell from 0.179 to 0.021.
+
+## Run 37349624888, wiz-hum-cha-mal, 1 iteration, melee tie-break in fight2
+
+[37349624888](https://github.com/OlegPapulov/nethacker/actions/runs/37349624888) finished green. The job ran from 17:35 UTC to 18:16 UTC. The judge scored 0.09228385325013148. The child was not kept. `main` stays on the 0.114 bot.
+
+The operator ran for 1,863 seconds and used 301,610 tokens. The cold-start mean is 0.114 and 36,648 turns. The child mean is 0.092 and 31,701 turns. The notes were rewritten.
+
+The only bot change is 25 lines in `fight2`. `emergency_strategy` stays as the parent wrote it. When two melee actions share a priority, the bot keeps the last target, and otherwise it prefers a faster or a dangerous monster.
 
 ### Why it stopped
-no-cell-improved
+
+A child is kept only when its mean is strictly above the parent. This mean is lower.
 
 ### What is the problem
-# Playthrough
 
-Identity: `wiz-hum-cha-mal`
+Seed 4 stays at 2,742 turns and 0.018. Seeds 10 and 12 keep their turn counts. Seed 9 fell from 0.255 to 0.179. That is Xp:11 to Xp:10. Seed 1 fell from 0.179 to 0.051. That is Xp:10 to Xp:7. Seed 3 fell from 0.179 to 0.117. That is Xp:10 to Xp:9.
 
-## Why it stopped
-
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. A game under 10,000 turns that lasts longer raises the mean. A long game that gets shorter lowers the mean.
-
-## What might solve it
-
-See `experiments.md`.
+The tie-break runs only when two melee actions have the same priority. Seed 4 never reaches a different action, so its death stays. The long games do reach that tie, and their progress falls.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.09228385325013148 improved=False notes_ignored=False code_unchanged=False
-
-### Why it stopped
-no-cell-improved
-
-### What is the problem
-# Playthrough
-
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. A game under 10,000 turns that lasts longer raises the mean. A long game that gets shorter lowers the mean.
-
-## What might solve it
-
-See `experiments.md`.
-
-### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
