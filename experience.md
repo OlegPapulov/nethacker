@@ -630,3 +630,29 @@ Seed 4 stays at 2,742 turns and 0.018. Seed 10 rises from 0.024 to 0.037. Seed 1
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
+## Run wiz-hum-cha-mal (1 iteration(s))
+- iteration 1: reason=no-cell-improved dev_fitness=0.10051000771701067 improved=False notes_ignored=False code_unchanged=False
+
+### Why it stopped
+no-cell-improved
+
+### What is the problem
+# Playthrough
+
+Identity: `wiz-hum-cha-mal`
+
+## Why it stopped
+
+The parent batch is not in this note. The judge plays the 15 seeds after you exit.
+
+## What is the problem
+
+The score is the mean of those seeds. Do not add a function. Seed 9 is at Xp:11.
+
+## What might solve it
+
+See `experiments.md`.
+
+### What might solve it
+See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
