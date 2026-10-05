@@ -58,35 +58,36 @@ jobs:
         run: |
           python - <<'PY'
           import sys
+          import textwrap
           from pathlib import Path
           import nethackers.harness.brief as brief
           path = Path(brief.__file__)
           text = path.read_text()
           if "def build_brief(" not in text:
               sys.exit("build_brief not found")
-          text += '''
+          text += textwrap.dedent('''
 
-def build_brief(objective_name, character, **_kwargs):
-    """The operator prompt. The published sections stay in the file and are not used."""
-    identity = character or objective_name
-    return (
-        "You develop a bot to play NetHack 3.6.6. "
-        "The rules and nuances of the game are in `GAME_RULES.md`. "
-        "Your task is to write a bot that progresses further in the game. "
-        "Progress is the highest milestone a game reaches. "
-        "The judge score is the mean of 15 seeds. "
-        "Experience level is the milestone that moves this score. "
-        f"The identity you are trying to improve is `{identity}`. "
-        "You receive the ends of played games. "
-        "Describe those games in `experience.md`. "
-        "Analyze why the bot lost. "
-        "Propose the changes in `experiments.md`, in accordance with the game rules. "
-        "Based on `experiments.md`, change the bot. "
-        "When `experience.md` or `experiments.md` does not exist yet, create it. "
-        "Do not run `python -m nethackers.arena.run`. "
-        "The judge plays the 15 seeds after you exit.\\n"
-    )
-'''
+          def build_brief(objective_name, character, **_kwargs):
+              """The operator prompt. The published sections stay in the file and are not used."""
+              identity = character or objective_name
+              return (
+                  "You develop a bot to play NetHack 3.6.6. "
+                  "The rules and nuances of the game are in `GAME_RULES.md`. "
+                  "Your task is to write a bot that progresses further in the game. "
+                  "Progress is the highest milestone a game reaches. "
+                  "The judge score is the mean of 15 seeds. "
+                  "Experience level is the milestone that moves this score. "
+                  f"The identity you are trying to improve is `{identity}`. "
+                  "You receive the ends of played games. "
+                  "Describe those games in `experience.md`. "
+                  "Analyze why the bot lost. "
+                  "Propose the changes in `experiments.md`, in accordance with the game rules. "
+                  "Based on `experiments.md`, change the bot. "
+                  "When `experience.md` or `experiments.md` does not exist yet, create it. "
+                  "Do not run `python -m nethackers.arena.run`. "
+                  "The judge plays the 15 seeds after you exit.\n"
+              )
+          ''')
           path.write_text(text)
           import importlib
           importlib.reload(brief)
