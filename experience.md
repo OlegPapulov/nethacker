@@ -780,30 +780,15 @@ A child is kept only when its mean is strictly above the parent. This mean is lo
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
-## Run wiz-hum-cha-mal (2 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.02384360774531744 improved=False notes_ignored=False code_unchanged=False
-- iteration 2: reason=no-cell-improved dev_fitness=0.10662171848589869 improved=False notes_ignored=False code_unchanged=False
+## Run 37517425932, wiz-hum-cha-mal, 2 iterations, `--effort high`, prayer wait then corpse walk
+
+[37517425932](https://github.com/OlegPapulov/nethacker/actions/runs/37517425932) finished green. The job ran from 19:14 UTC to 20:55 UTC. No child was kept. Each iteration starts from the 0.114 parent.
+
+Iteration 1 scored 0.02384360774531744. The prayer wait goes from 500 turns and from 400 turns to 3,500 turns. Every seed at 0.179 or above falls. Seed 9 falls from 0.255 to 0.018 in 1,403 turns. The operator ran for 2,888 seconds and used 1,001,382 tokens.
+
+Iteration 2 scored 0.10662171848589869. The corpse walk goes from 20 squares to 30. Seed 7 rises from 0.117 to 0.255. Seeds 5 and 6 fall from 0.179 to 0.037. Seed 9 stays at 0.255. The operator ran for 2,539 seconds and used 366,112 tokens.
 
 ### Why it stopped
-no-cell-improved
 
-### What is the problem
-# Playthrough
-
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. Progress is the highest milestone a game reaches.
-
-## What might solve it
-
-See `experiments.md`.
-
-### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+A child is kept only when its mean is strictly above the parent. Each of these means is lower.
 

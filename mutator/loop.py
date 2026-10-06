@@ -143,8 +143,6 @@ def _keep_win() -> str:
         "Progress is the highest milestone a game reaches. "
         "The judge score is the mean of 15 seeds. "
         "Change one test that already exists. "
-        "A seed at 0.179 or above must stay there or go higher. "
-        "A rise on a lower seed does not pay for a fall on a higher seed. "
         "Do not add a new action. "
         "Describe the games in `experience.md`. "
         "Propose one change in this file, in accordance with the game rules. "
@@ -604,6 +602,7 @@ def self_check() -> None:
         assert "highest milestone" in game
         assert "one test that already exists" in game
         assert "0.179" in game
+        assert "Assumptions" in game
         assert "experiments.md" in game
         bare = root / "bare-notes"
         bare.mkdir()
@@ -639,7 +638,6 @@ def self_check() -> None:
         hungry_text = (hungry / "experiments.md").read_text()
         assert "highest milestone" in hungry_text
         assert "one test that already exists" in hungry_text
-        assert "0.179" in hungry_text
         assert "Propose one change" in hungry_text
         assert "do not add 15" not in hungry_text
         assert "difficulty" not in hungry_text

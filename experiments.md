@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. A seed at 0.179 or above must stay there or go higher. A rise on a lower seed does not pay for a fall on a higher seed. The operator still changes one existing test and does not add a new action.
+Applied in this commit. The assumptions are in `GAME_RULES.md`. A prayer wait of 3,500 turns and a corpse walk of 30 squares are already measured. They are not the next edit. The brief still says to change one existing test and not to add a new action.
 
 ## Result
 

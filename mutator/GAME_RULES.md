@@ -22,7 +22,7 @@ There are thirteen roles. There are five races: human, elf, dwarf, gnome, and or
 
 A wizard casts spells. A spell does damage from a distance. Metal body armor blocks a spell. Hunger rises when the wizard casts. Mapping and the spell list are not this edit.
 
-A wizard has few hit points. The wizard role is neutral. This wizard is chaotic, so prayer is less safe than for a neutral wizard. Do not assume an item that you have not seen in the inventory.
+A wizard has few hit points. The wizard role is neutral. This wizard is chaotic. Do not assume an item that you have not seen in the inventory.
 
 The six stats are strength, dexterity, constitution, intelligence, wisdom, and charisma. Armor class goes down as protection goes up. Energy is the spell budget. A heavy pack drops speed to zero.
 
@@ -42,6 +42,13 @@ These facts explain a death.
 - Do not quaff an unknown potion during a fight.
 - A seed-specific branch does not count. The private seeds are different games.
 
+## Assumptions
+
+These two changes are already measured. They are not the next edit.
+
+- A prayer wait of 3,500 turns drops the mean from 0.114 to 0.024. Every seed at 0.179 or above falls. Seed 9 falls from 0.255 to 0.018. The parent wait is 500 turns at low hit points and 400 turns while fainting.
+- A corpse walk of 30 squares drops the mean from 0.114 to 0.107. Seeds 5 and 6 fall from 0.179 to 0.037. The walk that holds the current mean stops at 20 squares.
+
 ## The edit
 
-Change one test that already exists. A seed at 0.179 or above must stay there or go higher. A rise on a lower seed does not pay for a fall on a higher seed. Do not add a new action. Describe the games in `experience.md`. Propose one change in `experiments.md`, in accordance with these rules. Change the bot from that proposal. Do not run `python -m nethackers.arena.run`. The judge plays the 15 seeds after you exit.
+Change one test that already exists. Do not add a new action. Describe the games in `experience.md`. Propose one change in `experiments.md`, in accordance with these rules. Change the bot from that proposal. Do not run `python -m nethackers.arena.run`. The judge plays the 15 seeds after you exit.
