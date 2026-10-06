@@ -1,6 +1,18 @@
 # Next mutator experiment
 
-Applied in this commit. The operator still changes one existing test and does not add a new action. The 15 seeds must leave the parent line. A test these games never reach does not change the mean.
+Applied in this commit. A seed at 0.179 or above must stay there or go higher. A rise on a lower seed does not pay for a fall on a higher seed. The operator still changes one existing test and does not add a new action.
+
+## Result
+
+Run 37486143597 used `--effort high` for one iteration. The parent is 0.114.
+
+- iteration 1: 0.10001864934271318 not kept (no-cell-improved). Decreases the mean by 0.014 (from 0.114 to 0.100). One line in `melee_monster_priority`: the `+15` bonus requires hit points above `max(8, max_hitpoints // 2)`. Seed 14 rises from 0.075 to 0.255. Seed 9 falls from 0.255 to 0.179.
+
+## What might solve it
+
+The seeds did leave the parent line. The mean still fell. Do not put this melee line on the bot.
+
+# Previous instruction
 
 ## Result
 

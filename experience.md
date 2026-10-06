@@ -762,29 +762,21 @@ A child is kept only when its mean is strictly above the parent. This mean is eq
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.10001864934271318 improved=False notes_ignored=False code_unchanged=False
+## Run 37486143597, wiz-hum-cha-mal, 1 iteration, `--effort high`, melee bonus above half hit points
+
+[37486143597](https://github.com/OlegPapulov/nethacker/actions/runs/37486143597) finished green. The job ran from 15:16 UTC to 17:24 UTC. The judge scored 0.10001864934271318. The table printed 0.100. The child was not kept. `main` stays on the 0.114 bot.
+
+The operator ran for 6,927 seconds and used 781,862 tokens. The cold-start mean is 0.114 and 36,648 turns. The child mean is 0.100 and 28,467 turns. `notes_ignored` is false.
+
+The operator changed one line in `melee_monster_priority`. The `+15` melee bonus now requires hit points above `max(8, max_hitpoints // 2)`. It used to require hit points above 8.
+
+Seed 14 rises from 0.075 to 0.255, and from 32,018 turns to 95,414 turns. Seed 0 rises from 0.117 to 0.179. Seed 9 falls from 0.255 to 0.179. Seeds 3 and 5 fall from 0.179 to 0.037 and 0.029. Seed 4 stays at 2,742 turns and 0.018. Seed 8 stays at 9,957 turns and 0.037.
 
 ### Why it stopped
-no-cell-improved
 
-### What is the problem
-# Playthrough
-
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. Progress is the highest milestone a game reaches.
-
-## What might solve it
-
-See `experiments.md`.
+A child is kept only when its mean is strictly above the parent. This mean is lower.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
