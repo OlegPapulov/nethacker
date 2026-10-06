@@ -1444,7 +1444,7 @@ class Agent:
                 yield False
         elif not only_below_me and self.blstats.hunger_state >= Hunger.WEAK:
             # hypothesis: when weak, look farther for food to avoid starvation
-            max_dist = 20
+            max_dist = 25
             to_eat = [t for t in to_eat if dis[t[0], t[1]] <= max_dist]
             if not to_eat:
                 yield False
