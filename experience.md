@@ -792,30 +792,15 @@ Iteration 2 scored 0.10662171848589869. The corpse walk goes from 20 squares to 
 
 A child is kept only when its mean is strictly above the parent. Each of these means is lower.
 
-## Run wiz-hum-cha-mal (2 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.10699510164442977 improved=False notes_ignored=False code_unchanged=False
-- iteration 2: reason=no-cell-improved dev_fitness=0.10459918429733958 improved=False notes_ignored=False code_unchanged=False
+## Run 37532568987, wiz-hum-cha-mal, 2 iterations, `--effort high`, corpse cap 25 then melee bonus
+
+[37532568987](https://github.com/OlegPapulov/nethacker/actions/runs/37532568987) finished green. The job ran from 21:15 UTC to 22:39 UTC. No child was kept. Each iteration starts from the 0.114 parent. The assumptions in `GAME_RULES.md` named a prayer wait of 3,500 turns and a corpse walk of 30 squares.
+
+Iteration 1 scored 0.10699510164442977. The weak-hunger corpse walk goes from 20 squares to 25. Seed 0 rises from 0.117 to 0.179. Seed 13 falls from 0.179 to 0.051. Seed 9 stays at 0.255. The operator ran for 2,146 seconds and used 181,479 tokens.
+
+Iteration 2 scored 0.10459918429733958. The +15 melee bonus no longer applies because the monster is faster. It applies only when hit points are above 8 and melee is not fatal. Seed 3 falls from 0.179 to 0.029. Seed 9 stays at 0.255. The operator ran for 1,790 seconds and used 367,142 tokens.
 
 ### Why it stopped
-no-cell-improved
 
-### What is the problem
-# Playthrough
-
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. Progress is the highest milestone a game reaches.
-
-## What might solve it
-
-See `experiments.md`.
-
-### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+A child is kept only when its mean is strictly above the parent. Each of these means is lower.
 

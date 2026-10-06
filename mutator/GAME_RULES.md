@@ -44,10 +44,11 @@ These facts explain a death.
 
 ## Assumptions
 
-These two changes are already measured. They are not the next edit.
+These changes are already measured. They are not the next edit. A nearby number is the same change.
 
 - A prayer wait of 3,500 turns drops the mean from 0.114 to 0.024. Every seed at 0.179 or above falls. Seed 9 falls from 0.255 to 0.018. The parent wait is 500 turns at low hit points and 400 turns while fainting.
-- A corpse walk of 30 squares drops the mean from 0.114 to 0.107. Seeds 5 and 6 fall from 0.179 to 0.037. The walk that holds the current mean stops at 20 squares.
+- A corpse walk longer than 20 squares drops the mean. A cap of 30 drops it to 0.107, and seeds 5 and 6 fall from 0.179 to 0.037. A cap of 25 drops it to 0.107, and seed 13 falls from 0.179 to 0.051. The walk that holds the current mean stops at 20 squares.
+- The parent melee bonus is +15 when hit points are above 8 or the monster is faster. Replacing the faster-monster test with a fatal-melee test drops the mean from 0.114 to 0.105. Seed 3 falls from 0.179 to 0.029.
 
 ## The edit
 
