@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. The assumptions are in `GAME_RULES.md`. A corpse walk longer than 20 squares and the changed melee bonus are already measured. A nearby number is the same change. The brief is unchanged.
+Applied in this commit. The assumptions are in `GAME_RULES.md`. Raising the prayer test from below 6 hit points to below 9 is already measured. A nearby number in that test is the same change. The brief is unchanged.
 
 ## Result
 
