@@ -142,7 +142,10 @@ def _keep_win() -> str:
     return (
         "Progress is the highest milestone a game reaches. "
         "The judge score is the mean of 15 seeds. "
-        "Change one test that already exists. Do not add a new action. "
+        "Change one test that already exists. "
+        "The 15 seeds must leave the parent line. "
+        "A test these games never reach does not change the mean. "
+        "Do not add a new action. "
         "Describe the games in `experience.md`. "
         "Propose one change in this file, in accordance with the game rules. "
         "Change the bot from that proposal."
@@ -600,6 +603,7 @@ def self_check() -> None:
         assert "killed after" not in game
         assert "highest milestone" in game
         assert "one test that already exists" in game
+        assert "parent line" in game
         assert "experiments.md" in game
         bare = root / "bare-notes"
         bare.mkdir()
@@ -635,6 +639,7 @@ def self_check() -> None:
         hungry_text = (hungry / "experiments.md").read_text()
         assert "highest milestone" in hungry_text
         assert "one test that already exists" in hungry_text
+        assert "parent line" in hungry_text
         assert "Propose one change" in hungry_text
         assert "do not add 15" not in hungry_text
         assert "difficulty" not in hungry_text

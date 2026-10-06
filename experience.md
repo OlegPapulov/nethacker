@@ -744,29 +744,21 @@ A child is kept only when its mean is strictly above the parent. This mean is lo
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.11444300565928403 improved=False notes_ignored=False code_unchanged=False
+## Run 37478334891, wiz-hum-cha-mal, 1 iteration, `--effort high`, corpse walk starts at hungry
+
+[37478334891](https://github.com/OlegPapulov/nethacker/actions/runs/37478334891) finished green. The job ran from 14:21 UTC to 14:53 UTC. The judge scored 0.11444300565928403. The child was not kept. The mean equals the parent. `main` stays on the 0.114 bot.
+
+The operator ran for 1,237 seconds and used 142,799 tokens. The child mean is 36,648 turns. That is the parent turn count. `notes_ignored` is false. `code_unchanged` is false.
+
+The operator changed one existing test. The 20-square corpse walk now starts at `Hunger.HUNGRY`. It used to start at `Hunger.WEAK`. The operator did not add a new action.
+
+All 15 seeds keep the parent progress and the parent turn count. Seed 4 stays at 2,742 turns and 0.018. Seed 9 stays at 69,906 turns and 0.255.
 
 ### Why it stopped
-no-cell-improved
 
-### What is the problem
-# Playthrough
-
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. Progress is the highest milestone a game reaches.
-
-## What might solve it
-
-See `experiments.md`.
+A child is kept only when its mean is strictly above the parent. This mean is equal.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+See `experiments.md`. Do not edit `mutator/` until a human approves it.
 

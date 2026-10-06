@@ -44,4 +44,4 @@ These facts explain a death.
 
 ## The edit
 
-Change one test that already exists. Do not add a new action. Describe the games in `experience.md`. Propose one change in `experiments.md`, in accordance with these rules. Change the bot from that proposal. Do not run `python -m nethackers.arena.run`. The judge plays the 15 seeds after you exit.
+Change one test that already exists. The 15 seeds must leave the parent line. A test these games never reach does not change the mean. Do not add a new action. Describe the games in `experience.md`. Propose one change in `experiments.md`, in accordance with these rules. Change the bot from that proposal. Do not run `python -m nethackers.arena.run`. The judge plays the 15 seeds after you exit.

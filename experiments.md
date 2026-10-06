@@ -1,6 +1,12 @@
 # Next mutator experiment
 
-Applied in this commit. The operator changes one test that already exists. The operator does not add a new action.
+Applied in this commit. The operator still changes one existing test and does not add a new action. The 15 seeds must leave the parent line. A test these games never reach does not change the mean.
+
+## Result
+
+Run 37478334891 used `--effort high` for one iteration. The parent is 0.114.
+
+- iteration 1: 0.11444300565928403 not kept (no-cell-improved). Does not change the mean (0.114). The 20-square corpse walk starts at `Hunger.HUNGRY` instead of `Hunger.WEAK`. All 15 seeds keep the parent line.
 
 ## Result
 
