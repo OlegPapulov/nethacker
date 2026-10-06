@@ -33,7 +33,7 @@ OWNER = "OlegPapulov"
 BASELINE_COMMIT = "8387c34be4ce7c4019f4d98a9445a48e83e42731"
 MODEL = "opencode/big-pickle"
 OPERATOR = "opencode2"
-EFFORT = "high"
+EFFORT = "xhigh"
 RUN_NOTES = ("experience.md", "experiments.md")
 NOTES = ("GAME_RULES.md", *RUN_NOTES)
 BOT_NAMES = ("bot.py", "arena_adapter.py", "autoascend", "nethackers.solution.json", "LICENSE")
@@ -624,7 +624,7 @@ def self_check() -> None:
         command = evolve_command(seed, root / "work", DEFAULT_IDENTITY, 3)
         assert DEFAULT_IDENTITY in command
         assert command[command.index("--iterations") + 1] == "3"
-        assert command[command.index("--effort") + 1] == "high"
+        assert command[command.index("--effort") + 1] == "xhigh"
         assert "killed after" not in game
         assert "highest milestone" in game
         assert "experiments.md" in game
