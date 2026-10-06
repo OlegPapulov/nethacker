@@ -44,7 +44,7 @@ These facts explain a death. They are not a second edit. Propose one change in `
 
 ## What a good change looks like
 
-Progress is the highest milestone a game reaches. The judge score is the mean of 15 seeds. Experience level moves that score. A down stair is not, by itself, progress.
+Progress is the highest milestone a game reaches. The judge score is the mean of 15 seeds. Experience level moves that score. The mean falls when a long game loses a milestone, even when a short game lasts longer. A down stair is not, by itself, progress.
 
 Leave the corpse walk capped at 20 squares. Leave `experience_level >= 12` in place. Leave the fainting test that sets `_xp_farm_level` to 2 as it is. Do not edit `fight_heur.py`, `exploration_logic.py`, `fight2`, or `emergency_strategy`.
 

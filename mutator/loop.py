@@ -62,6 +62,7 @@ def _game_rules(identity: str) -> str:
         "The rules and nuances of the game are in this file. "
         "Progress is the highest milestone a game reaches. "
         "The judge score is the mean of 15 seeds. "
+        "The mean falls when a long game loses a milestone, even when a short game lasts longer. "
         "Describe the games in `experience.md`. "
         "Propose the change in `experiments.md`. "
         "Change the bot from that proposal. "
@@ -149,6 +150,7 @@ def _keep_win() -> str:
     """Facts for the note. The operator proposes the change."""
     return (
         "The score is the mean of the 15 judge seeds. "
+        "The mean falls when a long game loses a milestone, even when a short game lasts longer. "
         "Progress is the highest milestone a game reaches. "
         "Experience level moves that score. "
         "Seed 9 is at Xp:11. "
@@ -627,6 +629,7 @@ def self_check() -> None:
         assert command[command.index("--effort") + 1] == "xhigh"
         assert "killed after" not in game
         assert "highest milestone" in game
+        assert "loses a milestone" in game
         assert "experiments.md" in game
         bare = root / "bare-notes"
         bare.mkdir()
@@ -662,6 +665,7 @@ def self_check() -> None:
         hungry_text = (hungry / "experiments.md").read_text()
         assert "20 squares" in hungry_text
         assert "highest milestone" in hungry_text
+        assert "loses a milestone" in hungry_text
         assert "Xp:11" in hungry_text
         assert "2,742" in hungry_text
         assert "under 10,000 turns" in hungry_text

@@ -1,6 +1,24 @@
 # Next mutator experiment
 
-Applied in this commit. The brief stays as it is. The operator effort changes from `medium` to `high`.
+Applied in this commit. The operator brief says the mean falls when a long game loses a milestone, even when a short game lasts longer.
+
+## Result
+
+Run 37397657802 used `--effort xhigh` for three iterations. Each iteration starts from the 0.114 parent, because no child is kept.
+
+- iteration 1: 0.053290418490603744 not kept (no-cell-improved). Decreases the mean by 0.061 (from 0.114 to 0.053). Picks up coins only while `_drop_gold_till_turn` is still active.
+- iteration 2: 0.09002482586758531 not kept (no-cell-improved). Decreases the mean by 0.024 (from 0.114 to 0.090). `can_engrave` returns false while hit points are below the maximum.
+- iteration 3: 0.07239138816724316 not kept (no-cell-improved). Decreases the mean by 0.042 (from 0.114 to 0.072). Walks away when `2 * difficulty * difficulty` exceeds current hit points.
+
+## What is the problem
+
+Each comment calls the edit an improvement. The edit runs for every seed. A short seed can rise while seed 9 loses a milestone. The mean then falls.
+
+Iteration 1 raises seeds 4, 8, and 12. Seed 9 falls from 0.255 to 0.029. Iteration 2 raises seed 6 from 0.179 to 0.255. Seeds 3 and 5 fall from 0.179 to 0.029. Seed 9 falls from 0.255 to 0.179. Iteration 3 leaves seeds 4, 8, and 12 on the parent turn counts. Seed 9 falls from 0.255 to 0.051.
+
+## What might solve it
+
+Do not put any of these three diffs on the bot. The next operator sentence should say that the mean falls when a long game loses a milestone, even when a short game lasts longer. Do not name the gold test, `can_engrave`, or `movement_priority` in that sentence. Naming a symbol makes the operator edit that symbol.
 
 ## Result
 
@@ -94,12 +112,9 @@ Change the bot from the proposal above. The judge measures that tree.
 
 ## Result
 
-- iteration 1: 0.053 not kept (no-cell-improved).
-- iteration 2: 0.090 not kept (no-cell-improved). Increases the mean by 0.037 (from 0.053 to 0.090).
-- iteration 3: 0.072 not kept (no-cell-improved). Decreases the mean by 0.018 (from 0.090 to 0.072).
-
-## Proposal (not approved)
-Source: the last mutator iteration. Applying this means editing `mutator/`, which needs a human yes.
+- iteration 1: 0.053290418490603744 not kept. Decreases the mean by 0.061 (from 0.114 to 0.053). The record step compared this child with the next child. Each child is scored against the 0.114 parent.
+- iteration 2: 0.09002482586758531 not kept. Decreases the mean by 0.024 (from 0.114 to 0.090).
+- iteration 3: 0.07239138816724316 not kept. Decreases the mean by 0.042 (from 0.114 to 0.072).
 
 # Next experiment
 

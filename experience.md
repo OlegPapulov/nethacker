@@ -658,57 +658,51 @@ The operator added `cast_at_monsters` and called it before `fight2`. The spell i
 
 A child is kept only when its mean is strictly above the parent. This mean is lower.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.11444300565928403 improved=False notes_ignored=False code_unchanged=False
+## Run 37387762326, wiz-hum-cha-mal, 1 iteration, `--effort high`, leave a used-up floor
+
+[37387762326](https://github.com/OlegPapulov/nethacker/actions/runs/37387762326) finished green. The judge scored 0.11444300565928403. The child was not kept. The mean equals the parent.
+
+The operator ran for 3,277 seconds and used 737,660 tokens. The child mean is 36,040 turns. The parent mean is 36,648 turns.
+
+The operator added `_floor_is_used_up` in `global_logic.py`. When that test is true, the farm target becomes the next Doom level, with a cap of 4. The comment says eleven seeds stall on one experience level. Five seeds share the most common parent progress, 0.179. Fourteen seeds keep the parent progress and the parent turn count. Seed 6 changes from 73,840 turns at depth 3 to 64,713 turns at depth 2. Its progress stays 0.179.
 
 ### Why it stopped
-no-cell-improved
 
-### What is the problem
-# Playthrough
+A child is kept only when its mean is strictly above the parent. This mean is equal.
 
-Identity: `wiz-hum-cha-mal`
+## Run 37397657802, wiz-hum-cha-mal, 3 iterations, `--effort xhigh`
 
-## Why it stopped
+[37397657802](https://github.com/OlegPapulov/nethacker/actions/runs/37397657802) finished green. The job ran from 01:08 UTC to 03:05 UTC. No child was kept. `main` stays on the 0.114 bot. Each iteration starts from that parent. The cold-start mean is 0.114 and 36,648 turns on every iteration. `notes_ignored` is false on every iteration.
 
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
+### Iteration 1, gold
 
-## What is the problem
+The operator ran for 2,577 seconds and used 627,854 tokens. The judge scored 0.053290418490603744. The table printed 0.053. The child mean is 17,394 turns.
 
-The score is the mean of those seeds. Progress is the highest milestone a game reaches.
+The edit is in `ItemPriority`. The parent picks up coins when `_drop_gold_till_turn` is already past. The child picks up coins only while that deadline is still active. The comment says a gold pile fills the weight budget and blocks potions and food.
 
-## What might solve it
+Seeds 4, 8, and 12 rise. Seed 4 goes from 0.018 to 0.029. Seed 8 goes from 0.037 to 0.075. Seed 12 goes from 0.029 to 0.117. Seed 9 falls from 0.255 to 0.029, and from 69,906 turns to 3,153 turns.
 
-See `experiments.md`.
+### Iteration 2, Elbereth
 
-### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+The operator ran for 1,252 seconds and used 157,566 tokens. The judge scored 0.09002482586758531. The table printed 0.090. The child mean is 27,240 turns.
 
-## Run wiz-hum-cha-mal (3 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.053290418490603744 improved=False notes_ignored=False code_unchanged=False
-- iteration 2: reason=no-cell-improved dev_fitness=0.09002482586758531 improved=False notes_ignored=False code_unchanged=False
-- iteration 3: reason=no-cell-improved dev_fitness=0.07239138816724316 improved=False notes_ignored=False code_unchanged=False
+`can_engrave` returns false while hit points are below the maximum. The comment says the word makes melee, ranged, and zap lose priority, so the bot stands and takes hits.
+
+Seeds 4, 8, and 12 keep the parent turn counts. Seed 6 rises from 0.179 to 0.255, and from 73,840 turns to 81,023 turns. Seeds 3 and 5 fall from 0.179 to 0.029. Seed 9 falls from 0.255 to 0.179.
+
+### Iteration 3, retreat
+
+The operator ran for 1,905 seconds and used 408,481 tokens. The judge scored 0.07239138816724316. The table printed 0.072. The child mean is 23,376 turns.
+
+`is_out_trading_us` treats `2 * difficulty * difficulty` as the hit-point cost of a melee exchange, and twice that when the monster is faster. When that cost exceeds current hit points, the movement priority walks away.
+
+Seeds 4, 8, and 12 keep the parent turn counts. Seed 11 rises from 0.075 to 0.117. Seed 9 falls from 0.255 to 0.051. Seeds 1 and 3 fall from 0.179 to 0.037.
 
 ### Why it stopped
-no-cell-improved
 
-### What is the problem
-# Playthrough
-
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. Progress is the highest milestone a game reaches.
-
-## What might solve it
-
-See `experiments.md`.
+A child is kept only when its mean is strictly above the parent. Each of these means is lower.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
