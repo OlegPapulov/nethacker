@@ -932,9 +932,26 @@ class Agent:
                                  f'expected ({expected_y}, {expected_x}), got ({self.blstats.y}, {self.blstats.x})')
 
     def can_engrave(self):
-        if self.character.prop.polymorph:
-            return False  # TODO: only for handless monsters (which cannot write)
-        return (self.blstats.y, self.blstats.x) != self._forbidden_engrave_position
+        # hypothesis: Elbereth is the only engraving this agent ever writes, and writing
+        # it costs the wizard the fight it is written during. The engrave is offered only
+        # when a non-weak monster is already adjacent and hitpoints are under 30
+        # (fight_heur.elbereth_action), i.e. in the middle of a fight the wizard is already
+        # losing, and the moment "elbereth" is underfoot every melee, ranged and zap action
+        # loses 100 priority while standing still is worth 30 - 40 * hp/max. At the
+        # hitpoints where that happens, the wait also beats the retreat rings (never worth
+        # more than +10), so the wizard stops swinging and stops running at the same time
+        # and can only wait to be killed -- waiting deals no damage, so the fight cannot end
+        # in its favour. Elbereth only turns away undead, and none of the monsters that kill
+        # this wizard are undead (killer bee, giant bat, plains centaur, kitten, pony,
+        # invisible Mordor orc), so the engraving buys stillness instead of survival. With
+        # the engrave gone, `engraving_below_me` never becomes 'elbereth', the wait action
+        # and the -100 penalties become unreachable, and the wizard fights each of those
+        # fights with its normal actions -- melee at its usual priority and the unchanged
+        # retreat rings -- which is what it already does in every fight where it did not
+        # engrave. fight_heur.py, fight2 and emergency_strategy are off limits, and
+        # elbereth_action reads this gate before it can offer the action, so this is the
+        # one place the decision can be made.
+        return False
 
     def engrave(self, text):
         assert '\r' not in text
