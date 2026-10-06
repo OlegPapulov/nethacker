@@ -1,6 +1,16 @@
 # Next mutator experiment
 
-Applied in this commit. `GAME_RULES.md` states the goal, the score, and one proposal. The operator effort is `high`.
+Applied in this commit. The operator changes one test that already exists. The operator does not add a new action.
+
+## Result
+
+Run 37450590226 used `--effort high` for one iteration. The parent is 0.114.
+
+- iteration 1: 0.04406781738617764 not kept (no-cell-improved). Decreases the mean by 0.070 (from 0.114 to 0.044). `is_safe_to_pray` waits 1,200 turns. Seed 9 falls from 0.255 to 0.018.
+
+## What might solve it
+
+Do not put this prayer diff on the bot. The rulebook already states the goal and the mean. This run still wrote a new prayer rule, and the mean fell.
 
 ## Result
 

@@ -726,29 +726,21 @@ A child is kept only when its mean is strictly above the parent. This mean is lo
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.04406781738617764 improved=False notes_ignored=False code_unchanged=False
+## Run 37450590226, wiz-hum-cha-mal, 1 iteration, `--effort high`, prayer wait of 1,200 turns
+
+[37450590226](https://github.com/OlegPapulov/nethacker/actions/runs/37450590226) finished green. The judge scored 0.04406781738617764. The table printed 0.044. The child was not kept. `main` stays on the 0.114 bot.
+
+The operator ran for 6,702 seconds and used 958,790 tokens. The cold-start mean is 0.114 and 36,648 turns. The child mean is 0.044 and 11,366 turns. `notes_ignored` is false.
+
+`is_safe_to_pray` now waits 1,200 turns between prayers. It also refuses a prayer on an altar of another god, and it refuses again after a rejected prayer until a sacrifice on the wizard's altar. The comment says a prayer that comes too soon costs luck and an experience level.
+
+Seed 4 rises from 0.018 to 0.051. Seed 11 rises from 0.075 to 0.117. Seed 9 falls from 0.255 to 0.018, and from 69,906 turns to 1,403 turns. Seeds 1, 3, 5, 6, and 13 fall from 0.179.
 
 ### Why it stopped
-no-cell-improved
 
-### What is the problem
-# Playthrough
-
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. Progress is the highest milestone a game reaches.
-
-## What might solve it
-
-See `experiments.md`.
+A child is kept only when its mean is strictly above the parent. This mean is lower.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+See `experiments.md`. Do not edit `mutator/` until a human approves it.
 

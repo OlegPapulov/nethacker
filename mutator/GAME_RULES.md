@@ -38,11 +38,10 @@ These facts explain a death.
 - A faster monster takes a turn before the wizard takes a turn. A few hits kill the wizard.
 - A pet is a resource. An attack on a peaceful monster can ruin the game.
 - Eat before a faint. A faint next to a monster is a death.
-- A prayer can feed the wizard. A god that rejects the prayer takes an experience level and hit points.
 - A cockatrice corpse turns the hero to stone. Do not eat it. Do not touch it with bare hands.
 - Do not quaff an unknown potion during a fight.
 - A seed-specific branch does not count. The private seeds are different games.
 
 ## The edit
 
-Describe the games in `experience.md`. Propose one change in `experiments.md`, in accordance with these rules. Change the bot from that proposal. Do not run `python -m nethackers.arena.run`. The judge plays the 15 seeds after you exit.
+Change one test that already exists. Do not add a new action. Describe the games in `experience.md`. Propose one change in `experiments.md`, in accordance with these rules. Change the bot from that proposal. Do not run `python -m nethackers.arena.run`. The judge plays the 15 seeds after you exit.
