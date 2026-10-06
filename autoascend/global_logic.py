@@ -58,7 +58,20 @@ class ItemPriority(ItemPriorityBase):
                 bag = item  # TODO: select the best
                 add_item(bag)
 
-        if self._drop_gold_till_turn < self.agent.blstats.time:
+        # Gold is worth no experience, and experience is the only thing the score
+        # moves. Coin piles used to be taken here, third in the order, which is
+        # ahead of the unambiguous healing potions, the food and the catch-all
+        # potion/ring/wand pass below: `add_item` spends `remaining_weight` on as
+        # many coins as the capacity allows, and every later item then gets
+        # `int(remaining_weight // unit_weight) == 0`. So one gold pile could fill
+        # the pack's weight budget and turn the rest of the floor into loot the
+        # wizard refuses to walk to, and the coins themselves are dead weight that
+        # costs carrying capacity, inventory slots and encumbrance for nothing.
+        # Coins are therefore only carried while a vault guard is about to attack
+        # for them, which is exactly what `_drop_gold_till_turn` means: the guard
+        # handlers in `follow_guard`/`offer_corpses` set it to `time + 100`, and
+        # outside that window `arrange_items` drops the coins again.
+        if self._drop_gold_till_turn >= self.agent.blstats.time:
             for item in items:
                 if item.category == nh.COIN_CLASS:
                     add_item(item)
