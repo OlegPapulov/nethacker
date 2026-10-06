@@ -165,6 +165,7 @@ class GlobalLogic:
 
         self._got_artifact = False
         self._xp_farm_level = None
+        self._stalled_farm_level = None
 
     def update(self):
         if not self.agent.character.prop.hallu:
@@ -512,10 +513,81 @@ class GlobalLogic:
 
         self.agent.go_to(y, x, stop_one_before=True)
 
+    # A stall is the one way this bot can lose a game without dying: every
+    # strategy in the chain yields false, the generator spins without a turn
+    # ever being taken, and the episode is eventually ended for making no
+    # progress. A used-up floor is visible long before that happens, so look
+    # for that directly instead of watching the turn counter: the spin happens
+    # inside a generator that never comes back out, so nothing above it can
+    # ever observe the missing turn and act on it.
+    #
+    # The wizard has no ranged attack, so the farm stops where the floors stop
+    # being worth the walk. Progress is monotone (the scorer keeps the highest
+    # milestone ever seen), so a fatal floor below this one costs the run
+    # nothing that was not already banked.
+    MAX_STALLED_FARM_LEVEL = 4
+
+    def _floor_is_used_up(self):
+        """True when nothing left on this Doom floor is worth a turn.
+
+        The farm sits on one floor until the wizard is level 12, but a Doom
+        floor runs out: every tile is seen, every searchable square has been
+        dug at, the stairs have all been used and nothing is left standing to
+        kill. Then `explore1` yields false, every strategy below yields false,
+        and the run is lost to the spin above -- which banks exactly the
+        experience level the wizard had, and explains why so many seeds stop on
+        the same number. All of that is computable from what the wizard already
+        remembers, so ask it instead of inferring the spin after the fact.
+        """
+        level = self.agent.current_level()
+        if level.dungeon_number != Level.DUNGEONS_OF_DOOM or level.level_number < 1:
+            # Still on the surface, or somewhere the stairs strategy cannot
+            # leave: a deeper farm floor would only be an unreachable target.
+            return False
+        if level.level_number >= self.MAX_STALLED_FARM_LEVEL:
+            # Already farming as deep as this is willing to go.
+            return False
+        if len(self.agent.exploration.get_unexplored_stairs(*level.key(), all=True)) > 0:
+            # A stair that leads somewhere unknown is never used up.
+            return False
+
+        # Same question `explore1` asks itself in `to_visit_func`: is there a
+        # reachable tile left to walk to? Unseen stone is only worth a trip if
+        # the wizard can stand next to it, and a door is only worth a kick if it
+        # has not already been kicked four times.
+        stone = utils.isin(self.agent.glyphs, G.STONE) & ~level.seen
+        doors = utils.isin(self.agent.glyphs, G.DOOR_CLOSED) & (level.door_open_count < 4)
+        to_visit = np.zeros(stone.shape, bool)
+        tmp = np.zeros(stone.shape, bool)
+        for dy in [-1, 0, 1]:
+            for dx in [-1, 0, 1]:
+                if dy == 0 and dx == 0:
+                    continue
+                to_visit |= utils.translate(stone, dy, dx, out=tmp)
+                if dx == 0 or dy == 0:
+                    to_visit |= utils.translate(doors, dy, dx, out=tmp)
+        if (to_visit & (self.agent.bfs() != -1)).any():
+            return False
+
+        # Nothing left to search, by the same yardstick explore1 uses to decide
+        # the floor is dug out enough to walk across traps without searching.
+        counts = level.search_count[level.search_count > 0]
+        if len(counts) == 0 or np.max(counts) - np.quantile(counts, 0.3) <= 400:
+            return False
+
+        # Only worth a floor deeper if that floor can actually be walked to.
+        return (level.dungeon_number, level.level_number + 1) in \
+            self.agent.exploration.get_achievable_levels()
+
     @Strategy.wrap
     def current_strategy(self):
         yield True
         while 1:
+            if self.milestone != Milestone.BE_ON_FIRST_LEVEL:
+                # The experience level gate is what the whole farm serves, and
+                # the levels past dlvl 1 have their own milestone chain. Forget
+                # the deeper farm rather than carry it into the mines or Sokoban.
+                self._stalled_farm_level = None
             explore_stairs_condition = lambda: False
             if self.milestone == Milestone.BE_ON_FIRST_LEVEL:
                 # hypothesis: the score is the best (deepest dlvl / highest xp
@@ -561,6 +633,34 @@ class GlobalLogic:
                         self._xp_farm_level = 2
                 if self._xp_farm_level is not None:
                     level = (Level.DUNGEONS_OF_DOOM, self._xp_farm_level)
+                # hypothesis: the reason eleven of the fifteen seeds stop on one
+                # exact experience level is not death. dlvl 1 runs out: every tile is
+                # seen, every searchable square has been dug out, no stair leads
+                # anywhere new and no monster is left to kill, so every strategy
+                # below yields false, this loop spins without a turn ever being
+                # taken and the run is lost to the stall (the judge ends an episode
+                # whose turn counter has not moved). A stall banks exactly the
+                # experience level the wizard had, which is why so many seeds land
+                # on the same number. `current_strategy` is a generator that only
+                # yields once, so a stall never even comes back out to be
+                # interrupted -- the only way to score past it is to give the farm
+                # another floor. Deeper Doom floors are worth more experience per
+                # kill, so once the floor under the wizard is used up, farm the next
+                # one down: dlvl 1 does have a down stair (only the up stair is
+                # withheld from it), so the stairs strategy already in this chain
+                # walks the wizard there. `_floor_is_used_up` decides that from what
+                # the wizard already remembers rather than from a missing turn,
+                # which nothing above the spin can see.
+                farm_level = level[1]
+                current = self.agent.current_level()
+                if (current.dungeon_number == Level.DUNGEONS_OF_DOOM and
+                        current.level_number == farm_level and
+                        self._floor_is_used_up()):
+                    self._stalled_farm_level = min(farm_level + 1, self.MAX_STALLED_FARM_LEVEL)
+                    self.agent.stats_logger.log_event('stalled_xp_farm')
+                if self._stalled_farm_level is not None:
+                    level = (Level.DUNGEONS_OF_DOOM,
+                             max(level[1], self._stalled_farm_level))
 
             elif self.milestone == Milestone.FIND_SOKOBAN:
                 condition = lambda: self.agent.current_level().dungeon_number == Level.SOKOBAN
@@ -633,19 +733,27 @@ class GlobalLogic:
                     .until(self.agent, lambda: (self.agent.blstats.y, self.agent.blstats.x) == (y, x))
                 )
 
-            (
-                self.agent.exploration.go_to_level_strategy(*level, go_to_strategy, exploration_strategy(None))
-                .before(exploration_strategy(None))#.before(self.agent.exploration.patrol())
-                .preempt(self.agent, [
-                    exploration_strategy(0),
-                    exploration_strategy(None).until(
-                        self.agent, lambda: self.agent.blstats.hitpoints >= 0.8 * self.agent.blstats.max_hitpoints)
-                ])
-                .preempt(self.agent, [
-                    self.agent.exploration.explore_stairs(go_to_strategy, all=True).condition(explore_stairs_condition),
-                ])
-                .until(self.agent, condition)
-            ).run()
+            try:
+                (
+                    self.agent.exploration.go_to_level_strategy(*level, go_to_strategy, exploration_strategy(None))
+                    .before(exploration_strategy(None))#.before(self.agent.exploration.patrol())
+                    .preempt(self.agent, [
+                        exploration_strategy(0),
+                        exploration_strategy(None).until(
+                            self.agent, lambda: self.agent.blstats.hitpoints >= 0.8 * self.agent.blstats.max_hitpoints)
+                    ])
+                    .preempt(self.agent, [
+                        self.agent.exploration.explore_stairs(go_to_strategy, all=True).condition(explore_stairs_condition),
+                    ])
+                    .until(self.agent, condition)
+                ).run()
+            except AgentPanic:
+                if self._stalled_farm_level is None:
+                    raise
+                # The deeper farm asked for a floor the wizard cannot be walked
+                # to. Fall back to the floor it was already farming instead of
+                # taking the whole run down with the panic.
+                self._stalled_farm_level = None
 
     def global_strategy(self):
         return (

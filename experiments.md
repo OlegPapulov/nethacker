@@ -1,14 +1,3 @@
-# Next mutator experiment
-
-Applied in this commit. The brief stays as it is. The operator effort changes from `medium` to `high`.
-
-## Result
-
-- iteration 1: 0.066 not kept (no-cell-improved). Decreases the mean by 0.048 (from 0.114 to 0.066). Added `cast_at_monsters` before `fight2`. Run 37383680703.
-
-## Proposal (not approved)
-Source: the last mutator iteration. Applying this means editing `mutator/`, which needs a human yes.
-
 # Next experiment
 
 ## Result
@@ -45,5 +34,38 @@ Mean progress is unknown. The bot is kept only if the next mean is strictly high
 
 The score is the mean of the 15 judge seeds. Progress is the highest milestone a game reaches. Experience level moves that score. Seed 9 is at Xp:11. Seed 4 dies at 2,742 turns and stops at Xp:2. Seeds 10 and 12 die under 10,000 turns. Leave the weak-hunger corpse walk capped at 20 squares. Leave `_xp_farm_level` as it is. Leave `experience_level >= 12` as it is. Describe the games in `experience.md`. Propose one change in this file, in accordance with the game rules. Change the bot from that proposal.
 
-Change the bot from the proposal above. The judge measures that tree.
+## The one change
 
+Farm the next Doom floor down when the floor under the wizard is used up.
+
+Eleven of the fifteen seeds stop on one exact experience level, and no seed reaches
+`Xp:12`. That is a stall, not a death: a stall is a loss here, and NLE ends an
+episode after 10,000 steps with an unmoved turn counter. The XP farm parks the
+wizard on Doom dlvl 1 until it is level 12, and a wizard with that floor dug out
+has nothing left to do on it, so `current_strategy` spins in place and the run is
+lost with whatever experience it had banked.
+
+The change adds `GlobalLogic._floor_is_used_up()`, which asks directly what
+`explore1` asks itself, from what the wizard already remembers:
+
+- no unexplored stair (`get_unexplored_stairs(all=True)` is empty),
+- no reachable tile left to walk to: `~level.seen & G.STONE` and un-kicked
+  `G.DOOR_CLOSED`, expanded over the eight neighbours exactly as
+  `explore1.to_visit_func` does, masked by `agent.bfs() != -1`,
+- nothing left to search, by the same `search_diff > 400` yardstick `explore1`
+  uses to decide the floor is dug out enough to walk across traps,
+- and a way down that is actually achievable, so the target can be walked to.
+
+When that holds on the floor the wizard is farming, the farm target moves to the
+next Doom floor down, capped at `MAX_STALLED_FARM_LEVEL = 4`. Doom dlvl 1 has a
+down stair (only the up stair is withheld), and the stairs strategy already in the
+chain walks the wizard there, so this costs no new code path. The latch is cleared
+as soon as the milestone leaves `BE_ON_FIRST_LEVEL`, and an `AgentPanic` from an
+unreachable target falls back to the previous floor instead of ending the run.
+
+Why this and not something safer: progress is monotone, so descending cannot cost
+banked score, and deeper Doom floors are worth more experience per kill. The
+detection is positive, so when it does not fire the behaviour is byte-identical to
+the parent.
+
+Change the bot from the proposal above. The judge measures that tree.
