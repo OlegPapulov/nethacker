@@ -32,3 +32,36 @@ def is_dangerous_monster(monster):
 
 def consider_melee_only_ranged_if_hp_full(agent, monster):
     return monster[3].mname in ('brown mold', 'blue jelly') and agent.blstats.hitpoints == agent.blstats.max_hitpoints
+
+
+def is_out_trading_us(agent, monster):
+    """ Whether a straight melee exchange with this monster would cost us more
+    hit points than we can afford to lose.
+
+    A hero's health pool is the budget for a fight.  Putting a monster down in
+    melee takes on the order of `difficulty` rounds (its hit points scale with
+    that rating), and each round it deals on the order of `difficulty` damage,
+    so rating `d` costs roughly `d * d` hit points to exchange blows with.  A
+    monster that moves faster than we do lands about twice as many hits during
+    that exchange.  When the expected cost exceeds the hit points we actually
+    have, we cannot win the trade and must not walk into it -- especially with
+    a small pool of hit points.
+    """
+    _, _, _, mon, _ = monster
+
+    if mon.mname in WEAK_MONSTERS or mon.mname in ONLY_RANGED_SLOW_MONSTERS:
+        # These are free to fight: the weak ones barely scratch us and the slow
+        # ranged ones cannot hit us in melee.  Keep the existing engage logic.
+        return False
+
+    difficulty = getattr(mon, 'difficulty', None)
+    if difficulty is None:
+        # An unresolved monster (invisible or unknown glyph).  We cannot plan
+        # the exchange, so assume the worst rather than charge into it.
+        return True
+
+    expected_cost = 2 * difficulty * difficulty
+    if is_monster_faster(agent, monster):
+        # it acts before we do and again before we do, so roughly twice the hits
+        expected_cost *= 2
+    return expected_cost > agent.blstats.hitpoints

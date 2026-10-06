@@ -1,7 +1,20 @@
 from ..utils import adjacent
 from . import utils
 from .monster_utils import WEAK_MONSTERS, ONLY_RANGED_SLOW_MONSTERS, consider_melee_only_ranged_if_hp_full, \
-    imminent_death_on_melee, EXPLODING_MONSTERS, WEIRD_MONSTERS
+    imminent_death_on_melee, EXPLODING_MONSTERS, WEIRD_MONSTERS, is_out_trading_us
+
+
+def _draw_away(priority, y, x, step, radius, walkable):
+    """ Give each walkable cell a priority that grows with its (Chebyshev)
+    distance from (y, x), so that stepping further from a monster is preferred
+    over stepping closer. """
+    for y1 in range(y - radius, y + radius + 1):
+        for x1 in range(x - radius, x + radius + 1):
+            if not (0 <= y1 < priority.shape[0] and 0 <= x1 < priority.shape[1]):
+                continue
+            if not walkable[y1, x1]:
+                continue
+            priority[y1, x1] += step * max(abs(y1 - y), abs(x1 - x))
 
 
 def _draw_around(priority, y, x, value, radius=1, operation='add'):
@@ -43,6 +56,15 @@ def draw_monster_priority_positive(agent, monster, priority, walkable):
 
     # don't move into the monster
     priority[y, x] = float('nan')
+
+    if is_out_trading_us(agent, monster):
+        # A straight melee exchange would cost more hit points than we have, so
+        # do not offer an approach ring that would walk us into it.  Instead,
+        # reward every step that takes us further away, so the bot breaks
+        # contact instead of charging in.  (Weak and slow-ranged monsters are
+        # never out-trading, so their engage logic below is unaffected.)
+        _draw_away(priority, y, x, 5, 5, walkable)
+        return
 
     if mon.mname in WEAK_MONSTERS:
         # weak monster - freely engage in melee
