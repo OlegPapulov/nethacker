@@ -1435,15 +1435,16 @@ class Agent:
         to_eat = sorted(filter(lambda e: dis[e[0], e[1]] != -1, to_eat), key=lambda e: dis[e[0], e[1]])
         if not to_eat:
             yield False
-        # hypothesis: avoid long corpse hunts when just hungry to save turns; only go far when weak
-        if not only_below_me and self.blstats.hunger_state < Hunger.WEAK:
-            # hypothesis: allow slightly farther corpse search when hungry to find food without wasting too many turns
+        # hypothesis: allow the wizard to walk up to 20 squares for food when hungry,
+        # not just when weak, to avoid starvation. A chaotic wizard dies to weak
+        # monsters (goblin, newt, kitten, kobold lord) when already weakened by
+        # hunger; waiting until WEAK to allow a 20-square walk is too late.
+        if not only_below_me and self.blstats.hunger_state < Hunger.HUNGRY:
             max_dist = 5
             to_eat = [t for t in to_eat if dis[t[0], t[1]] <= max_dist]
             if not to_eat:
                 yield False
-        elif not only_below_me and self.blstats.hunger_state >= Hunger.WEAK:
-            # hypothesis: when weak, look farther for food to avoid starvation
+        elif not only_below_me and self.blstats.hunger_state >= Hunger.HUNGRY:
             max_dist = 20
             to_eat = [t for t in to_eat if dis[t[0], t[1]] <= max_dist]
             if not to_eat:
