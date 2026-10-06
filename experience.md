@@ -706,29 +706,23 @@ A child is kept only when its mean is strictly above the parent. Each of these m
 
 See `experiments.md`. Do not edit `mutator/` until a human approves it.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.09002482586758531 improved=False notes_ignored=False code_unchanged=False
+## Run 37439589596, wiz-hum-cha-mal, 1 iteration, `--effort xhigh`, `can_engrave` returns false
+
+[37439589596](https://github.com/OlegPapulov/nethacker/actions/runs/37439589596) finished green. The job ran from 08:57 UTC to 10:27 UTC. The judge scored 0.09002482586758531. The table printed 0.090. The child was not kept. `main` stays on the 0.114 bot.
+
+The operator ran for 4,899 seconds and used 469,390 tokens. The cold-start mean is 0.114 and 36,648 turns. The child mean is 0.090 and 27,240 turns. `notes_ignored` is false.
+
+`can_engrave` now returns false on every call. The comment quotes the new sentence: a wait under Elbereth ends the fight at the current experience level. The comment also says `fight_heur.py`, `fight2`, and `emergency_strategy` are off limits, so the edit is the gate those functions call.
+
+The 15 seed rows match iteration 2 of run 37397657802. That earlier edit returned false only while hit points were below the maximum. This edit returns false always. The score is the same number.
+
+Seed 6 rises from 0.179 to 0.255, and from 73,840 turns to 81,023 turns. Seeds 3 and 5 fall from 0.179 to 0.029. Seed 9 falls from 0.255 to 0.179. Seeds 4, 8, and 12 keep the parent turn counts.
 
 ### Why it stopped
-no-cell-improved
 
-### What is the problem
-# Playthrough
-
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. Progress is the highest milestone a game reaches.
-
-## What might solve it
-
-See `experiments.md`.
+A child is kept only when its mean is strictly above the parent. This mean is lower.
 
 ### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
+See `experiments.md`. Do not edit `mutator/` until a human approves it.
 

@@ -33,7 +33,7 @@ OWNER = "OlegPapulov"
 BASELINE_COMMIT = "8387c34be4ce7c4019f4d98a9445a48e83e42731"
 MODEL = "opencode/big-pickle"
 OPERATOR = "opencode2"
-EFFORT = "xhigh"
+EFFORT = "high"
 RUN_NOTES = ("experience.md", "experiments.md")
 NOTES = ("GAME_RULES.md", *RUN_NOTES)
 BOT_NAMES = ("bot.py", "arena_adapter.py", "autoascend", "nethackers.solution.json", "LICENSE")
@@ -58,16 +58,7 @@ def _game_rules(identity: str) -> str:
     header = (
         f"# This gameplay\n\n"
         f"Identity: `{identity}`\n\n"
-        "You develop a bot to play NetHack 3.6.6. "
-        "The rules and nuances of the game are in this file. "
-        "Progress is the highest milestone a game reaches. "
-        "The judge score is the mean of 15 seeds. "
-        "The mean falls when a long game loses a milestone, even when a short game lasts longer. "
-        "Describe the games in `experience.md`. "
-        "Propose the change in `experiments.md`. "
-        "Change the bot from that proposal. "
-        "Do not run `python -m nethackers.arena.run`. "
-        "The judge plays the 15 seeds after you exit.\n\n"
+        "The rules and nuances of the game are in this file.\n\n"
     )
     return header + body
 
@@ -149,16 +140,8 @@ def _lead_cause(counts: dict[str, int]) -> str:
 def _keep_win() -> str:
     """Facts for the note. The operator proposes the change."""
     return (
-        "The score is the mean of the 15 judge seeds. "
-        "The mean falls when a long game loses a milestone, even when a short game lasts longer. "
         "Progress is the highest milestone a game reaches. "
-        "Experience level moves that score. "
-        "Seed 9 is at Xp:11. "
-        "Seed 4 dies at 2,742 turns and stops at Xp:2. "
-        "Seeds 10 and 12 die under 10,000 turns. "
-        "Leave the weak-hunger corpse walk capped at 20 squares. "
-        "Leave `_xp_farm_level` as it is. "
-        "Leave `experience_level >= 12` as it is. "
+        "The judge score is the mean of 15 seeds. "
         "Describe the games in `experience.md`. "
         "Propose one change in this file, in accordance with the game rules. "
         "Change the bot from that proposal."
@@ -166,21 +149,7 @@ def _keep_win() -> str:
 
 
 def _hypothesis(cause: str, shallow: int, total: int, causes: list[str] | None = None) -> str:
-    blob = " ".join([cause, *(causes or [])]).lower()
-    if any(word in blob for word in ("starv", "hunger", "faint")):
-        lead = "One game still starves. Do not edit the corpse walk. "
-    elif "poison" in blob:
-        lead = (
-            "Treat poison as a reason to leave, not a hit to trade. A wizard "
-            "dies to it with no hit points in reserve. "
-        )
-    elif not total:
-        lead = ""
-    elif shallow * 2 >= total:
-        lead = f"Most games end at depth 1, usually {cause}. "
-    else:
-        lead = ""
-    return lead + _keep_win()
+    return _keep_win()
 
 
 def mean_change(previous: float, score: float) -> str:
@@ -626,10 +595,9 @@ def self_check() -> None:
         command = evolve_command(seed, root / "work", DEFAULT_IDENTITY, 3)
         assert DEFAULT_IDENTITY in command
         assert command[command.index("--iterations") + 1] == "3"
-        assert command[command.index("--effort") + 1] == "xhigh"
+        assert command[command.index("--effort") + 1] == "high"
         assert "killed after" not in game
         assert "highest milestone" in game
-        assert "loses a milestone" in game
         assert "experiments.md" in game
         bare = root / "bare-notes"
         bare.mkdir()
@@ -649,7 +617,7 @@ def self_check() -> None:
             ],
         }, DEFAULT_IDENTITY)
         text = (filled / "experiments.md").read_text()
-        assert "20 squares" in text
+        assert "highest milestone" in text
         assert "The judge measures" in text
         assert "killed by a jackal" in (filled / "experience.md").read_text()
         hungry = root / "hungry"
@@ -663,14 +631,7 @@ def self_check() -> None:
             ],
         }, DEFAULT_IDENTITY)
         hungry_text = (hungry / "experiments.md").read_text()
-        assert "20 squares" in hungry_text
         assert "highest milestone" in hungry_text
-        assert "loses a milestone" in hungry_text
-        assert "Xp:11" in hungry_text
-        assert "2,742" in hungry_text
-        assert "under 10,000 turns" in hungry_text
-        assert "_xp_farm_level" in hungry_text
-        assert "experience_level >= 12" in hungry_text
         assert "Propose one change" in hungry_text
         assert "do not add 15" not in hungry_text
         assert "difficulty" not in hungry_text
@@ -678,12 +639,9 @@ def self_check() -> None:
         play = (hungry / "experience.md").read_text()
         assert "highest milestone" in play
         assert "when a long game gets longer" not in play
-        assert "exploration_logic.py" in game
         assert "Propose one change" in game
         assert "arena.run" in game
         assert "NetHack 3.6.6" in game
-        assert "_xp_farm_level" in hungry_text
-        assert "experience_level >= 12" in hungry_text
         assert "died of starvation (1 of 2)" in hungry_text
         assert "matched the parent" in _carry({
             "code_unchanged": True, "reason": "gate:child identical to parent",

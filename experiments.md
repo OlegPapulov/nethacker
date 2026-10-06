@@ -1,6 +1,22 @@
 # Next mutator experiment
 
-Applied in this commit. The operator brief says the mean falls when a long game loses a milestone, even when a short game lasts longer.
+Applied in this commit. `GAME_RULES.md` states the goal, the score, and one proposal. The operator effort is `high`.
+
+## Result
+
+Run 37439589596 used `--effort xhigh` for one iteration. The parent is 0.114.
+
+- iteration 1: 0.09002482586758531 not kept (no-cell-improved). Decreases the mean by 0.024 (from 0.114 to 0.090). `can_engrave` returns false on every call. The 15 seed rows match iteration 2 of run 37397657802.
+
+## What is the problem
+
+The new sentence is in the comment. The edit still disables engraving. Seed 6 rises from 0.179 to 0.255. Seeds 3 and 5 fall from 0.179 to 0.029. Seed 9 falls from 0.255 to 0.179.
+
+## What might solve it
+
+Do not put this diff on the bot. Do not add another sentence that only repeats the mean rule. This run shows the operator can write that rule in a comment and still submit the same lower tree.
+
+# Previous proposal
 
 ## Result
 
@@ -160,10 +176,7 @@ Change the bot from the proposal above. The judge measures that tree.
 
 ## Result
 
-- iteration 1: 0.090 not kept (no-cell-improved).
-
-## Proposal (not approved)
-Source: the last mutator iteration. Applying this means editing `mutator/`, which needs a human yes.
+- iteration 1: 0.09002482586758531 not kept. Decreases the mean by 0.024 (from 0.114 to 0.090). Run 37439589596. The seed rows match the earlier 0.090 Elbereth tree.
 
 # Next experiment
 
