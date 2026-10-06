@@ -934,6 +934,31 @@ class Agent:
     def can_engrave(self):
         if self.character.prop.polymorph:
             return False  # TODO: only for handless monsters (which cannot write)
+        # Never write Elbereth while we are hurt. This is the only engraving this
+        # agent ever writes, and `combat.fight_heur` turns it into a one-way door.
+        #
+        # `elbereth_action` only *offers* the engraving when a monster is already
+        # adjacent and `hitpoints < 30` -- i.e. never at full health, and for any
+        # character whose maximum is under 30 (a wizard, always) never at anything
+        # else either. So the words only ever land on the floor at the moment the
+        # character can least afford to stop fighting. It then treats the words
+        # under its own feet as a reason never to fight again: while they are
+        # there, `melee`, `ranged` and `zap` each lose 100 points of priority and
+        # `wait` keeps `30 - 40 * hitpoints / max_hitpoints`. Below two thirds of
+        # our hitpoints that is above every competing action -- the strongest
+        # `move` in the heatmap is worth 3, `go_to` 1, `melee` -84, `ranged` -89,
+        # `zap` -100 -- so the agent cannot strike, cannot shoot, cannot zap and
+        # cannot walk away, and `fight2` only leaves its loop once nothing is
+        # within seven squares. It stands still and takes hits until it dies, and
+        # the game ends with the experience level it had, which is the whole score.
+        #
+        # Worked out on the wizard's numbers (`max_hitpoints` 20, two dangerous
+        # monsters adjacent): the engraving is offered from 13/20 hitpoints down and
+        # is always the top action from 14/20 down; a dangerous+plain pair needs
+        # 11/20, and two plain monsters 4/20. Refuse it while damaged and the
+        # combat heuristic is free to do what it is built to do -- trade hits.
+        if self.blstats.hitpoints < self.blstats.max_hitpoints:
+            return False
         return (self.blstats.y, self.blstats.x) != self._forbidden_engrave_position
 
     def engrave(self, text):
