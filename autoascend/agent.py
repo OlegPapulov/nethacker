@@ -49,6 +49,25 @@ SPELL_REFUSED_MESSAGES = (
     'must be able to move',
 )
 
+# Every way NetHack 3.6 can answer a prayer with a refusal (pray.c angrygods()):
+# cases 0/1 displeased, 2/3 relearn (an experience level), 4/5 and 6 curses or
+# the ball and chain, 7/8 a minion, the default a lightning bolt.
+PRAYER_REJECTED_MESSAGES = (
+    'is displeased',
+    'relearn thy lessons',
+    'being punished for your misbehavior',
+    'Thou hast angered me',
+    'Thou durst',
+)
+
+# NetHack refuses a prayer until its private ublesscnt falls to 200 and resets that
+# counter to rnz(350) after an accepted prayer. rnz() has a long tail: over 400k draws
+# a 400 turn wait is refused 23% of the time, a 500 turn wait 13%, a 1000 turn wait
+# 5.5%, a 1200 turn wait 2.3%. A refusal from praying too soon costs 3 luck, makes the
+# god permanently angry and then rolls angrygods(), which takes an experience level
+# about half the time -- so the wait is worth paying.
+PRAYER_MIN_INTERVAL = 1200
+
 
 class Agent:
     def __init__(self, env, seed=0, verbose=False, panic_on_errors=False):
@@ -82,6 +101,10 @@ class Agent:
         self.last_bfs_dis = None
         self.last_bfs_step = None
         self.last_prayer_turn = None
+        self.sacrifice_count = 0
+        self.prayer_rejected = False
+        self.prayer_rejected_sacrifice_count = 0
+        self._prayer_pending = False
         self._previous_glyphs = None
         self._last_turn = -1
         self._inactivity_counter = 0
@@ -409,6 +432,9 @@ class Agent:
     def update(self, observation, additional_action_iterator=None):
         self._observation = observation
         done = self.update_message_and_popup(observation)
+
+        if self._prayer_pending:
+            self._record_prayer_outcome()
 
         self._is_reading_message_or_popup = True
         if additional_action_iterator is not None:
@@ -760,15 +786,50 @@ class Agent:
             self.stats_logger.log_event('container_untrap_fail')
             return self.message
 
-    def is_safe_to_pray(self, limit=500):
-        return (
-                (self.last_prayer_turn is None and self.blstats.time > 300) or
-                (self.last_prayer_turn is not None and self.blstats.time - self.last_prayer_turn > limit)
-        )
+    def is_safe_to_pray(self):
+        if self.last_prayer_turn is None:
+            # NetHack starts ublesscnt at 300 and drops it one per turn.
+            if self.blstats.time <= 300:
+                return False
+        elif self.blstats.time - self.last_prayer_turn < PRAYER_MIN_INTERVAL:
+            return False
+
+        # Praying from an altar of another god makes NetHack score the request as
+        # alignment = -record and refuse it, so only pray off an altar we know is ours.
+        altar = self.current_level().altars.get((self.blstats.y, self.blstats.x))
+        if altar is not None and altar != self.character.alignment:
+            return False
+
+        # A refused prayer leaves the god angry, and that anger never decays with time.
+        # Until a sacrifice on our own altar has appeased it, every further prayer is
+        # another roll of angrygods(), so do not roll again.
+        if self.prayer_rejected:
+            if self.sacrifice_count <= self.prayer_rejected_sacrifice_count:
+                return False
+            if self.blstats.time - self.last_prayer_turn < 2 * PRAYER_MIN_INTERVAL:
+                return False
+
+        return True
+
+    def _record_prayer_outcome(self):
+        if not self._prayer_pending:
+            return
+        if self.blstats.time - self.last_prayer_turn > 15:
+            # The prayer resolved and none of its messages was a refusal.
+            self._prayer_pending = False
+            self.prayer_rejected = False
+            return
+        text = (self.message or '') + ' ' + ' '.join(self.popup or ())
+        if any(phrase in text for phrase in PRAYER_REJECTED_MESSAGES):
+            self._prayer_pending = False
+            self.prayer_rejected = True
+            self.prayer_rejected_sacrifice_count = self.sacrifice_count
+            self.stats_logger.log_event('prayer_rejected')
 
     def pray(self):
         self.step(A.Command.PRAY)
         self.last_prayer_turn = self.blstats.time
+        self._prayer_pending = True
         # TODO: return value
         return True
 
@@ -1560,10 +1621,10 @@ class Agent:
             return
 
         if (
-                (self.is_safe_to_pray(500) and
+                (self.is_safe_to_pray() and
                  (self.blstats.hitpoints < 1 / (5 if self.blstats.experience_level < 6 else 6)
                   * self.blstats.max_hitpoints or self.blstats.hitpoints < 6))
-                or (self.is_safe_to_pray(400) and self.blstats.hunger_state >= Hunger.FAINTING)
+                or (self.is_safe_to_pray() and self.blstats.hunger_state >= Hunger.FAINTING)
         ):
             yield True
             self.pray()

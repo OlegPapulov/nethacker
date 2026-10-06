@@ -474,6 +474,7 @@ class GlobalLogic:
                                 self.agent.inventory.call_item(item, 'old')
                                 return
                             if 'Use my gift wisely' in self.agent.message:
+                                self.agent.sacrifice_count += 1
                                 self._got_artifact = True
                                 self.agent.inventory.get_items_below_me()
                                 return
@@ -484,6 +485,7 @@ class GlobalLogic:
                                 ('The blood covers the altar!' in self.agent.message and \
                                  'You have summoned ' in self.agent.message), \
                                 self.agent.message
+                            self.agent.sacrifice_count += 1
                             break
                 else:
                     break
