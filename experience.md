@@ -816,29 +816,15 @@ The operator left the prayer wait at 500 turns and at 400 turns. The low-hit-poi
 
 A child is kept only when its mean is strictly above the parent. This mean is lower.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.11444300565928403 improved=False notes_ignored=False code_unchanged=False
+## Run 37547642566, wiz-hum-cha-mal, 1 iteration, `--effort high`, weak latch at experience level 10
+
+[37547642566](https://github.com/OlegPapulov/nethacker/actions/runs/37547642566) finished green. The job ran from 23:38 UTC on 6 October to 02:31 UTC on 7 October. The judge scored 0.11444300565928403. The table printed 0.114. The child was not kept. `main` stays on the 0.114 bot.
+
+The operator ran for 9,717 seconds and used 847,414 tokens. The cold-start mean is 0.114 and 36,648 turns. The child mean is 34,898 turns.
+
+The fainting latch still sets the farm level to 2. It also sets that level when hunger is weak and experience level is at least 10. Seed 9 stays at 0.255 and 69,906 turns. Seeds 1, 3, 5, and 6 stay at 0.179. Seed 6 goes from 73,840 turns to 54,297 turns. Seed 4 stays at 2,742 turns and 0.018.
 
 ### Why it stopped
-no-cell-improved
 
-### What is the problem
-# Playthrough
-
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. Progress is the highest milestone a game reaches.
-
-## What might solve it
-
-See `experiments.md`.
-
-### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+A child is kept only when its mean is strictly above the parent. This mean is equal.
 

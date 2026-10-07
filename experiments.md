@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. The assumptions are in `GAME_RULES.md`. Raising the prayer test from below 6 hit points to below 9 is already measured. A nearby number in that test is the same change. The brief is unchanged.
+Applied in this commit. The assumptions are in `GAME_RULES.md`. A weak-hunger farm latch at experience level 10 or above is already measured. A nearby experience level in that test is the same change. The brief is unchanged.
 
 ## Result
 
