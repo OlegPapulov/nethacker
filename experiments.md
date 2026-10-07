@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. The assumptions are in `GAME_RULES.md`. A weak-hunger farm latch at experience level 10 or above is already measured. A nearby experience level in that test is the same change. The brief is unchanged.
+Applied in this commit. The tips in `GAME_RULES.md` now say when to eat and when to write Elbereth. The brief is unchanged.
 
 ## Result
 

@@ -37,7 +37,8 @@ These facts explain a death.
 - A fight in a doorway lets one monster hit. A fight in a corridor lets one monster hit. An open room lets several monsters hit.
 - A faster monster takes a turn before the wizard takes a turn. A few hits kill the wizard.
 - A pet is a resource. An attack on a peaceful monster can ruin the game.
-- Eat before a faint. A faint next to a monster is a death.
+- Eat before a faint. A faint next to a monster is a death. Eat a corpse that is already in reach. Leave the floor when you are fainting and that corpse is gone.
+- Writing Elbereth takes the turn. The word helps after it is on the floor. An adjacent monster still acts while you write. When hit points are low, hit, zap, or step into a doorway.
 - A cockatrice corpse turns the hero to stone. Do not eat it. Do not touch it with bare hands.
 - Do not quaff an unknown potion during a fight.
 - A seed-specific branch does not count. The private seeds are different games.

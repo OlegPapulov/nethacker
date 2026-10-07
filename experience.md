@@ -828,29 +828,15 @@ The fainting latch still sets the farm level to 2. It also sets that level when 
 
 A child is kept only when its mean is strictly above the parent. This mean is equal.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.06348716697829164 improved=False notes_ignored=False code_unchanged=False
+## Run 37597677671, wiz-hum-cha-mal, 1 iteration, `--effort high`, Elbereth weight
+
+[37597677671](https://github.com/OlegPapulov/nethacker/actions/runs/37597677671) finished green. The job ran from 09:01 UTC to 10:35 UTC. The judge scored 0.06348716697829164. The table printed 0.063. The child was not kept. `main` stays on the 0.114 bot.
+
+The operator ran for 5,223 seconds and used 776,425 tokens. The cold-start mean is 0.114 and 36,648 turns. The child mean is about 23,199 turns.
+
+One number in `elbereth_action` goes from 20 to 60. The bot writes Elbereth more often when hit points are below 30 and a monster is adjacent. Seed 9 falls from 0.255 to 0.024. Seed 4 falls from 0.018 to 0.000 in 117 turns. Seeds 11 and 14 rise from 0.075 to 0.117.
 
 ### Why it stopped
-no-cell-improved
 
-### What is the problem
-# Playthrough
-
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. Progress is the highest milestone a game reaches.
-
-## What might solve it
-
-See `experiments.md`.
-
-### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+A child is kept only when its mean is strictly above the parent. This mean is lower.
 
