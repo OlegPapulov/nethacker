@@ -37,7 +37,7 @@ These facts explain a death.
 - A fight in a doorway lets one monster hit. A fight in a corridor lets one monster hit. An open room lets several monsters hit.
 - A faster monster takes a turn before the wizard takes a turn. A few hits kill the wizard.
 - A pet is a resource. An attack on a peaceful monster can ruin the game.
-- Eat before a faint. A faint next to a monster is a death. Eat a corpse that is already in reach. Leave the floor when you are fainting and that corpse is gone.
+- Eat before a faint. A faint next to a monster is a death. Start a meal only when every monster is too far to walk up during the meal. A monster a few squares away still holds the turn.
 - Writing Elbereth takes the turn. The word helps after it is on the floor. An adjacent monster still acts while you write. When hit points are low, hit, zap, or step into a doorway.
 - A cockatrice corpse turns the hero to stone. Do not eat it. Do not touch it with bare hands.
 - Do not quaff an unknown potion during a fight.
@@ -51,6 +51,7 @@ These changes are already measured. They are not the next edit. A nearby number 
 - A corpse walk longer than 20 squares drops the mean. A cap of 30 drops it to 0.107, and seeds 5 and 6 fall from 0.179 to 0.037. A cap of 25 drops it to 0.107, and seed 13 falls from 0.179 to 0.051. The walk that holds the current mean stops at 20 squares.
 - The parent melee bonus is +15 when hit points are above 8 or the monster is faster. Replacing the faster-monster test with a fatal-melee test drops the mean from 0.114 to 0.105. Seed 3 falls from 0.179 to 0.029.
 - The parent sets the farm level to 2 when hunger is fainting and no edible corpse is in reach. Also setting that level when hunger is weak and experience level is at least 10 leaves the mean at 0.114. Seed 9 stays at 0.255. Seeds 1, 3, 5, and 6 stay at 0.179. The mean of turns falls from 36,648 to 34,898. Seed 6 falls from 73,840 turns to 54,297 turns. A nearby experience level or a nearby hunger state in that same test is the same change.
+- The parent lets the wizard eat when every monster is more than 7 squares away. When hunger is weak, letting a monster at 5 or 6 squares through drops the mean from 0.114 to 0.082. Seed 9 falls from 0.255 to 0.051. A nearby distance in that same test is the same change.
 
 ## The edit
 

@@ -840,29 +840,23 @@ One number in `elbereth_action` goes from 20 to 60. The bot writes Elbereth more
 
 A child is kept only when its mean is strictly above the parent. This mean is lower.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=gate:child identical to parent dev_fitness=None improved=False notes_ignored=True code_unchanged=True
+## Run 37610683227, wiz-hum-cha-mal, 3 iterations, `--effort high`, eat while a monster is near
+
+[37610683227](https://github.com/OlegPapulov/nethacker/actions/runs/37610683227) was cancelled at the 6-hour job limit. Two iterations were scored. Each starts from the 0.114 parent. The third iteration has no score.
+
+Iteration 1 printed a mean of 0.082. When hunger is weak, a monster at 5 or 6 squares no longer blocks eating. Seed 9 falls from 0.255 to 0.051. Seed 0 rises from 0.117 to 0.179. The operator ran for 4,867 seconds and used 698,912 tokens.
+
+Iteration 2 printed a mean of 0.114 and 36,648 turns. Every seed matches the parent. The operator ran for 13,885 seconds and used 1,927,501 tokens.
 
 ### Why it stopped
-gate:child identical to parent
 
-### What is the problem
-# Playthrough
+A child is kept only when its mean is strictly above the parent. The first mean is lower. The second mean is equal. The job then hit the time limit.
 
-Identity: `wiz-hum-cha-mal`
+## Run 37674400042, wiz-hum-cha-mal, 1 iteration, `--effort high`, identical tree
 
-## Why it stopped
+[37674400042](https://github.com/OlegPapulov/nethacker/actions/runs/37674400042) finished green. The job ran from 19:25 UTC to 20:32 UTC. The operator ran for 3,904 seconds and used 487,746 tokens. The child tree matches the parent. The judge did not play. `main` stays on the 0.114 bot.
 
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
+### Why it stopped
 
-## What is the problem
-
-The score is the mean of those seeds. Progress is the highest milestone a game reaches.
-
-## What might solve it
-
-See `experiments.md`.
-
-### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+The gate stops the judge when the child tree matches the parent. This run has no score.
 
