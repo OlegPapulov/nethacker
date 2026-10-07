@@ -840,3 +840,29 @@ One number in `elbereth_action` goes from 20 to 60. The bot writes Elbereth more
 
 A child is kept only when its mean is strictly above the parent. This mean is lower.
 
+## Run wiz-hum-cha-mal (1 iteration(s))
+- iteration 1: reason=gate:child identical to parent dev_fitness=None improved=False notes_ignored=True code_unchanged=True
+
+### Why it stopped
+gate:child identical to parent
+
+### What is the problem
+# Playthrough
+
+Identity: `wiz-hum-cha-mal`
+
+## Why it stopped
+
+The parent batch is not in this note. The judge plays the 15 seeds after you exit.
+
+## What is the problem
+
+The score is the mean of those seeds. Progress is the highest milestone a game reaches.
+
+## What might solve it
+
+See `experiments.md`.
+
+### What might solve it
+See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
