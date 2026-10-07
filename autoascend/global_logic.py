@@ -556,8 +556,15 @@ class GlobalLogic:
                     # (FAINTING), the only viable food/XP source may be one level down; latch
                     # to DL2 to continue farming there if reachable. This preserves good
                     # DL1 runs while rescuing food-starved cases.
+                    # hypothesis: a fainting walk to a corpse at distance 11-20 keeps failing
+                    # (the corpse rots past the 50 turn window or a monster blocks the path),
+                    # so the wizard stalls at Xp 8 retrying the doomed corpse-race. A corpse
+                    # that close that is actually walkable is still eaten first -- the eat
+                    # preempt runs before this latch -- so require the latch to fire as soon
+                    # as no edible corpse is within 10 squares instead of 20, sending the
+                    # fainting wizard down to a fresh floor with its own monsters and corpses.
                     if (self.agent.blstats.hunger_state >= Hunger.FAINTING and
-                            not self.agent.has_edible_corpse_in_reach()):
+                            not self.agent.has_edible_corpse_in_reach(max_dist=10)):
                         self._xp_farm_level = 2
                 if self._xp_farm_level is not None:
                     level = (Level.DUNGEONS_OF_DOOM, self._xp_farm_level)
