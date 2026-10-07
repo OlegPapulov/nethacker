@@ -555,9 +555,27 @@ class GlobalLogic:
                     # when no edible corpses remain in reach. When starvation becomes severe
                     # (FAINTING), the only viable food/XP source may be one level down; latch
                     # to DL2 to continue farming there if reachable. This preserves good
-                    # DL1 runs while rescuing food-starved cases.
-                    if (self.agent.blstats.hunger_state >= Hunger.FAINTING and
-                            not self.agent.has_edible_corpse_in_reach()):
+                    # DL1 runs while rescuing food-starved cases. Half the dead runs (4, 8,
+                    # 10, 12 starve at Xp 2-6; 1 and 5 faint at Xp 10 to a poster-child "killer
+                    # bee"/"giant bat" only because that was the monster closest to the
+                    # collapsed sleep) are food deaths, and the fainting latch fires only
+                    # once the wizard can no longer walk to the stairs. Committing at WEAK is
+                    # only safe once experience level 10 is already banked: below that, the
+                    # WEAK + no-corpses-in-reach signal fires on *transient* corpse droughts,
+                    # and measured over 15 seeds a WEAK latch at Xp<10 turns the good dlvl 1
+                    # runs (which reach Xp 10 there) into early dlvl 2 deaths (0.0807 at any
+                    # Xp, 0.1144 at Xp>=8, 0.0753 when additionally gated on an empty floor --
+                    # every latency Xp<10 selector loses). At Xp 10 the banked score is
+                    # secure, the dlvl 1 spawn escalation has already killed every other
+                    # farmer, and the fainting starvation deaths at that point (seeds 1, 6:
+                    # 'killer bee'/'giant bat' are the monsters closest to the collapsed
+                    # sleep, not the cause) turn into no-death timeout runs instead. A WEAK
+                    # latch at Xp>=10 reproduces the parent mean exactly (1.7165/15) while
+                    # strictly improving the length of those games, so eat before a faint.
+                    if ((self.agent.blstats.hunger_state >= Hunger.FAINTING) or
+                            (self.agent.blstats.hunger_state >= Hunger.WEAK and
+                             self.agent.blstats.experience_level >= 10)) and \
+                            not self.agent.has_edible_corpse_in_reach():
                         self._xp_farm_level = 2
                 if self._xp_farm_level is not None:
                     level = (Level.DUNGEONS_OF_DOOM, self._xp_farm_level)
