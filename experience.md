@@ -860,29 +860,15 @@ A child is kept only when its mean is strictly above the parent. The first mean 
 
 The gate stops the judge when the child tree matches the parent. This run has no score.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.11444300565928403 improved=False notes_ignored=False code_unchanged=False
+## Run 37692260470, wiz-hum-cha-mal, 1 iteration, `--effort high`, fainting search of 10 squares
+
+[37692260470](https://github.com/OlegPapulov/nethacker/actions/runs/37692260470) finished green. The job ran from 21:51 UTC to 22:21 UTC. The judge scored 0.11444300565928403. The table printed 0.114. The child was not kept. `main` stays on the 0.114 bot.
+
+The operator ran for 1,309 seconds and used 176,533 tokens. The cold-start mean is 0.114 and 36,648 turns. The child mean is 36,648 turns.
+
+The fainting latch still sets the farm level to 2. Its corpse search goes from the default of 20 squares to 10. All 15 seeds keep the parent turn counts. Seed 9 stays at 0.255 and 69,906 turns. Seed 4 stays at 2,742 turns and 0.018.
 
 ### Why it stopped
-no-cell-improved
 
-### What is the problem
-# Playthrough
-
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. Progress is the highest milestone a game reaches.
-
-## What might solve it
-
-See `experiments.md`.
-
-### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+A child is kept only when its mean is strictly above the parent. This mean is equal.
 

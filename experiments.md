@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. The eat tip now says a monster a few squares away still holds the turn. Letting that monster through while hunger is weak is already measured. The brief is unchanged.
+Applied in this commit. The assumptions are in `GAME_RULES.md`. A fainting corpse search of 10 squares is already measured. A nearby distance on that search is the same change. The brief is unchanged.
 
 ## Result
 
