@@ -1169,7 +1169,16 @@ class Agent:
 
             dis = self.bfs()
 
-            if not monsters or all(dis > 7 for dis, *_ in monsters) or \
+            # hypothesis: fight2 outranks the whole eating group and the
+            # `hp >= 0.8 * max` rest loop in `global_strategy`, so this test is
+            # the only thing that decides whether the wizard may eat at all. At
+            # `dis > 7` a monster standing five or six squares away vetoes the
+            # weak-hunger corpse walk (which the same bot is willing to make for
+            # 20 squares) and vetoes resting, so hunger runs weak -> fainting
+            # and the wizard enters its unavoidable fights under 80% of its max.
+            # Once weak, only a monster within four squares may hold the turn.
+            if not monsters or all(dis > 7 or (dis > 4 and self.blstats.hunger_state >= Hunger.WEAK)
+                                   for dis, *_ in monsters) or \
                     (only_ranged_slow_monsters and not self.inventory.get_ranged_combinations()
                      and np.sum(dis != -1) > 1 and not allow_attack_all):
                 if wait_counter:
