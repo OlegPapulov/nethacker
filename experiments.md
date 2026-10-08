@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. The assumptions are in `GAME_RULES.md`. A fainting corpse search of 10 squares is already measured. A nearby distance on that search is the same change. The brief is unchanged.
+Applied in this commit. The assumptions in `GAME_RULES.md` say the next edit is an existing test that the list does not name. An unchanged bot is already measured. The brief is unchanged.
 
 ## Result
 

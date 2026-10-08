@@ -872,29 +872,13 @@ The fainting latch still sets the farm level to 2. Its corpse search goes from t
 
 A child is kept only when its mean is strictly above the parent. This mean is equal.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.11444300565928403 improved=False notes_ignored=True code_unchanged=False
+## Run 37698643214, wiz-hum-cha-mal, 1 iteration, `--effort high`, unchanged bot
+
+[37698643214](https://github.com/OlegPapulov/nethacker/actions/runs/37698643214) finished green. The job ran from 22:50 UTC on 7 October to 00:19 UTC on 8 October. The judge scored 0.11444300565928403. The table printed 0.114. The child was not kept. `main` stays on the 0.114 bot.
+
+The operator ran for 4,684 seconds and used 3,354,506 tokens. The notes stay the seed text. The files under `autoascend/` match the parent. All 15 seeds keep the parent turn counts.
 
 ### Why it stopped
-no-cell-improved
 
-### What is the problem
-# Playthrough
-
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. Progress is the highest milestone a game reaches.
-
-## What might solve it
-
-See `experiments.md`.
-
-### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+A child is kept only when its mean is strictly above the parent. This mean is equal.
 
