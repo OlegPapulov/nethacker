@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. The assumptions in `GAME_RULES.md` say a zap penalty of 5 is already measured. A nearby number in that wand function is the same change. The brief is unchanged.
+Applied in this commit. The brief no longer says to change one existing test. The assumptions say to leave every listed test as it is, including a nearby number in the same function.
 
 ## Result
 

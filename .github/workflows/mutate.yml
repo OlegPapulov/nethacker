@@ -76,7 +76,8 @@ jobs:
                   "Your task is to write a bot that progresses further in the game. "
                   "Progress is the highest milestone a game reaches. "
                   "The judge score is the mean of 15 seeds. "
-                  "Change one test that already exists. "
+                  "A child is kept only when that mean is strictly higher. "
+                  "Leave every listed test as it is, including a nearby number in the same function. "
                   "Do not add a new action. "
                   "Experience level is the milestone that moves this score. "
                   f"The identity you are trying to improve is `{identity}`. "
@@ -101,12 +102,13 @@ jobs:
               "experience.md",
               "experiments.md",
               "highest milestone",
-              "one test that already exists",
+              "Leave every listed test",
+              "strictly higher",
               "Do not run `python -m nethackers.arena.run`",
           ):
               if item not in sample:
                   sys.exit(f"brief missing: {item}")
-          for bad in ("600000", "any amount of code", "Raise its score", "descends, and advances", "foreground command"):
+          for bad in ("600000", "any amount of code", "Raise its score", "descends, and advances", "foreground command", "one test that already exists"):
               if bad in sample:
                   sys.exit(f"brief still has: {bad}")
           PY
