@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. The assumptions in `GAME_RULES.md` say the next edit is an existing test that the list does not name. An unchanged bot is already measured. The brief is unchanged.
+Applied in this commit. The assumptions in `GAME_RULES.md` say a wand stop on a peaceful monster is already measured. The brief is unchanged.
 
 ## Result
 
