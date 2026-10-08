@@ -261,6 +261,7 @@ def get_available_actions(agent, monsters):
                 actions.append((pri, ('ranged', dy, dx)))
 
             actions.extend(get_potential_wand_usages(agent, monsters, dy, dx))
+            actions.extend(cast_attack_actions(agent, monsters, dy, dx))
 
     to_pickup = decide_what_to_pickup(agent)
     if to_pickup:
@@ -311,6 +312,57 @@ def get_corridors_priority_map(walkable):
     corridor_mask[~walkable] = 0
     corridor_dilated = signal.convolve2d(corridor_mask.astype(int), k, boundary='symm', mode='same')
     return corridor_mask + corridor_dilated >= 1
+
+
+def cast_attack_actions(agent, monsters, dy, dx):
+    # hypothesis: a wizard casts spells, and a spell does damage from a distance.
+    # The parent never fires an attack spell.  Once it has thrown away its ammo it
+    # walks into melee and trades blows, which is how the late games end.  Force
+    # bolt is a cheap, reliable spell, but a low-level wizard has only ~6 energy,
+    # so a single cast competes with survival.  Two gates keep the new attack from
+    # disturbing the games the parent already wins:
+    #   * experience level 10+ -- by then energy is 70+ and the wizard is a real
+    #     caster; every level below 10 is untouched, so the games that die young
+    #     do not change at all.
+    #   * the first Doom level -- that floor is the one the bot farms until level
+    #     12; on any other floor it is travelling between levels and should keep
+    #     its energy in reserve.
+    # The bolt is only offered from a distance (2..8, clear line) so that an
+    # adjacent target is still handled by the tuned melee heuristics.
+    if agent.blstats.experience_level < 10:
+        return []
+    if agent.blstats.depth != 1:
+        return []
+    if 'force bolt' not in agent.character.known_spells:
+        return []
+    if agent.character.spell_fail_chance.get('force bolt', 1.0) > 0.15:
+        return []
+    if agent.blstats.energy < 10:
+        return []
+    if agent._last_turn - agent.last_cast_fail_turn['force bolt'] < 2:
+        return []
+
+    y, x = agent.blstats.y, agent.blstats.x
+    while True:
+        y += dy
+        x += dx
+        if not inside(agent, y, x):
+            return []
+        if not agent.current_level().walkable[y, x]:
+            return []
+        if agent.glyphs[y, x] in G.PETS:
+            return []
+        if agent.glyphs[y, x] in G.MONS:
+            monster = [m for m in monsters if m[1] == y and m[2] == x]
+            if not monster:
+                return []
+            _, _, _, mon, _ = monster[0]
+            if mon.mname in WEAK_MONSTERS:
+                return []
+            dis = line_dis_from(agent, y, x)
+            if dis < 2 or dis > 8:
+                return []
+            return [(5, ('cast', dy, dx, 'force bolt'))]
 
 
 def get_priorities(agent):
