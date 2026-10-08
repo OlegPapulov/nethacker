@@ -1438,7 +1438,7 @@ class Agent:
         # hypothesis: avoid long corpse hunts when just hungry to save turns; only go far when weak
         if not only_below_me and self.blstats.hunger_state < Hunger.WEAK:
             # hypothesis: allow slightly farther corpse search when hungry to find food without wasting too many turns
-            max_dist = 5
+            max_dist = 6
             to_eat = [t for t in to_eat if dis[t[0], t[1]] <= max_dist]
             if not to_eat:
                 yield False
