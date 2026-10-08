@@ -894,29 +894,15 @@ The wand path stops on a pet. It now also stops on a peaceful monster. Seed 9 fa
 
 A child is kept only when its mean is strictly above the parent. This mean is lower.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.09224227795853944 improved=False notes_ignored=False code_unchanged=False
+## Run 37758795884, wiz-hum-cha-mal, 1 iteration, `--effort high`, zap penalty of 5
+
+[37758795884](https://github.com/OlegPapulov/nethacker/actions/runs/37758795884) finished green. The job ran from 12:52 UTC to 14:17 UTC. The judge scored 0.09224227795853944. The table printed 0.092. The child was not kept. `main` stays on the 0.114 bot.
+
+The operator ran for 4,555 seconds and used 590,751 tokens. The cold-start mean is 0.114 and 36,648 turns. The child mean is 29,487 turns.
+
+The zap penalty goes from 15 to 5. Seed 9 falls from 0.255 to 0.117. Seed 3 falls from 0.179 to 0.051. Seed 5 falls from 0.179 to 0.075. Seed 0 falls from 0.117 to 0.075. Seed 8 rises from 0.037 to 0.117. Seed 4 stays at 2,742 turns and 0.018.
 
 ### Why it stopped
-no-cell-improved
 
-### What is the problem
-# Playthrough
-
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. Progress is the highest milestone a game reaches.
-
-## What might solve it
-
-See `experiments.md`.
-
-### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+A child is kept only when its mean is strictly above the parent. This mean is lower.
 

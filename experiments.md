@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. The assumptions in `GAME_RULES.md` say a wand stop on a peaceful monster is already measured. The brief is unchanged.
+Applied in this commit. The assumptions in `GAME_RULES.md` say a zap penalty of 5 is already measured. A nearby number in that wand function is the same change. The brief is unchanged.
 
 ## Result
 
