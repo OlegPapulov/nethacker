@@ -49,7 +49,7 @@ def draw_monster_priority_positive(agent, monster, priority, walkable):
         _draw_around(priority, y, x, 2, radius=1, operation='max')
         _draw_around(priority, y, x, 1, radius=2, operation='max')
     elif 'mold' in mon.mname and mon.mname not in ONLY_RANGED_SLOW_MONSTERS:
-        if agent.blstats.hitpoints >= 15 or agent.blstats.hitpoints == agent.blstats.max_hitpoints:
+        if agent.blstats.hitpoints >= 12 or agent.blstats.hitpoints == agent.blstats.max_hitpoints:
             # freely engage in melee
             _draw_around(priority, y, x, 2, radius=1, operation='max')
             _draw_around(priority, y, x, 1, radius=2, operation='max')
