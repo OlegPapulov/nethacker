@@ -1257,6 +1257,10 @@ class Agent:
             self.stats_logger.log_event('wait_in_fight')
             self.search()
             return wait_counter
+        elif best_action[0] == 'cast':
+            _, dy, dx, spell_name = best_action
+            self.cast(spell_name, direction=(dy, dx))
+            return wait_counter
         elif best_action[0] == 'zap':
             if len(best_action) == 5:
                 _, dy, dx, wand, targeted_monsters = best_action
