@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. The brief no longer says to change one existing test. The assumptions say to leave every listed test as it is, including a nearby number in the same function.
+Applied in this commit. The brief says to add one behavior the listed tests do not already cover. That behavior raises the experience level a game reaches. A number in an existing test stays as it is.
 
 ## Result
 

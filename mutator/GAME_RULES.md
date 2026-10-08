@@ -56,4 +56,4 @@ These changes are already measured. Do not repeat a listed change. A nearby numb
 
 ## The edit
 
-Leave every listed test as it is, including a nearby number in the same function. Do not add a new action. Describe the games in `experience.md`. Propose one change in `experiments.md`, in accordance with these rules. Change the bot from that proposal. Do not run `python -m nethackers.arena.run`. The judge plays the 15 seeds after you exit.
+Leave every listed test as it is, including a nearby number in the same function. Do not change a number in an existing test. Add one behavior the listed tests do not already cover. That behavior raises the experience level a game reaches. Describe the games in `experience.md`. Propose one change in `experiments.md`, in accordance with these rules. Change the bot from that proposal. Do not run `python -m nethackers.arena.run`. The judge plays the 15 seeds after you exit.

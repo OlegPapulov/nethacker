@@ -918,29 +918,13 @@ While hunger is below weak, the corpse search goes from 5 squares to 6. All 15 s
 
 A child is kept only when its mean is strictly above the parent. This mean is equal.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.11444300565928403 improved=False notes_ignored=True code_unchanged=False
+## Run 37812319482, wiz-hum-cha-mal, 1 iteration, `--effort high`, unchanged bot
+
+[37812319482](https://github.com/OlegPapulov/nethacker/actions/runs/37812319482) finished green. The job ran from 16:53 UTC to 20:07 UTC. The judge scored 0.11444300565928403. The table printed 0.114. The child was not kept. `main` stays on the 0.114 bot.
+
+The operator ran for 11,022 seconds and used 756,442 tokens. The notes stay the seed text. The published files under `autoascend/` match the parent. All 15 seeds keep the parent turn counts.
 
 ### Why it stopped
-no-cell-improved
 
-### What is the problem
-# Playthrough
-
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. Progress is the highest milestone a game reaches.
-
-## What might solve it
-
-See `experiments.md`.
-
-### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+A child is kept only when its mean is strictly above the parent. This mean is equal. The brief closed every listed test and also forbade a new action.
 

@@ -144,7 +144,9 @@ def _keep_win() -> str:
         "The judge score is the mean of 15 seeds. "
         "A child is kept only when that mean is strictly higher. "
         "Leave every listed test as it is, including a nearby number in the same function. "
-        "Do not add a new action. "
+        "Do not change a number in an existing test. "
+        "Add one behavior the listed tests do not already cover. "
+        "That behavior raises the experience level a game reaches. "
         "Describe the games in `experience.md`. "
         "Propose one change in this file, in accordance with the game rules. "
         "Change the bot from that proposal."
@@ -602,7 +604,8 @@ def self_check() -> None:
         assert "killed after" not in game
         assert "highest milestone" in game
         assert "Leave every listed test" in game
-        assert "one test that already exists" not in game
+        assert "Add one behavior" in game
+        assert "Do not add a new action" not in game
         assert "0.179" in game
         assert "Assumptions" in game
         assert "experiments.md" in game
@@ -640,7 +643,8 @@ def self_check() -> None:
         hungry_text = (hungry / "experiments.md").read_text()
         assert "highest milestone" in hungry_text
         assert "Leave every listed test" in hungry_text
-        assert "one test that already exists" not in hungry_text
+        assert "Add one behavior" in hungry_text
+        assert "Do not add a new action" not in hungry_text
         assert "Propose one change" in hungry_text
         assert "do not add 15" not in hungry_text
         assert "difficulty" not in hungry_text

@@ -78,7 +78,9 @@ jobs:
                   "The judge score is the mean of 15 seeds. "
                   "A child is kept only when that mean is strictly higher. "
                   "Leave every listed test as it is, including a nearby number in the same function. "
-                  "Do not add a new action. "
+                  "Do not change a number in an existing test. "
+                  "Add one behavior the listed tests do not already cover. "
+                  "That behavior raises the experience level a game reaches. "
                   "Experience level is the milestone that moves this score. "
                   f"The identity you are trying to improve is `{identity}`. "
                   "You receive the ends of played games. "
@@ -102,13 +104,13 @@ jobs:
               "experience.md",
               "experiments.md",
               "highest milestone",
-              "Leave every listed test",
+              "Add one behavior",
               "strictly higher",
               "Do not run `python -m nethackers.arena.run`",
           ):
               if item not in sample:
                   sys.exit(f"brief missing: {item}")
-          for bad in ("600000", "any amount of code", "Raise its score", "descends, and advances", "foreground command", "one test that already exists"):
+          for bad in ("600000", "any amount of code", "Raise its score", "descends, and advances", "foreground command", "one test that already exists", "Do not add a new action"):
               if bad in sample:
                   sys.exit(f"brief still has: {bad}")
           PY
