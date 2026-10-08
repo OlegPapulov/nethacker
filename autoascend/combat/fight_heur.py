@@ -137,7 +137,8 @@ def _simulate_wand_path(agent, wand, monsters, y, x, dy, dx, range_left, hit_tar
             monster = monster[0]
             # For each monster hit, range decreases by 2.
             range_left -= 2
-        elif inside(agent, y, x) and agent.glyphs[y, x] in G.PETS:
+        elif inside(agent, y, x) and (agent.glyphs[y, x] in G.PETS or
+                                      agent.monster_tracker.peaceful_monster_mask[y, x]):
             monster = 'pet'
             # For each monster hit, range decreases by 2.
             range_left -= 2
