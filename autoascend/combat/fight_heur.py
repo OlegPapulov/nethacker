@@ -191,7 +191,7 @@ def get_potential_wand_usages(agent, monsters, dy, dx):
                 targeted_monsters.add((y, x, monster))
         if targeted_monsters:
             # priority = priority * (1 - player_hp_ratio) - 10
-            priority = priority - 15
+            priority = priority - 5
             if agent.inventory.engraving_below_me.lower() == 'elbereth':
                 priority -= 100
             ret.append((priority, ('zap', dy, dx, item, targeted_monsters)))
