@@ -5,7 +5,7 @@ import numpy as np
 from scipy import signal
 
 from ..glyph import G
-from ..utils import adjacent
+from ..utils import adjacent, isin
 from .monster_utils import is_monster_faster, is_dangerous_monster, \
     ONLY_RANGED_SLOW_MONSTERS, EXPLODING_MONSTERS, WEAK_MONSTERS, consider_melee_only_ranged_if_hp_full
 from .movement_priority import draw_monster_priority_positive, draw_monster_priority_negative
@@ -314,6 +314,40 @@ def get_corridors_priority_map(walkable):
     return corridor_mask + corridor_dilated >= 1
 
 
+def get_choke_point_priority_map(agent, monsters, walkable):
+    """ Movement bonus for a doorway or corridor tile while a fight is going badly.
+
+    A one-tile-wide passage -- a door in a wall, or a corridor -- has six or more
+    of its eight neighbours blocked, so at most one monster can reach the wizard
+    standing there, while an open room lets several.  The parent never chooses
+    the ground of a fight: the corridor map is built but left commented out of
+    `get_priorities`, and the wizard always trades blows in the open.
+
+    This only fires when the wizard is already losing -- hurt, or with two or
+    more monsters adjacent -- so a healthy wizard still fights a single monster
+    in place.  A faster monster is left to the melee bonus (`+15`), which is a
+    measured test, so the two never compete.
+    """
+    hostiles = [m for m in monsters if m[3].mname not in WEAK_MONSTERS]
+    if not any(m[0] <= 3 for m in hostiles):
+        return None
+    adjacent_hostiles = [m for m in hostiles
+                         if adjacent((m[1], m[2]), (agent.blstats.y, agent.blstats.x))]
+    if any(is_monster_faster(agent, m) for m in adjacent_hostiles):
+        return None
+
+    hurt = agent.blstats.hitpoints <= 8
+    outnumbered = len(adjacent_hostiles) >= 2
+    if not (hurt or outnumbered):
+        return None
+
+    wall_count = signal.convolve2d((~walkable).astype(int), np.ones((3, 3)),
+                                   boundary='symm', mode='same')
+    choke = (wall_count >= 6) & walkable
+    choke |= isin(agent.current_level().objects, G.DOORS) & walkable
+    return choke
+
+
 def cast_attack_actions(agent, monsters, dy, dx):
     # hypothesis: a wizard casts spells, and a spell does damage from a distance.
     # The parent never fires an attack spell.  Once it has thrown away its ammo it
@@ -374,6 +408,14 @@ def get_priorities(agent):
         draw_monster_priority_positive(agent, m, priority, walkable)
     for m in monsters:
         draw_monster_priority_negative(agent, m, priority, walkable)
+
+    # Losing a fight in an open room: give ground to a doorway or a corridor so
+    # that only one monster can reach the wizard.  The weight sits just above the
+    # melee weight (16) so it wins only when the wizard is hurt or surrounded.
+    choke = get_choke_point_priority_map(agent, monsters, walkable)
+    if choke is not None:
+        priority += choke * 20
+
     priority[~walkable] = float('nan')
 
     # TODO: figure out how to use corridors priority so that it improves the score
