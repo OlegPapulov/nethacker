@@ -960,3 +960,29 @@ The operator left the new behavior in the tree. When the wizard is hurt or two m
 
 A child is kept only when its mean is strictly above the parent. This mean is lower.
 
+## Run wiz-hum-cha-mal (1 iteration(s))
+- iteration 1: reason=no-cell-improved dev_fitness=0.10444363554680508 improved=False notes_ignored=False code_unchanged=False
+
+### Why it stopped
+no-cell-improved
+
+### What is the problem
+# Playthrough
+
+Identity: `wiz-hum-cha-mal`
+
+## Why it stopped
+
+The parent batch is not in this note. The judge plays the 15 seeds after you exit.
+
+## What is the problem
+
+The score is the mean of those seeds. Progress is the highest milestone a game reaches.
+
+## What might solve it
+
+See `experiments.md`.
+
+### What might solve it
+See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
