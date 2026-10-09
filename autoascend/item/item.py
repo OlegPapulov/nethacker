@@ -213,7 +213,12 @@ class Item:
     def is_offensive_usable_wand(self):
         if len(self.objs) != 1:
             return False
-        if not self.is_ray_wand():
+        # A wand of striking fires a beam rather than a ray, so the is_ray_wand()
+        # test below used to discard it -- yet it is one of the game's named early
+        # finds and it deals its damage from a distance like any attack wand.  A
+        # wizard has very little melee staying power and often starts with one, so
+        # keep it as an offensive option alongside the ray wands.
+        if not self.is_ray_wand() and self.objs[0] != O.from_name('striking', nh.WAND_CLASS):
             return False
         if self.uses == 'no charges':
             # TODO: is it right ?
