@@ -960,29 +960,15 @@ The operator left the new behavior in the tree. When the wizard is hurt or two m
 
 A child is kept only when its mean is strictly above the parent. This mean is lower.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.10444363554680508 improved=False notes_ignored=False code_unchanged=False
+## Run 37925686017, wiz-hum-cha-mal, 1 iteration, `--effort high`, wand of striking
+
+[37925686017](https://github.com/OlegPapulov/nethacker/actions/runs/37925686017) finished green. The job ran from 11:45 UTC to 12:19 UTC. The judge scored 0.10444363554680508. The table printed 0.104. The child was not kept. `main` stays on the force-bolt bot.
+
+The operator ran for 1,427 seconds and used 316,703 tokens. The cold-start mean is 0.119 and 36,366 turns. The child mean is 31,998 turns.
+
+The operator left the new behavior in the tree. A wand of striking now counts as an offensive wand. Seed 9 falls from 0.255 to 0.037 in 6,892 turns. Seed 8 falls from 0.037 to 0.029. Seed 3 stays at 0.255 and 69,782 turns.
 
 ### Why it stopped
-no-cell-improved
 
-### What is the problem
-# Playthrough
-
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. Progress is the highest milestone a game reaches.
-
-## What might solve it
-
-See `experiments.md`.
-
-### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+A child is kept only when its mean is strictly above the parent. This mean is lower.
 

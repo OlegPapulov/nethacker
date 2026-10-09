@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. The assumptions in `GAME_RULES.md` say a doorway movement bonus is already measured. A nearby weight on that bonus is the same change. The brief is unchanged.
+Applied in this commit. The game rules now say a wand of striking is a beam that stops on the first target. Treating it as an offensive wand is already measured. The brief is unchanged.
 
 ## Result
 

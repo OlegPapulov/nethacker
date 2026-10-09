@@ -28,7 +28,7 @@ The six stats are strength, dexterity, constitution, intelligence, wisdom, and c
 
 ## Items
 
-Most items start unidentified. Price, appearance, and one careful use tell them apart. A useful early find is food, a healing potion, a wand of striking, a wand of magic missile, speed, or magic resistance. A dangerous early use is an unknown potion, an unknown scroll, a wand aimed at yourself, or a cockatrice corpse.
+Most items start unidentified. Price, appearance, and one careful use tell them apart. A useful early find is food, a healing potion, a wand of magic missile, speed, or magic resistance. A wand of striking is a beam. The beam stops on the first monster or the first door. It does not bounce. It breaks the door. A ray passes through and can bounce. Force bolt is the ranged attack once the wizard can cast it. A dangerous early use is an unknown potion, an unknown scroll, a wand aimed at yourself, or a cockatrice corpse.
 
 ## Tips
 
@@ -54,6 +54,7 @@ These changes are already measured. Do not repeat a listed change. A nearby numb
 - The parent lets the wizard eat when every monster is more than 7 squares away. When hunger is weak, letting a monster at 5 or 6 squares through drops the mean from 0.114 to 0.082. Seed 9 falls from 0.255 to 0.051. A nearby distance in that same test is the same change.
 - The parent wand path stops on a pet. Treating a peaceful monster as that same stop drops the mean from 0.114 to 0.098. Seed 9 falls from 0.255 to 0.117. Seed 0 falls from 0.117 to 0.075. Seed 3 falls from 0.179 to 0.117. The parent zap penalty is 15. Changing that penalty to 5 drops the mean from 0.114 to 0.092. Seed 9 falls from 0.255 to 0.117. Seed 3 falls from 0.179 to 0.051. Seed 5 falls from 0.179 to 0.075. Seed 8 rises from 0.037 to 0.117. A nearby number in that wand function is the same change.
 - A movement bonus of 20 toward a doorway or a corridor, when the wizard is hurt or two monsters are adjacent, drops the mean from 0.119 to 0.068. Seed 3 falls from 0.255 to 0.024. Seed 9 falls from 0.255 to 0.024. Seed 4 rises from 0.018 to 0.179. A nearby weight on that bonus is the same change.
+- Treating a wand of striking as an offensive wand drops the mean from 0.119 to 0.104. Seed 9 falls from 0.255 to 0.037. Seed 8 falls from 0.037 to 0.029. Seed 3 stays at 0.255. The zap score counts every monster on the line. A striking beam hits only the first target. A nearby wand in that same test is the same change.
 
 ## The edit
 
