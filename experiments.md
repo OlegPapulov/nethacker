@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. The brief says to add one behavior the listed tests do not already cover. That behavior raises the experience level a game reaches. A number in an existing test stays as it is.
+Applied in this commit. The brief says to add one behavior and not to revert it. The judge scores the tree you exit with. A tree that matches the parent is not a result.
 
 ## Result
 

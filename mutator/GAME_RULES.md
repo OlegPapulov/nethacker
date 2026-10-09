@@ -45,7 +45,7 @@ These facts explain a death.
 
 ## Assumptions
 
-These changes are already measured. Do not repeat a listed change. A nearby number on a listed test is the same change. Leave those tests as they are, including a nearby number in the same function. An unchanged bot leaves the mean at 0.114.
+These changes are already measured. Do not repeat a listed change. A nearby number on a listed test is the same change. Leave those tests as they are, including a nearby number in the same function. Do not revert the change. The judge scores the tree you exit with. A tree that matches the parent is not a result.
 
 - A prayer wait of 3,500 turns drops the mean from 0.114 to 0.024. Every seed at 0.179 or above falls. Seed 9 falls from 0.255 to 0.018. The parent wait is 500 turns at low hit points and 400 turns while fainting. The parent also prays below 6 hit points. Raising that 6 to 9 drops the mean from 0.114 to 0.074. Seed 9 falls from 0.255 to 0.000 in 702 turns. A nearby number in that same test is the same change.
 - A corpse walk longer than 20 squares drops the mean. A cap of 30 drops it to 0.107, and seeds 5 and 6 fall from 0.179 to 0.037. A cap of 25 drops it to 0.107, and seed 13 falls from 0.179 to 0.051. The walk that holds the current mean stops at 20 squares. The fainting latch uses that same 20-square search. Cutting it to 10 squares leaves the mean at 0.114. All 15 seeds keep the parent turn counts. A nearby distance on that search is the same change.
@@ -56,4 +56,4 @@ These changes are already measured. Do not repeat a listed change. A nearby numb
 
 ## The edit
 
-Leave every listed test as it is, including a nearby number in the same function. Do not change a number in an existing test. Add one behavior the listed tests do not already cover. That behavior raises the experience level a game reaches. Describe the games in `experience.md`. Propose one change in `experiments.md`, in accordance with these rules. Change the bot from that proposal. Do not run `python -m nethackers.arena.run`. The judge plays the 15 seeds after you exit.
+Leave every listed test as it is, including a nearby number in the same function. Do not change a number in an existing test. Add one behavior the listed tests do not already cover. That behavior raises the experience level a game reaches. Do not revert the change. The judge scores the tree you exit with. A tree that matches the parent is not a result. Describe the games in `experience.md`. Propose one change in `experiments.md`, in accordance with these rules. Change the bot from that proposal. Do not run `python -m nethackers.arena.run`. The judge plays the 15 seeds after you exit.

@@ -147,6 +147,9 @@ def _keep_win() -> str:
         "Do not change a number in an existing test. "
         "Add one behavior the listed tests do not already cover. "
         "That behavior raises the experience level a game reaches. "
+        "Do not revert the change. "
+        "The judge scores the tree you exit with. "
+        "A tree that matches the parent is not a result. "
         "Describe the games in `experience.md`. "
         "Propose one change in this file, in accordance with the game rules. "
         "Change the bot from that proposal."
@@ -605,6 +608,7 @@ def self_check() -> None:
         assert "highest milestone" in game
         assert "Leave every listed test" in game
         assert "Add one behavior" in game
+        assert "Do not revert" in game
         assert "Do not add a new action" not in game
         assert "0.179" in game
         assert "Assumptions" in game
@@ -644,6 +648,7 @@ def self_check() -> None:
         assert "highest milestone" in hungry_text
         assert "Leave every listed test" in hungry_text
         assert "Add one behavior" in hungry_text
+        assert "Do not revert" in hungry_text
         assert "Do not add a new action" not in hungry_text
         assert "Propose one change" in hungry_text
         assert "do not add 15" not in hungry_text

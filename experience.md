@@ -928,55 +928,23 @@ The operator ran for 11,022 seconds and used 756,442 tokens. The notes stay the 
 
 A child is kept only when its mean is strictly above the parent. This mean is equal. The brief closed every listed test and also forbade a new action.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=registered dev_fitness=0.11949000253913263 improved=True notes_ignored=False code_unchanged=False
+## Run 37839861778, wiz-hum-cha-mal, 1 iteration, `--effort high`, force bolt
+
+[37839861778](https://github.com/OlegPapulov/nethacker/actions/runs/37839861778) finished green. The job ran from 20:29 UTC to 22:53 UTC. The judge scored 0.11949000253913263. The table printed 0.120. The hub registered this tree. `main` keeps this bot.
+
+The operator ran for 8,204 seconds and used 975,885 tokens. At experience level 10 or higher, on dungeon depth 1, the wizard casts force bolt at a monster 2 to 8 squares away. Seed 3 rises from 0.179 to 0.255. Seed 9 stays at 0.255 and 69,906 turns.
 
 ### Why it stopped
-registered
 
-### What is the problem
-# Playthrough
+A child is kept when its mean is strictly above the parent. This mean is higher.
 
-Identity: `wiz-hum-cha-mal`
+## Run 37859207943, wiz-hum-cha-mal, 1 iteration, `--effort high`, reverted tree
 
-## Why it stopped
+[37859207943](https://github.com/OlegPapulov/nethacker/actions/runs/37859207943) finished green. The job ran from 23:23 UTC on 8 October to 02:29 UTC on 9 October. The judge scored 0.11949000253913263. The table printed 0.120. The child was not kept. `main` stays on the force-bolt bot.
 
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. Progress is the highest milestone a game reaches.
-
-## What might solve it
-
-See `experiments.md`.
-
-### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
-
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.11949000253913263 improved=False notes_ignored=False code_unchanged=False
+The operator ran for 10,726 seconds and used 900,768 tokens. It tried a corridor bias, two potion quaffs, and a step away from a swarm. It wrote that each of those checks lowered the mean. It restored the parent code before it exited. The published files under `autoascend/` match the force-bolt bot. Every seed keeps that bot's turn count.
 
 ### Why it stopped
-no-cell-improved
 
-### What is the problem
-# Playthrough
-
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. Progress is the highest milestone a game reaches.
-
-## What might solve it
-
-See `experiments.md`.
-
-### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+A child is kept only when its mean is strictly above the parent. This mean is equal.
 
