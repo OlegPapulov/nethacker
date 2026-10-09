@@ -948,29 +948,15 @@ The operator ran for 10,726 seconds and used 900,768 tokens. It tried a corridor
 
 A child is kept only when its mean is strictly above the parent. This mean is equal.
 
-## Run wiz-hum-cha-mal (1 iteration(s))
-- iteration 1: reason=no-cell-improved dev_fitness=0.06802182900796194 improved=False notes_ignored=False code_unchanged=False
+## Run 37919108952, wiz-hum-cha-mal, 1 iteration, `--effort high`, doorway bonus
+
+[37919108952](https://github.com/OlegPapulov/nethacker/actions/runs/37919108952) finished green. The job ran from 10:41 UTC to 11:28 UTC. The judge scored 0.06802182900796194. The table printed 0.068. The child was not kept. `main` stays on the force-bolt bot.
+
+The operator ran for 2,511 seconds and used 475,872 tokens. The cold-start mean is 0.119 and 36,366 turns. The child mean is 22,563 turns.
+
+The operator left the new behavior in the tree. When the wizard is hurt or two monsters stand adjacent, movement priority rises by 20 on a doorway or a one-tile corridor. Seed 4 rises from 0.018 to 0.179. Seed 3 falls from 0.255 to 0.024. Seed 9 falls from 0.255 to 0.024.
 
 ### Why it stopped
-no-cell-improved
 
-### What is the problem
-# Playthrough
-
-Identity: `wiz-hum-cha-mal`
-
-## Why it stopped
-
-The parent batch is not in this note. The judge plays the 15 seeds after you exit.
-
-## What is the problem
-
-The score is the mean of those seeds. Progress is the highest milestone a game reaches.
-
-## What might solve it
-
-See `experiments.md`.
-
-### What might solve it
-See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+A child is kept only when its mean is strictly above the parent. This mean is lower.
 

@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. The brief says to add one behavior and not to revert it. The judge scores the tree you exit with. A tree that matches the parent is not a result.
+Applied in this commit. The assumptions in `GAME_RULES.md` say a doorway movement bonus is already measured. A nearby weight on that bonus is the same change. The brief is unchanged.
 
 ## Result
 
