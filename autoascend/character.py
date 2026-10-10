@@ -401,7 +401,18 @@ class Character:
 
     def select_skill_to_upgrade(self):
         assert self.upgradable_skills
-        # TODO: logic
+        # hypothesis: the previous pick (first letter of the enhance menu, in menu
+        # order) alternated between the wizard's held quarterstaff and its off-hand
+        # dagger, so half of its skill points went to a weapon it was never swinging.
+        # The melee damage calculation keys off the *wielded* weapon's skill, so put
+        # every upgrade a level grants into that weapon instead (the only weapon that
+        # affects any roll in this agent); the other skills get nothing, which is
+        # strictly what the parent does for them anyway.
+        main_hand = self.agent.inventory.items.main_hand
+        if main_hand is not None and main_hand.is_weapon():
+            wielded_skill = abs(main_hand.objs[0].sub)
+            if wielded_skill in self.upgradable_skills:
+                return wielded_skill
         return next(iter(self.upgradable_skills.keys()))
 
     def _parse_enhance_view(self):
