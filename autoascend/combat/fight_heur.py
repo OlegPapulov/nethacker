@@ -315,22 +315,21 @@ def get_corridors_priority_map(walkable):
 
 
 def cast_attack_actions(agent, monsters, dy, dx):
-    # hypothesis: a wizard casts spells, and a spell does damage from a distance.
-    # The parent never fires an attack spell.  Once it has thrown away its ammo it
-    # walks into melee and trades blows, which is how the late games end.  Force
-    # bolt is a cheap, reliable spell, but a low-level wizard has only ~6 energy,
-    # so a single cast competes with survival.  Two gates keep the new attack from
-    # disturbing the games the parent already wins:
-    #   * experience level 10+ -- by then energy is 70+ and the wizard is a real
-    #     caster; every level below 10 is untouched, so the games that die young
-    #     do not change at all.
+    # hypothesis: a wizard casts spells, and force bolt does damage from a
+    # distance.  The parent only offered the cast from experience level 10, but
+    # the games that score worst (0.018, 0.024, 0.029 and 0.037) die at
+    # experience levels 2, 4, 5 and 6 -- the gate never opens for them, so the
+    # ranged attack always arrived too late to matter.  Offer it from the start
+    # instead.  The energy reserve below still keeps a first-level wizard (six
+    # energy, one bolt short of the reserve) from spending its whole budget, and
+    # from experience level 2 (fifteen energy) the wizard can soften the monster
+    # that would otherwise have to be met in melee:
     #   * the first Doom level -- that floor is the one the bot farms until level
     #     12; on any other floor it is travelling between levels and should keep
     #     its energy in reserve.
+    #   * the same known, reliable spell and the same 10-energy reserve.
     # The bolt is only offered from a distance (2..8, clear line) so that an
     # adjacent target is still handled by the tuned melee heuristics.
-    if agent.blstats.experience_level < 10:
-        return []
     if agent.blstats.depth != 1:
         return []
     if 'force bolt' not in agent.character.known_spells:
