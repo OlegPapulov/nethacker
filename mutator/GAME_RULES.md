@@ -82,6 +82,7 @@ A change that lifts a short game and drops a long game lowers the score.
 - Stepping toward a doorway because the wizard is hurt or two monsters are adjacent.
 - Zapping a wand of striking as an attack wand.
 - Refusing a corpse underfoot that the parent still treats as fresh.
+- Dropping a carried item when the wizard is strained, overtaxed, or overloaded. The drop runs before the fight, and a corpse goes first. The parent already keeps the pack under its weight budget.
 
 ### These actions leave the score where it is
 

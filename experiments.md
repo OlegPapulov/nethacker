@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. The task is one change that raises the score. That change is one new function, or one rewrite of one function. `experience.md` holds the played games. `experiments.md` holds the one proposal. The brief matches that task.
+Applied in this commit. Dropping a carried item when the wizard is strained or worse lowers the score. The drop runs before the fight, and a corpse goes first. The brief is unchanged.
 
 ## Result
 
