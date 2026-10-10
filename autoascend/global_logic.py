@@ -512,6 +512,46 @@ class GlobalLogic:
 
         self.agent.go_to(y, x, stop_one_before=True)
 
+    @utils.debug_log('avoid_overload')
+    @Strategy.wrap
+    def avoid_overload(self):
+        # hypothesis: the wizard loses games to its own backpack. When it is
+        # polymorphed -- in particular by lycanthropy, which turns it into a
+        # wererat (corpse weight 40, physical size tiny) on a timer -- NetHack
+        # rescales carrying capacity to the form, so the wizard's ordinary load
+        # is suddenly past three times what the tiny form can carry and it is
+        # Overloaded. arrange_items deliberately stands down while polymorphed
+        # (it would try to wear handless gear), so nothing sheds the weight:
+        # NetHack then refuses to fight or move ("You cannot fight while so
+        # heavily loaded", "You don't have enough stamina to move") and the
+        # wizard is killed in place. The item model cannot see this because the
+        # capacity it budgets against is the wizard's own, not the form's, and
+        # the encumbrance level is not derived from the parsed item weights at
+        # all. NetHack does publish ground truth, though: blstats.carrying_capacity
+        # is near_capacity() (0 unencumbered .. 5 Overloaded). When that reaches
+        # Strained (3) drop the heaviest thing the wizard is neither wearing nor
+        # wielding -- corpses and spare weapons first -- until the game says it
+        # can move and fight again. Acting only at Strained+ matters: Burdened (1)
+        # and Stressed (2) merely slow the wizard down and shedding gear there
+        # throws away won games. This runs while polymorphed on purpose, exactly
+        # the state arrange_items refuses to touch.
+        if self.agent.blstats.carrying_capacity < 3:
+            yield False
+
+        # Re-read the inventory so an item grabbed on the previous turn (the
+        # observation trails the status line by a step) is accounted for.
+        self.agent.inventory.items.update(force=True)
+        droppable = [item for item in flatten_items(self.agent.inventory.items)
+                     if item.can_be_dropped_from_inventory() and item.shop_status == Item.NOT_SHOP]
+        if not droppable:
+            yield False
+
+        droppable.sort(key=lambda item: (not item.is_corpse(), -item.weight()))
+        yield True
+
+        item = droppable[0]
+        self.agent.inventory.drop(item, item.count, smart=False)
+
     @Strategy.wrap
     def current_strategy(self):
         yield True
@@ -686,6 +726,9 @@ class GlobalLogic:
             ])
             .preempt(self.agent, [
                 self.agent.fight2(),
+            ])
+            .preempt(self.agent, [
+                self.avoid_overload(),
             ])
             .preempt(self.agent, [
                 self.agent.engulfed_fight(),
