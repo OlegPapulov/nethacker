@@ -329,6 +329,16 @@ def cast_attack_actions(agent, monsters, dy, dx):
     #     its energy in reserve.
     # The bolt is only offered from a distance (2..8, clear line) so that an
     # adjacent target is still handled by the tuned melee heuristics.
+    # hypothesis for this edit: the farm ends when a faster monster (giant bat,
+    # killer bee, kitten, housecat, pony) closes in and the wizard trades melee
+    # hits it cannot afford -- melee kills a bee in ~6 swings, taking a hit for
+    # every one.  A bolt of force is a beam: it stops on the first monster and
+    # does not bounce, so shooting an adjacent monster is safe, and it kills the
+    # same bee in ~2 casts while halving the hits taken (and thus the food the
+    # extra fight turns would burn).  Offer the bolt at distance 1 too, at a
+    # priority above melee, but only for a monster the wizard cannot out-hit in
+    # melee (fast or dangerous), and only while the wizard is healthy enough to
+    # absorb a failed cast (hit points at 15+, energy over 20).
     if agent.blstats.experience_level < 10:
         return []
     if agent.blstats.depth != 1:
@@ -360,8 +370,13 @@ def cast_attack_actions(agent, monsters, dy, dx):
             if mon.mname in WEAK_MONSTERS:
                 return []
             dis = line_dis_from(agent, y, x)
-            if dis < 2 or dis > 8:
+            if dis > 8:
                 return []
+            if dis < 2 and not (is_monster_faster(agent, monster[0]) or is_dangerous_monster(monster[0])):
+                return []
+            if dis == 1 and (is_monster_faster(agent, monster[0]) or is_dangerous_monster(monster[0])) \
+                    and agent.blstats.hitpoints >= 15 and agent.blstats.energy >= 20:
+                return [(30, ('cast', dy, dx, 'force bolt'))]
             return [(5, ('cast', dy, dx, 'force bolt'))]
 
 
