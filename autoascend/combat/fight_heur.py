@@ -221,6 +221,21 @@ def elbereth_action(agent, monsters):
             adj_monsters_count += 2 * multiplier
 
     player_hp_ratio = (agent.blstats.hitpoints / agent.blstats.max_hitpoints) ** 0.5
+    # A fast monster grinds the wizard down in melee: by the time hit points are
+    # low enough to engrave, it has already hit several times and keeps acting
+    # while the word is being written. From level 10 on, engrave Elbereth while
+    # such a monster is still a few squares out, so the word is on the floor
+    # before it can strike.
+    if agent.blstats.experience_level >= 10 and agent.blstats.hitpoints < 30:
+        for monster in monsters:
+            _, my, mx, mon, _ = monster
+            if mon.mname in ONLY_RANGED_SLOW_MONSTERS or mon in WEAK_MONSTERS:
+                continue
+            if not is_monster_faster(agent, monster):
+                continue
+            if not adjacent((my, mx), (agent.blstats.y, agent.blstats.x)) and \
+                    line_dis_from(agent, my, mx) <= 5:
+                return [(200, ('elbereth',))]
     if agent.blstats.hitpoints < 30 and adj_monsters_count > 0:
         return [(-15 + 20 * adj_monsters_count * (1 - player_hp_ratio), ('elbereth',))]
     return []
