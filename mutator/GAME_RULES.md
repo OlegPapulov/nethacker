@@ -38,9 +38,12 @@ These facts explain a death.
 - A faster monster takes a turn before the wizard takes a turn. A few hits kill the wizard.
 - A pet is a resource. An attack on a peaceful monster can ruin the game.
 - Eat before a faint. A faint next to a monster is a death. Start a meal only when every monster is too far to walk up during the meal. A monster a few squares away still holds the turn.
-- Writing Elbereth takes the turn. The word helps after it is on the floor. An adjacent monster still acts while you write. When hit points are low, hit, zap, or step into a doorway.
+- Writing Elbereth takes the turn. The word helps only on a later turn, after it is on the floor. When a faster monster can reach the wizard during the writing, the wizard hits, zaps, or steps into a doorway.
 - A cockatrice corpse turns the hero to stone. Do not eat it. Do not touch it with bare hands.
 - Do not quaff an unknown potion during a fight.
+- The score moves when an experience level changes. A longer game at the same level has the same score.
+- A behavior that starts at experience level 10 misses a game that dies earlier. The games at 0.018, 0.024, 0.029, and 0.037 die in the first few thousand turns.
+- Use the death the played game states. That death is the one the edit answers.
 - A seed-specific branch does not count. The private seeds are different games.
 
 ## Assumptions
@@ -55,6 +58,9 @@ These changes are already measured. Do not repeat a listed change. A nearby numb
 - The parent wand path stops on a pet. Treating a peaceful monster as that same stop drops the mean from 0.114 to 0.098. Seed 9 falls from 0.255 to 0.117. Seed 0 falls from 0.117 to 0.075. Seed 3 falls from 0.179 to 0.117. The parent zap penalty is 15. Changing that penalty to 5 drops the mean from 0.114 to 0.092. Seed 9 falls from 0.255 to 0.117. Seed 3 falls from 0.179 to 0.051. Seed 5 falls from 0.179 to 0.075. Seed 8 rises from 0.037 to 0.117. A nearby number in that wand function is the same change.
 - A movement bonus of 20 toward a doorway or a corridor, when the wizard is hurt or two monsters are adjacent, drops the mean from 0.119 to 0.068. Seed 3 falls from 0.255 to 0.024. Seed 9 falls from 0.255 to 0.024. Seed 4 rises from 0.018 to 0.179. A nearby weight on that bonus is the same change.
 - Treating a wand of striking as an offensive wand drops the mean from 0.119 to 0.104. Seed 9 falls from 0.255 to 0.037. Seed 8 falls from 0.037 to 0.029. Seed 3 stays at 0.255. The zap score counts every monster on the line. A striking beam hits only the first target. A nearby wand in that same test is the same change.
+- Skill points in the wielded weapon raise the mean from 0.119 to 0.133. Seed 0 and seed 7 rise from 0.117 to 0.179. Seed 6 rises from 0.179 to 0.255. Leave that choice as it is. A nearby skill in that same choice is the same change.
+- Writing Elbereth while a faster monster is 2 to 5 squares away, from experience level 10, with hit points below 30, leaves the mean at 0.133. Every seed keeps its experience level. Seed 9 goes from 69,906 turns to 84,205 turns and stays at 0.255. A nearby distance or a nearby hit-point gate on that writing is the same change.
+- Refreshing a corpse age only while the recorded age is still fresh drops the mean from 0.133 to 0.129. Seed 5 falls from 0.179 to 0.117. Seeds 3, 6, and 9 stay at 0.255. The parent still refreshes that age when the wizard stands on the corpse and no pet is near. A nearby age test in that same place is the same change.
 
 ## The edit
 

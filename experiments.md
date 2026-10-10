@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. The game rules now say a wand of striking is a beam that stops on the first target. Treating it as an offensive wand is already measured. The brief is unchanged.
+Applied in this commit. The game rules now record the early Elbereth write and the fresh-corpse age stamp. They also say the score moves only when an experience level changes, a level-10 behavior misses an early death, and skill points stay on the wielded weapon. The brief is unchanged.
 
 ## Result
 
