@@ -61,6 +61,7 @@ These changes are already measured. Do not repeat a listed change. A nearby numb
 - Skill points in the wielded weapon raise the mean from 0.119 to 0.133. Seed 0 and seed 7 rise from 0.117 to 0.179. Seed 6 rises from 0.179 to 0.255. Leave that choice as it is. A nearby skill in that same choice is the same change.
 - Writing Elbereth while a faster monster is 2 to 5 squares away, from experience level 10, with hit points below 30, leaves the mean at 0.133. Every seed keeps its experience level. Seed 9 goes from 69,906 turns to 84,205 turns and stays at 0.255. A nearby distance or a nearby hit-point gate on that writing is the same change.
 - Refreshing a corpse age only while the recorded age is still fresh drops the mean from 0.133 to 0.129. Seed 5 falls from 0.179 to 0.117. Seeds 3, 6, and 9 stay at 0.255. The parent still refreshes that age when the wizard stands on the corpse and no pet is near. A nearby age test in that same place is the same change.
+- Praying when the status line shows food poisoning or illness, or eating a lizard corpse for that status, leaves the mean at 0.133. Seed 7 goes from 60,316 turns to 65,964 turns and stays at 0.179. Every other seed keeps the parent turn count. A nearby cure in that same place is the same change.
 
 ## The edit
 
