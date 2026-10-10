@@ -92,6 +92,17 @@ class Property:
         return 'Blind' in bytes(self.agent.last_observation['tty_chars'][-1]).decode()
 
     @property
+    def sick(self):
+        # The bottom status line names every condition NetHack 3.6.6 tracks, and
+        # the two that come from eating something bad are exactly the two the game
+        # prints for a troubled stomach: "FoodPois" for food poisoning (the rotted
+        # corpse case) and "TermIll" for terminal illness (a monster's sickness
+        # attack). Both kill within a couple dozen turns if left alone, and neither
+        # is visible anywhere else in the observation.
+        status = bytes(self.agent.last_observation['tty_chars'][-1]).decode()
+        return re.search(r'\b(FoodPois|TermIll|Ill)\b', status) is not None
+
+    @property
     def polymorph(self):
         if not nh.glyph_is_monster(self.agent.glyphs[self.agent.blstats.y, self.agent.blstats.x]):
             return False

@@ -1603,6 +1603,33 @@ class Agent:
     @utils.debug_log('cure_disease')
     @Strategy.wrap
     def cure_disease(self):
+        # hypothesis: the only death this agent ever takes from its own food is
+        # a rotted corpse (seed 7's "poisoned by a rotted rothe corpse"), and the
+        # status line says so -- see Property.sick. Nothing in the agent answered
+        # that status: emergency_strategy only prays for low hit points, so a
+        # full-health wizard with food poisoning sits there and dies on schedule.
+        # Answer the sickness directly and cheaply:
+        #   * a lizard corpse cures illness on the turn it is eaten, so use one
+        #     from the pack if we happen to carry it (it does not rot, which is
+        #     why the corpse logic exempts it);
+        #   * otherwise pray, but only inside the same safety window the rest of
+        #     the agent uses, so a sickness right after a prayer cannot turn a
+        #     god hostile.
+        # The wizard starts with no lizard corpse and never picks one up, so in
+        # practice this is the prayer; the corpse branch keeps the cure working
+        # if a later edit ever carries one.
+        if self.character.prop.sick:
+            lizard_id = MON.from_name('lizard') - nh.GLYPH_MON_OFF
+            for item in flatten_items(self.inventory.items):
+                if item.is_corpse() and item.monster_id == lizard_id:
+                    yield True
+                    self.inventory.eat(item)
+                    return
+            if self.is_safe_to_pray():
+                yield True
+                self.pray()
+                return
+
         if self.character.is_lycanthrope:
             # spring of wolfsbane
             for item in flatten_items(self.inventory.items):
