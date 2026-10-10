@@ -316,28 +316,27 @@ def get_corridors_priority_map(walkable):
 
 def cast_attack_actions(agent, monsters, dy, dx):
     # hypothesis: a wizard casts spells, and a spell does damage from a distance.
-    # The parent never fires an attack spell.  Once it has thrown away its ammo it
-    # walks into melee and trades blows, which is how the late games end.  Force
-    # bolt is a cheap, reliable spell, but a low-level wizard has only ~6 energy,
-    # so a single cast competes with survival.  Two gates keep the new attack from
-    # disturbing the games the parent already wins:
-    #   * experience level 10+ -- by then energy is 70+ and the wizard is a real
-    #     caster; every level below 10 is untouched, so the games that die young
-    #     do not change at all.
-    #   * the first Doom level -- that floor is the one the bot farms until level
-    #     12; on any other floor it is travelling between levels and should keep
-    #     its energy in reserve.
-    # The bolt is only offered from a distance (2..8, clear line) so that an
-    # adjacent target is still handled by the tuned melee heuristics.
-    if agent.blstats.experience_level < 10:
-        return []
-    if agent.blstats.depth != 1:
-        return []
+    # Every game the parent plays ends the same way -- the wizard is killed at
+    # melee range by a fast monster (giant bat, killer bee, housecat, pony, dwarf
+    # lord).  The wizard already owns the answer, force bolt, and this function
+    # already knows how to aim it, but two guards keep it from ever being offered
+    # where it matters:
+    #   * experience level 10+ -- the four games that die early
+    #     (0.018/0.024/0.029/0.037) stop at Xp 2-6, so they never see the spell;
+    #   * the first Doom level -- the games that reach depth 2-6 do their dying
+    #     there, where `depth != 1` switches the spell off.
+    # The wizard's energy has no other consumer in this agent (the healing casts
+    # are gated to the healer role and are commented out for everyone else), so
+    # every full energy bar spent in melee is a free ranged attack thrown away.
+    # Offer the bolt from level 1 and on every depth; the spell only costs 5 Pw,
+    # so require that much.  The remaining guards are unchanged: the bolt is only
+    # offered from a distance (2..8, clear line, no pet) so that an adjacent
+    # target is still handled by the tuned melee heuristics.
     if 'force bolt' not in agent.character.known_spells:
         return []
     if agent.character.spell_fail_chance.get('force bolt', 1.0) > 0.15:
         return []
-    if agent.blstats.energy < 10:
+    if agent.blstats.energy < 5:
         return []
     if agent._last_turn - agent.last_cast_fail_turn['force bolt'] < 2:
         return []
