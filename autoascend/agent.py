@@ -1470,12 +1470,17 @@ class Agent:
             corpse_below_me = next((item for item in self.inventory.items_below_me
                                    if item.is_corpse() and item.monster_id == monster_id), None)
             if corpse_below_me is not None:
-                # Walking to a corpse can easily take longer than the 50 turns the aging check in
-                # _is_corpse_editable allows, which would make us walk to the corpse, refuse to eat it
-                # and then walk to it again on the next turn. If we can see that the corpse we recorded
-                # is still lying right here where we killed it, treat it as freshly created - unless a
-                # pet is nearby, since then the corpse could belong to a pet of the same species instead.
-                if not self.has_pet:
+                # hypothesis: walking to a corpse can take longer than the 50-turn window in
+                # _is_corpse_editable, and the parent then stamps the corpse's recorded age back to
+                # "now" as soon as it stands on it. That makes a *rotted* corpse look fresh, so the
+                # wizard eats it and dies of "poisoned by a rotted <monster> corpse" -- the ending
+                # of seeds 6 and 7 in the parent batch (both at Xp:10-11, the top of the score
+                # table). The recorded age is stamped no earlier than the kill, so it is an upper
+                # bound on the true age; once it crosses the rot window the corpse is unsafe and no
+                # amount of standing on it makes it safe again. Only refresh a corpse that the
+                # recorded age still calls fresh (this keeps the original anti-walk-again effect),
+                # and otherwise fall through so the entry is forgotten.
+                if not self.has_pet and self._is_corpse_editable(monster_id, corpse_age):
                     corpse_age = self.blstats.time
                     level.corpses_to_eat[target_y, target_x][monster_id] = corpse_age
                 if self._is_corpse_editable(monster_id, corpse_age):
