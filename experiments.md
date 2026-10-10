@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. The game rules now record the food-poisoning prayer. Seed 7 lasts longer and stays at 0.179. The brief is unchanged.
+Applied in this commit. The task is one change that raises the score. That change is one new function, or one rewrite of one function. `experience.md` holds the played games. `experiments.md` holds the one proposal. The brief matches that task.
 
 ## Result
 

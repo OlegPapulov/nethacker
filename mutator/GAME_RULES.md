@@ -2,9 +2,19 @@
 
 The public score is `wiz-hum-cha-mal`: a chaotic male human wizard.
 
-Progress is the highest milestone a game reaches. The judge score is the mean of 15 seeds.
+Progress is the highest milestone a game reaches. The judge score is the mean of 15 seeds. The score moves when an experience level changes. A longer game at the same level has the same score.
 
-Describe the games in `experience.md`. Propose one change in `experiments.md`. Change the bot from that proposal.
+## The task
+
+Your task is to raise the score. You raise it by changing the bot. You use the knowledge in this file.
+
+Make one change. That change is one new function, or one rewrite of one function. The lists below name the actions that lower the score and the actions that leave the score where it is. Do not repeat a listed action. The one change raises the score. It does not lower the score.
+
+`experience.md` holds the ends of the games the judge already played. Read it. Describe why the bot lost. Do not invent a death that file does not state.
+
+`experiments.md` holds the one proposal. Propose one change in `experiments.md`, in accordance with these rules. Name the one function you add or the one function you rewrite. Then change the bot from that proposal. Then exit.
+
+Do not revert the change. The judge scores the tree you exit with. A tree that matches the parent is not a result. A child is kept only when the mean is strictly higher. Do not run `python -m nethackers.arena.run`. The judge plays the 15 seeds after you exit.
 
 ## Goal
 
@@ -41,28 +51,41 @@ These facts explain a death.
 - Writing Elbereth takes the turn. The word helps only on a later turn, after it is on the floor. When a faster monster can reach the wizard during the writing, the wizard hits, zaps, or steps into a doorway.
 - A cockatrice corpse turns the hero to stone. Do not eat it. Do not touch it with bare hands.
 - Do not quaff an unknown potion during a fight.
-- The score moves when an experience level changes. A longer game at the same level has the same score.
-- A behavior that starts at experience level 10 misses a game that dies earlier. The games at 0.018, 0.024, 0.029, and 0.037 die in the first few thousand turns.
-- Use the death the played game states. That death is the one the edit answers.
 - A seed-specific branch does not count. The private seeds are different games.
 
 ## Assumptions
 
-These changes are already measured. Do not repeat a listed change. A nearby number on a listed test is the same change. Leave those tests as they are, including a nearby number in the same function. Do not revert the change. The judge scores the tree you exit with. A tree that matches the parent is not a result.
+These actions are already measured. The lists below say what raises the score and what lowers the score. Do not repeat a listed action. A nearby number on a listed action is the same action. Leave those actions as they are. Do not revert the change. The judge scores the tree you exit with. A tree that matches the parent is not a result.
 
-- A prayer wait of 3,500 turns drops the mean from 0.114 to 0.024. Every seed at 0.179 or above falls. Seed 9 falls from 0.255 to 0.018. The parent wait is 500 turns at low hit points and 400 turns while fainting. The parent also prays below 6 hit points. Raising that 6 to 9 drops the mean from 0.114 to 0.074. Seed 9 falls from 0.255 to 0.000 in 702 turns. A nearby number in that same test is the same change.
-- A corpse walk longer than 20 squares drops the mean. A cap of 30 drops it to 0.107, and seeds 5 and 6 fall from 0.179 to 0.037. A cap of 25 drops it to 0.107, and seed 13 falls from 0.179 to 0.051. The walk that holds the current mean stops at 20 squares. The fainting latch uses that same 20-square search. Cutting it to 10 squares leaves the mean at 0.114. All 15 seeds keep the parent turn counts. A nearby distance on that search is the same change.
-- The parent melee bonus is +15 when hit points are above 8 or the monster is faster. Replacing the faster-monster test with a fatal-melee test drops the mean from 0.114 to 0.105. Seed 3 falls from 0.179 to 0.029.
-- The parent sets the farm level to 2 when hunger is fainting and no edible corpse is in reach. Also setting that level when hunger is weak and experience level is at least 10 leaves the mean at 0.114. Seed 9 stays at 0.255. Seeds 1, 3, 5, and 6 stay at 0.179. The mean of turns falls from 36,648 to 34,898. Seed 6 falls from 73,840 turns to 54,297 turns. A nearby experience level or a nearby hunger state in that same test is the same change.
-- The parent lets the wizard eat when every monster is more than 7 squares away. When hunger is weak, letting a monster at 5 or 6 squares through drops the mean from 0.114 to 0.082. Seed 9 falls from 0.255 to 0.051. A nearby distance in that same test is the same change.
-- The parent wand path stops on a pet. Treating a peaceful monster as that same stop drops the mean from 0.114 to 0.098. Seed 9 falls from 0.255 to 0.117. Seed 0 falls from 0.117 to 0.075. Seed 3 falls from 0.179 to 0.117. The parent zap penalty is 15. Changing that penalty to 5 drops the mean from 0.114 to 0.092. Seed 9 falls from 0.255 to 0.117. Seed 3 falls from 0.179 to 0.051. Seed 5 falls from 0.179 to 0.075. Seed 8 rises from 0.037 to 0.117. A nearby number in that wand function is the same change.
-- A movement bonus of 20 toward a doorway or a corridor, when the wizard is hurt or two monsters are adjacent, drops the mean from 0.119 to 0.068. Seed 3 falls from 0.255 to 0.024. Seed 9 falls from 0.255 to 0.024. Seed 4 rises from 0.018 to 0.179. A nearby weight on that bonus is the same change.
-- Treating a wand of striking as an offensive wand drops the mean from 0.119 to 0.104. Seed 9 falls from 0.255 to 0.037. Seed 8 falls from 0.037 to 0.029. Seed 3 stays at 0.255. The zap score counts every monster on the line. A striking beam hits only the first target. A nearby wand in that same test is the same change.
-- Skill points in the wielded weapon raise the mean from 0.119 to 0.133. Seed 0 and seed 7 rise from 0.117 to 0.179. Seed 6 rises from 0.179 to 0.255. Leave that choice as it is. A nearby skill in that same choice is the same change.
-- Writing Elbereth while a faster monster is 2 to 5 squares away, from experience level 10, with hit points below 30, leaves the mean at 0.133. Every seed keeps its experience level. Seed 9 goes from 69,906 turns to 84,205 turns and stays at 0.255. A nearby distance or a nearby hit-point gate on that writing is the same change.
-- Refreshing a corpse age only while the recorded age is still fresh drops the mean from 0.133 to 0.129. Seed 5 falls from 0.179 to 0.117. Seeds 3, 6, and 9 stay at 0.255. The parent still refreshes that age when the wizard stands on the corpse and no pet is near. A nearby age test in that same place is the same change.
-- Praying when the status line shows food poisoning or illness, or eating a lizard corpse for that status, leaves the mean at 0.133. Seed 7 goes from 60,316 turns to 65,964 turns and stays at 0.179. Every other seed keeps the parent turn count. A nearby cure in that same place is the same change.
+A change that lifts a short game and drops a long game lowers the score.
 
-## The edit
+### These actions raise the score
 
-Leave every listed test as it is, including a nearby number in the same function. Do not change a number in an existing test. Add one behavior the listed tests do not already cover. That behavior raises the experience level a game reaches. Do not revert the change. The judge scores the tree you exit with. A tree that matches the parent is not a result. Describe the games in `experience.md`. Propose one change in `experiments.md`, in accordance with these rules. Change the bot from that proposal. Do not run `python -m nethackers.arena.run`. The judge plays the 15 seeds after you exit.
+- Staying on the first dungeon level until experience level 12.
+- Putting skill points into the wielded weapon.
+- Casting force bolt from experience level 10, on the first dungeon level, at a monster that is not adjacent.
+- When the wizard is fainting and no edible corpse is in reach, moving the farm target one level down. The corpse search keeps its current reach.
+
+### These actions lower the score
+
+- Casting force bolt before experience level 10.
+- Casting force bolt off the first dungeon level.
+- Keeping less energy before that cast.
+- Waiting longer before a prayer.
+- Praying while hit points are still high enough to fight.
+- Walking farther for a corpse.
+- Eating while a monster can walk up during the meal.
+- Dropping the melee bonus for a faster monster.
+- Leaving the farm floor while the wizard is only weak.
+- Stopping a zap on a peaceful monster.
+- Making a zap easier to choose.
+- Stepping toward a doorway because the wizard is hurt or two monsters are adjacent.
+- Zapping a wand of striking as an attack wand.
+- Refusing a corpse underfoot that the parent still treats as fresh.
+
+### These actions leave the score where it is
+
+- Writing Elbereth while a faster monster is still approaching.
+- Praying, or eating a lizard corpse, because the status line shows sickness.
+- Searching a smaller area for a corpse while fainting.
+

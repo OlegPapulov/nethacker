@@ -143,15 +143,20 @@ def _keep_win() -> str:
         "Progress is the highest milestone a game reaches. "
         "The judge score is the mean of 15 seeds. "
         "A child is kept only when that mean is strictly higher. "
-        "Leave every listed test as it is, including a nearby number in the same function. "
-        "Do not change a number in an existing test. "
-        "Add one behavior the listed tests do not already cover. "
-        "That behavior raises the experience level a game reaches. "
+        "Your task is to raise the score. "
+        "You use the knowledge in `GAME_RULES.md`. "
+        "Make one change. "
+        "That change is one new function, or one rewrite of one function. "
+        "Do not repeat a listed action. "
+        "The one change raises the score. "
+        "It does not lower the score. "
         "Do not revert the change. "
         "The judge scores the tree you exit with. "
         "A tree that matches the parent is not a result. "
-        "Describe the games in `experience.md`. "
+        "`experience.md` holds the ends of the played games. "
+        "Read it and describe why the bot lost. "
         "Propose one change in this file, in accordance with the game rules. "
+        "Name the one function you add or the one function you rewrite. "
         "Change the bot from that proposal."
     )
 
@@ -606,11 +611,12 @@ def self_check() -> None:
         assert command[command.index("--effort") + 1] == "medium"
         assert "killed after" not in game
         assert "highest milestone" in game
-        assert "Leave every listed test" in game
-        assert "Add one behavior" in game
+        assert "Make one change" in game
+        assert "one new function, or one rewrite of one function" in game
         assert "Do not revert" in game
         assert "Do not add a new action" not in game
-        assert "0.179" in game
+        assert "raises the score" in game
+        assert "lowers the score" in game
         assert "Assumptions" in game
         assert "experiments.md" in game
         bare = root / "bare-notes"
@@ -646,8 +652,8 @@ def self_check() -> None:
         }, DEFAULT_IDENTITY)
         hungry_text = (hungry / "experiments.md").read_text()
         assert "highest milestone" in hungry_text
-        assert "Leave every listed test" in hungry_text
-        assert "Add one behavior" in hungry_text
+        assert "Make one change" in hungry_text
+        assert "one new function, or one rewrite of one function" in hungry_text
         assert "Do not revert" in hungry_text
         assert "Do not add a new action" not in hungry_text
         assert "Propose one change" in hungry_text
