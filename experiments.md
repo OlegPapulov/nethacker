@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Withholding a throw because force bolt can go down that line lowers the score. Recording a pet kill as a corpse leaves the score where it is. The brief is unchanged.
+Applied in this commit. Refusing a zap that hits the wizard lowers the score. Starting a fight farther than the current reach lowers the score. The brief is unchanged.
 
 ## Result
 

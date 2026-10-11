@@ -81,6 +81,8 @@ A change that lifts a short game and drops a long game lowers the score.
 - Leaving the farm floor while the wizard is only weak.
 - Stopping a zap on a peaceful monster.
 - Making a zap easier to choose.
+- Refusing a zap because the path hits the wizard. The parent already subtracts points for that self-hit. A nearby penalty on that self-hit is the same action.
+- Starting a fight when a monster is farther than the current reach, on the first floors, while hit points are still high. A nearby distance on that reach is the same action.
 - Stepping toward a doorway because the wizard is hurt or two monsters are adjacent.
 - Zapping a wand of striking as an attack wand.
 - Refusing a corpse underfoot that the parent still treats as fresh.
