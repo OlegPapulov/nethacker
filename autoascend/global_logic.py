@@ -688,6 +688,16 @@ class GlobalLogic:
                 self.agent.fight2(),
             ])
             .preempt(self.agent, [
+                # The starting spellbook of force bolt is dropped early on like the
+                # other unneeded items, and the spell itself expires ~20k turns
+                # after it is learned, while the farm floor (the only place the
+                # ranged attack is allowed, xp>=10 on depth 1) starts long past
+                # that. Re-learn it there: find the dropped book on this same
+                # level, briefly take it to re-read it, and let item priority drop
+                # it again, so the attack actually fires instead of stunning.
+                self.agent.keep_attack_spell_memorized(),
+            ])
+            .preempt(self.agent, [
                 self.agent.engulfed_fight(),
             ])
             .preempt(self.agent, [
