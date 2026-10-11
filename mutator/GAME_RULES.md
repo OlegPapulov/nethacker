@@ -28,30 +28,46 @@ An early death is food, a weak melee, a trap, or poison. A later death is a wand
 
 ## Character
 
-There are thirteen roles. There are five races: human, elf, dwarf, gnome, and orc. There are three alignments: lawful, neutral, and chaotic. There are two genders. Valkyrie is female only. That is 73 identities.
+This run is one identity: a chaotic male human wizard. Do not write a branch for another role, race, alignment, or gender.
 
-A wizard casts spells. A spell does damage from a distance. Metal body armor blocks a spell. Hunger rises when the wizard casts. Mapping and the spell list are not this edit.
+There are thirteen roles, five races, three alignments, and two genders. Valkyrie is female only. That is 73 identities. The six stats are strength, dexterity, constitution, intelligence, wisdom, and charisma. Armor class goes down as protection goes up. Energy is the spell budget. A heavy pack drops speed to zero. Do not assume an item that you have not seen in the inventory.
 
-A wizard has few hit points. The wizard role is neutral. This wizard is chaotic. Do not assume an item that you have not seen in the inventory.
+A wizard casts spells. That is the advantage. A spell does damage from a distance. The cost is few hit points, hunger when the wizard casts, and spell failure in metal body armor. A learned spell lapses after many turns. Re-reading the force bolt book only while no monster is close raises the score. Reading it while a monster is still nearby lowers the score.
 
-The six stats are strength, dexterity, constitution, intelligence, wisdom, and charisma. Armor class goes down as protection goes up. Energy is the spell budget. A heavy pack drops speed to zero.
+A human has no racial intrinsic. An elf has sleep resistance. A dwarf, a gnome, an elf, and an orc have infravision. An orc has poison resistance. This wizard is human, so none of those apply.
+
+This wizard is chaotic. A gift that requires a lawful hero does not apply. The wizard role itself is neutral. That does not change this hero's alignment.
+
+Gender does not change this wizard's spells or hit points.
+
+## Monsters
+
+A monster is an enemy, a pet, or a peaceful creature. The kind changes the action.
+
+- A faster monster takes a turn before the wizard. A few hits kill the wizard. Keep the melee bonus for a faster monster. Giving that bonus to a monster whose speed is above 12, when the name test misses it, leaves the score where it is.
+- A weak or slow monster is food more than a threat. A lichen, a newt, and a grid bug are in that group.
+- A pet is a resource. Do not attack it. A pet's kill can leave a corpse. Recording that kill leaves the score where it is.
+- A peaceful monster is not a target. An attack on one can ruin the game. Stopping a zap on one lowers the score.
+- A cockatrice or a chickatrice turns the hero to stone on a touch or a bite. Do not eat that corpse. Do not touch it with bare hands.
+- A mind flayer eats the brain. Keep distance. That is a later death.
+- A were-creature can give lycanthropy. The new body changes the carrying level. Dropping the pack because the wizard is strained still lowers the score.
 
 ## Items
 
-Most items start unidentified. Price, appearance, and one careful use tell them apart. A useful early find is food, a healing potion, a wand of magic missile, speed, or magic resistance. A wand of striking is a beam. The beam stops on the first monster or the first door. It does not bounce. It breaks the door. A ray passes through and can bounce. Force bolt is the ranged attack once the wizard can cast it. A dangerous early use is an unknown potion, an unknown scroll, a wand aimed at yourself, or a cockatrice corpse.
+Most items start unidentified. Price, appearance, and one careful use tell them apart.
+
+- A spellbook of force bolt is the ranged attack once the wizard can cast it. The measured cast is in the score lists.
+- The wielded weapon is the one the melee roll uses. Skill points in that weapon raise the score. An off-hand weapon does not.
+- Metal body armor blocks a spell. A cloak and a non-metal suit are the usual wear. Armor class still matters.
+- A healing potion, a wand of magic missile, speed, or magic resistance is a useful early find.
+- A ray wand passes through and can bounce. It can hit the wizard. Keep the penalty for that self-hit. Refusing the zap lowers the score.
+- A wand of striking is a beam. The beam stops on the first monster or the first door. It does not bounce. It breaks the door. Zapping it as an attack wand lowers the score.
+- A corpse is food. Eat before a faint, and only when every monster is too far to walk up during the meal. A longer walk to a corpse lowers the score. A corpse the parent still treats as fresh stays edible.
+- An unknown potion, an unknown scroll, or a wand aimed at yourself is a dangerous early use. Do not quaff an unknown potion during a fight.
 
 ## Tips
 
-These facts explain a death.
-
-- A fight in a doorway lets one monster hit. A fight in a corridor lets one monster hit. An open room lets several monsters hit.
-- A faster monster takes a turn before the wizard takes a turn. A few hits kill the wizard.
-- A pet is a resource. An attack on a peaceful monster can ruin the game.
-- Eat before a faint. A faint next to a monster is a death. Start a meal only when every monster is too far to walk up during the meal. A monster a few squares away still holds the turn.
-- Writing Elbereth takes the turn. The word helps only on a later turn, after it is on the floor. When a faster monster can reach the wizard during the writing, the wizard hits, zaps, or steps into a doorway.
-- A cockatrice corpse turns the hero to stone. Do not eat it. Do not touch it with bare hands.
-- Do not quaff an unknown potion during a fight.
-- A seed-specific branch does not count. The private seeds are different games.
+A fight in a doorway lets one monster hit. A fight in a corridor lets one monster hit. An open room lets several monsters hit. Writing Elbereth takes the turn. The word helps only on a later turn. When a faster monster can reach the wizard during the writing, the wizard hits, zaps, or steps into a doorway. A seed-specific branch does not count. The private seeds are different games. When a tip and a score list disagree, follow the score list.
 
 ## Assumptions
 

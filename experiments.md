@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. The score lists are grouped. Reading the force bolt book while a monster is still nearby lowers the score. A melee bonus for speed above 12 leaves the score where it is. The brief is unchanged.
+Applied in this commit. The game rules now give pros, cons, and advice for the hero, the monster kinds, and the item kinds. The score lists stay the measured record. The brief is unchanged.
 
 ## Result
 
