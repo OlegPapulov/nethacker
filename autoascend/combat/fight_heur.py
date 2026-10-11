@@ -64,6 +64,14 @@ def ranged_priority(agent, dy, dx, monsters):
     if ammo is None:
         return None
 
+    # When a level-10+ wizard is farming the first Doom level, force bolt is the
+    # real ranged attack; thrown ammo is what it walks into melee over.  If the
+    # bolt can be cast down this ray (cast_attack_actions already encodes every
+    # gate and leaves adjacent targets to melee), do not offer the throw, so the
+    # cast wins instead of the wizard running out of projectiles first.
+    if launcher is None and cast_attack_actions(agent, monsters, dy, dx):
+        return None
+
     if launcher is not None and not launcher.equipped:
         ret -= 5
 
