@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Refusing a zap that hits the wizard lowers the score. Starting a fight farther than the current reach lowers the score. The brief is unchanged.
+Applied in this commit. Re-reading the force bolt spellbook on the farm floor raises the score. Refusing a down staircase while the wizard is still farming lowers the score. The brief is unchanged.
 
 ## Result
 

@@ -64,6 +64,7 @@ A change that lifts a short game and drops a long game lowers the score.
 - Staying on the first dungeon level until experience level 12.
 - Putting skill points into the wielded weapon.
 - Casting force bolt from experience level 10, on the first dungeon level, at a monster that is not adjacent.
+- Re-reading the force bolt spellbook on that same floor, from experience level 10, while no monster is close. A nearby distance or a nearby wait on that read is the same action.
 - When the wizard is fainting and no edible corpse is in reach, moving the farm target one level down. The corpse search keeps its current reach.
 
 ### These actions lower the score
@@ -79,6 +80,7 @@ A change that lifts a short game and drops a long game lowers the score.
 - Eating while a monster can walk up during the meal.
 - Dropping the melee bonus for a faster monster.
 - Leaving the farm floor while the wizard is only weak.
+- Refusing a down staircase while the wizard is still farming. The food latch that moves the farm target stays. A nearby floor on that refusal is the same action.
 - Stopping a zap on a peaceful monster.
 - Making a zap easier to choose.
 - Refusing a zap because the path hits the wizard. The parent already subtracts points for that self-hit. A nearby penalty on that self-hit is the same action.
