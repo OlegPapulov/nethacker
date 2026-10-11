@@ -1166,6 +1166,7 @@ class Agent:
     def fight2(self):
         yielded = False
         wait_counter = 0
+        eat_target = None
         while 1:
             monsters = self.get_visible_monsters()
             allow_attack_all = self._last_turn - self._allow_attack_all_turn < 3
@@ -1212,6 +1213,54 @@ class Agent:
                 assert 0, 'No possible action available during fight2'
 
             priority, best_action = max(actions, key=lambda x: x[0]) if actions else None
+
+            # Hypothesis: the food latch below closes in only when the wizard is already
+            # FAINTING, and the walk to the stairs at that point is lethal -- the seeds that
+            # starve to death do so while locked inside fight2 (Elbereth wait stand-offs, and
+            # the FAINTING walk to the down staircase), and no OLD strategy outside fight2 can
+            # preempt a fight2 that is already running, so the nearby edible corpses traced in
+            # reach at death are never eaten. Once hunger reaches WEAK, a passive fight2 turn
+            # (search/wait, or walking while FAINTING) gives way to closing the normal
+            # corpse-search reach on the nearest edible corpse instead, so the wizard eats the
+            # food it can already reach before it ever starves into the death walk.
+            if self.blstats.hunger_state >= Hunger.WEAK and \
+                    (best_action[0] in ('wait', 'search') or
+                     (self.blstats.hunger_state >= Hunger.FAINTING and best_action[0] == 'move')):
+                level = self.current_level()
+                if (eat_target is None or eat_target not in level.corpses_to_eat or
+                        not any(self._is_corpse_editable(monster_id, age)
+                                for monster_id, age in level.corpses_to_eat[eat_target].items())):
+                    candidates = []
+                    for (yy, xx), corpse_mapping in level.corpses_to_eat.items():
+                        if level.shop[yy, xx]:
+                            continue
+                        for monster_id, age in corpse_mapping.items():
+                            if self._is_corpse_editable(monster_id, age) and \
+                                    dis[yy, xx] != -1 and dis[yy, xx] <= 20:
+                                candidates.append((dis[yy, xx], int(yy), int(xx)))
+                                break
+                    eat_target = tuple(min(candidates)[1:]) if candidates else None
+                if eat_target is not None:
+                    step_before = self.step_count
+                    if (eat_target[0], eat_target[1]) == (self.blstats.y, self.blstats.x):
+                        corpse = next((item for item in self.inventory.items_below_me
+                                       if item.is_corpse() and self._is_corpse_editable(
+                                           item.monster_id,
+                                           level.corpses_to_eat[eat_target].get(
+                                               item.monster_id, self.blstats.time))), None)
+                        if corpse is not None:
+                            with self.env.debug_log('fight2_eat_corpse'):
+                                self.inventory.eat(corpse)
+                            wait_counter = 5
+                            eat_target = None
+                            if self.step_count != step_before:
+                                continue
+                    else:
+                        self.go_to(eat_target[0], eat_target[1], stop_one_before=True, max_steps=1,
+                                   debug_tiles_args=dict(color=(255, 200, 0), is_path=True))
+                        wait_counter = 5
+                        if self.step_count != step_before:
+                            continue
 
             with self.env.debug_tiles(move_priority_heatmap, color='turbo', is_heatmap=True):
                 actions_str = '|'.join([combat.utils.action_str(self, a) for a in sorted(actions, key=lambda x: x[0])])
