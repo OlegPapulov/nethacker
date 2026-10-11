@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Dropping a carried item when the wizard is strained or worse lowers the score. The drop runs before the fight, and a corpse goes first. The brief is unchanged.
+Applied in this commit. Casting force bolt at an adjacent monster lowers the score. Force bolt at a monster that is not adjacent still raises the score. The brief is unchanged.
 
 ## Result
 

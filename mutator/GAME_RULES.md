@@ -70,6 +70,7 @@ A change that lifts a short game and drops a long game lowers the score.
 
 - Casting force bolt before experience level 10.
 - Casting force bolt off the first dungeon level.
+- Casting force bolt at an adjacent monster. A higher priority on that cast is the same action.
 - Keeping less energy before that cast.
 - Waiting longer before a prayer.
 - Praying while hit points are still high enough to fight.
