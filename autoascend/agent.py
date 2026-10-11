@@ -1169,7 +1169,14 @@ class Agent:
 
             dis = self.bfs()
 
-            if not monsters or all(dis > 7 for dis, *_ in monsters) or \
+            engage_distance = 7
+            _level = self.current_level()
+            if _level.dungeon_number == Level.DUNGEONS_OF_DOOM and \
+                    _level.level_number <= 2 and \
+                    self.blstats.hitpoints >= 0.5 * self.blstats.max_hitpoints:
+                engage_distance = 12
+
+            if not monsters or all(dis > engage_distance for dis, *_ in monsters) or \
                     (only_ranged_slow_monsters and not self.inventory.get_ranged_combinations()
                      and np.sum(dis != -1) > 1 and not allow_attack_all):
                 if wait_counter:
