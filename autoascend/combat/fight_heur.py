@@ -172,14 +172,27 @@ def get_potential_wand_usages(agent, monsters, dy, dx):
         targeted_monsters = set()
         if not item.is_offensive_usable_wand():
             continue
+
+        # hypothesis: a wand of fire/cold/lightning/death/magic missile is a ray,
+        # not a beam -- it passes through monsters and reflects off walls, so the
+        # same shot that hits the monster can come back across the wizard's square
+        # ("a wand aimed at yourself"). The path simulation already walks every
+        # square the ray reaches; if the wizard's own square is one of them, never
+        # offer that direction at all. The old code only discounted the self-hit
+        # (-30 * p), but against a monster this file calls dangerous the reward is
+        # p * 25 per pass, so a reflecting shot could still win and two judge seeds
+        # ended "killed by a bolt of fire"/"killed by a bolt of cold" at Xp:8 on
+        # depth 1. A beam (force bolt) cannot reflect and is unaffected here.
+        simulated_hits = list(simulate_wand_path(agent, item, monsters, dy, dx))
+        if any(hit_object == 'self' for _, _, hit_object, _ in simulated_hits):
+            continue
+
         priority = 0
         # print('--------------', dy, dx)
-        for y, x, monster, p in simulate_wand_path(agent, item, monsters, dy, dx):
+        for y, x, monster, p in simulated_hits:
             # print(y, x, monster, p)
             if monster == 'pet':
                 priority -= p * 20
-            elif monster == 'self':
-                priority -= p * 30
             elif monster is not None:
                 _, y, x, mon, _ = monster
                 if mon.mname in WEAK_MONSTERS:
