@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Casting force bolt at an adjacent monster lowers the score. Force bolt at a monster that is not adjacent still raises the score. The brief is unchanged.
+Applied in this commit. Withholding a throw because force bolt can go down that line lowers the score. Recording a pet kill as a corpse leaves the score where it is. The brief is unchanged.
 
 ## Result
 

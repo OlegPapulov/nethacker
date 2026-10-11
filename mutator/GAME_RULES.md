@@ -72,6 +72,7 @@ A change that lifts a short game and drops a long game lowers the score.
 - Casting force bolt off the first dungeon level.
 - Casting force bolt at an adjacent monster. A higher priority on that cast is the same action.
 - Keeping less energy before that cast.
+- Withholding a thrown projectile because force bolt can be cast down that line. The cast itself stays. A nearby projectile on that line is the same action.
 - Waiting longer before a prayer.
 - Praying while hit points are still high enough to fight.
 - Walking farther for a corpse.
@@ -90,4 +91,5 @@ A change that lifts a short game and drops a long game lowers the score.
 - Writing Elbereth while a faster monster is still approaching.
 - Praying, or eating a lizard corpse, because the status line shows sickness.
 - Searching a smaller area for a corpse while fainting.
+- Recording a pet's kill as a corpse, and continuing when a kill message has no vanished glyph.
 
