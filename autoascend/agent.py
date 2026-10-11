@@ -1633,13 +1633,19 @@ class Agent:
         if self.blstats.time - self._spell_read_fail_turn['force bolt'] < 1000:
             yield False
             return
-        if any(distance <= 5 for distance, *_ in self.get_visible_monsters()):
+        visible_monsters = self.get_visible_monsters()
+        if any(distance <= 5 for distance, *_ in visible_monsters):
             # Studying the book takes several turns, and a monster reaching the
             # wizard mid-study prints "You stop studying." and wastes the read.
-            # Defer until the vicinity is clear.
-            self._spell_read_fail_turn['force bolt'] = self.blstats.time
-            yield False
-            return
+            # Defer until the vicinity is clear; if a clear moment never comes
+            # (saturated late farm floor) but nothing is adjacent and the spell
+            # has already been due for 5000 extra turns, take the read anyway.
+            adjacent = any(distance <= 2 for distance, *_ in visible_monsters)
+            overdue = self.blstats.time - self._last_spell_read_turn['force bolt'] >= 25000
+            if adjacent or self._spell_read_fail_turn['force bolt'] <= 0 or not overdue:
+                self._spell_read_fail_turn['force bolt'] = self.blstats.time
+                yield False
+                return
 
         book = next((i for i in flatten_items(self.inventory.items)
                      if i.category == nh.SPBOOK_CLASS and i.objs[0].name == 'force bolt'), None)
