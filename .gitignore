@@ -1,6 +1,3 @@
-__pycache__/
-*.pyc
-*.pyo
-evidence.json
-.DS_Store
-.mutator-run/
+GAME_RULES.md
+experience.md
+experiments.md

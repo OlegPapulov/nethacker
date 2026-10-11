@@ -571,6 +571,17 @@ class Agent:
                           re.findall(r'((kills?)|(destroys?)) ((an?)|(the) )?([a-zA-Z ]+)\!', self.message)))
         mnames += list(map(lambda x: x[-4],
                            re.findall(r'((An? )|(The )( *))([a-zA-Z ]+) is ((killed)|(destroyed))\!', self.message)))
+        # The pet does its share of the kills on the farm floor, and its victims leave the same edible
+        # corpses the hero leaves behind. The two message forms above cannot see them: "The kitten kills
+        # the lichen." needs no exclamation mark, and the one that ends with one reads the killer, not the
+        # victim, as the corpse. Parse the victim out of the pet-kill messages as well, and let the
+        # vanished-glyph test below keep only the parsed names that actually died on screen.
+        mnames += list(map(lambda x: x[0],
+                           re.findall(r'The ([a-zA-Z ]+?) is ((killed)|(destroyed)) by the ([a-zA-Z ]+)[!.]',
+                                      self.message)))
+        mnames += list(map(lambda x: x[-1],
+                           re.findall(r'The ([a-zA-Z ]+?) (kills|destroys) (the|an?) ([a-zA-Z ]+)[!.]',
+                                      self.message)))
         mnames = list(filter(lambda name: 'invisible' not in name and name != 'it' and not name.startswith('poor '),
                              mnames))
         mnames = list(map(lambda name: name[len('saddled '):] if name.startswith('saddled ') else name,
@@ -589,22 +600,25 @@ class Agent:
             mons = old_mons.copy()
             mons[~mask] = -1
 
-            assert mons.any()
-
-            for mname in mnames:
-                # The corpse messages are matched out of free text, so a line like
-                # "... destroys the armor! The grid bug catches fire and burns!" can
-                # hand us a phrase that is not a monster at all. A name the game does
-                # not know is not a monster we can have killed.
-                if not MON.is_valid_name(mname):
-                    continue
-                glyph = MON.from_name(mname)
-                monster_id = glyph - nh.GLYPH_MON_OFF
-                corpse_glyph = MON.body_from_name(mname)
-                for y, x in zip(*utils.isin(mons, [glyph]).nonzero()):
-                    # TODO: it works because level.items is updated in `inventory.check_items`
-                    if all(map(lambda item: item.is_corpse() and item.monster_id != monster_id, level.items[y, x])):
-                        level.corpses_to_eat[y, x][monster_id] = self.blstats.time
+            # A kill message can name a victim whose corpse lies off screen, or a phrase that is not a
+            # monster at all. There is then no vanished glyph to attach a corpse to, and aborting the
+            # run over it turns every such message into a lost game, so only look for vanished glyphs
+            # when the message names one.
+            if mons.any():
+                for mname in mnames:
+                    # The corpse messages are matched out of free text, so a line like
+                    # "... destroys the armor! The grid bug catches fire and burns!" can
+                    # hand us a phrase that is not a monster at all. A name the game does
+                    # not know is not a monster we can have killed.
+                    if not MON.is_valid_name(mname):
+                        continue
+                    glyph = MON.from_name(mname)
+                    monster_id = glyph - nh.GLYPH_MON_OFF
+                    corpse_glyph = MON.body_from_name(mname)
+                    for y, x in zip(*utils.isin(mons, [glyph]).nonzero()):
+                        # TODO: it works because level.items is updated in `inventory.check_items`
+                        if all(map(lambda item: item.is_corpse() and item.monster_id != monster_id, level.items[y, x])):
+                            level.corpses_to_eat[y, x][monster_id] = self.blstats.time
 
         old_possible_corpses = level.corpses_to_eat[self.blstats.y, self.blstats.x].copy()
         del level.corpses_to_eat[self.blstats.y, self.blstats.x]
