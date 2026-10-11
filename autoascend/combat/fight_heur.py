@@ -15,7 +15,16 @@ from .utils import wielding_ranged_weapon, line_dis_from, inside
 def melee_monster_priority(agent, monsters, monster):
     _, y, x, mon, _ = monster
     ret = 1
-    if agent.blstats.hitpoints > 8 or is_monster_faster(agent, monster):
+    # hypothesis: `is_monster_faster` is name-based ("TODO: implement properly") and
+    # misses the giant ants (mmove 18) that spawn on the farm floor and end the
+    # late runs (fire ant, soldier ant). A monster that is faster than the wizard
+    # (speed 12) closes again on the same round it is walked away from, so dropping
+    # its melee bonus at low hit points only spends turns being hit for free. Treat
+    # anything whose permonst speed beats the wizard's as a faster monster for the
+    # melee bonus too -- the standing-and-trading the rules already prefer for the
+    # named fast monsters -- without touching `is_monster_faster` itself (which also
+    # gates Elbereth engraving).
+    if agent.blstats.hitpoints > 8 or is_monster_faster(agent, monster) or mon.mmove > 12:
         ret += 15
     if wielding_ranged_weapon(agent) and not is_monster_faster(agent, monster):
         ret -= 6
