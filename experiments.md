@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Re-reading the force bolt spellbook on the farm floor raises the score. Refusing a down staircase while the wizard is still farming lowers the score. The brief is unchanged.
+Applied in this commit. The score lists are grouped. Reading the force bolt book while a monster is still nearby lowers the score. A melee bonus for speed above 12 leaves the score where it is. The brief is unchanged.
 
 ## Result
 

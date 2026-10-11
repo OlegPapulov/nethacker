@@ -61,37 +61,23 @@ A change that lifts a short game and drops a long game lowers the score.
 
 ### These actions raise the score
 
-- Staying on the first dungeon level until experience level 12.
+- Staying on the first dungeon level until experience level 12. The food latch still moves the farm target one level down when the wizard is fainting and no edible corpse is in reach. The corpse search keeps its current reach.
 - Putting skill points into the wielded weapon.
-- Casting force bolt from experience level 10, on the first dungeon level, at a monster that is not adjacent.
-- Re-reading the force bolt spellbook on that same floor, from experience level 10, while no monster is close. A nearby distance or a nearby wait on that read is the same action.
-- When the wizard is fainting and no edible corpse is in reach, moving the farm target one level down. The corpse search keeps its current reach.
+- Casting force bolt from experience level 10, on the first dungeon level, at a monster that is not adjacent. Re-reading that spellbook on the same floor, from experience level 10, only while no monster is close.
 
 ### These actions lower the score
 
-- Casting force bolt before experience level 10.
-- Casting force bolt off the first dungeon level.
-- Casting force bolt at an adjacent monster. A higher priority on that cast is the same action.
-- Keeping less energy before that cast.
-- Withholding a thrown projectile because force bolt can be cast down that line. The cast itself stays. A nearby projectile on that line is the same action.
-- Waiting longer before a prayer.
-- Praying while hit points are still high enough to fight.
-- Walking farther for a corpse.
-- Eating while a monster can walk up during the meal.
-- Dropping the melee bonus for a faster monster.
-- Leaving the farm floor while the wizard is only weak.
-- Refusing a down staircase while the wizard is still farming. The food latch that moves the farm target stays. A nearby floor on that refusal is the same action.
-- Stopping a zap on a peaceful monster.
-- Making a zap easier to choose.
-- Refusing a zap because the path hits the wizard. The parent already subtracts points for that self-hit. A nearby penalty on that self-hit is the same action.
-- Starting a fight when a monster is farther than the current reach, on the first floors, while hit points are still high. A nearby distance on that reach is the same action.
-- Stepping toward a doorway because the wizard is hurt or two monsters are adjacent.
-- Zapping a wand of striking as an attack wand.
-- Refusing a corpse underfoot that the parent still treats as fresh.
+- Changing that force bolt. Casting it before experience level 10, off the first dungeon level, or at an adjacent monster lowers the score. Keeping less energy before the cast lowers the score. Withholding a throw because the bolt can go down that line lowers the score. Reading the book while a monster is still nearby lowers the score, even when the read is overdue and nothing is adjacent.
+- Leaving the farm floor while the wizard is only weak. Refusing a down staircase while the wizard is still farming. The stay until experience level 12, and the food latch, stay.
+- Dropping the melee bonus for a faster monster. Starting a fight farther than the current reach, on the first floors, while hit points are still high. Stepping toward a doorway because the wizard is hurt or two monsters are adjacent.
+- Stopping a zap on a peaceful monster, making a zap easier to choose, refusing a zap because the path hits the wizard, or zapping a wand of striking as an attack wand. The parent already subtracts points for a self-hit.
+- Waiting longer before a prayer, or praying while hit points are still high enough to fight.
+- Walking farther for a corpse, eating while a monster can walk up during the meal, or refusing a corpse underfoot that the parent still treats as fresh.
 - Dropping a carried item when the wizard is strained, overtaxed, or overloaded. The drop runs before the fight, and a corpse goes first. The parent already keeps the pack under its weight budget.
 
 ### These actions leave the score where it is
 
+- Giving the melee bonus to a monster whose speed is above 12, when the name test misses it. A nearby speed on that bonus is the same action.
 - Writing Elbereth while a faster monster is still approaching.
 - Praying, or eating a lizard corpse, because the status line shows sickness.
 - Searching a smaller area for a corpse while fainting.
