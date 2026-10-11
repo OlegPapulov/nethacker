@@ -8,6 +8,7 @@ from nle.nethack import actions as A
 from . import utils
 from .character import Character
 from .exceptions import AgentPanic
+from .global_logic import Milestone
 from .glyph import G, C, SS
 from .level import Level
 from .strategy import Strategy
@@ -99,6 +100,23 @@ class ExplorationLogic:
     @Strategy.wrap
     def explore_stairs(self, go_to_strategy, **kwargs):
         unexplored_stairs = self.get_unexplored_stairs(**kwargs)
+        # The XP farm (milestone BE_ON_FIRST_LEVEL) is meant to keep the wizard on
+        # the first Dungeon level until experience level 12, but the staircase
+        # explorer followed the first down staircase it saw, stranding a low-level
+        # wizard next to deeper-floor spawns (goblins, kobold lords, ponies) --
+        # the early eval deaths on Dlvls 2-5. While farming, only follow a down
+        # staircase that lands on or above the farm target (`_xp_farm_level`,
+        # default dlvl 1); the target only moves to dlvl 2 when the food latch
+        # fires (fainting with no corpse in reach), and that descent stays allowed.
+        if self.agent.global_logic.milestone == Milestone.BE_ON_FIRST_LEVEL:
+            level = self.agent.current_level()
+            farm_level = self.agent.global_logic._xp_farm_level if \
+                self.agent.global_logic._xp_farm_level is not None else 1
+            unexplored_stairs = [
+                stair for stair in unexplored_stairs
+                if level.objects[stair] not in G.STAIR_DOWN or
+                level.level_number + 1 <= farm_level
+            ]
         if len(unexplored_stairs) == 0:
             yield False
         yield True
