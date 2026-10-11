@@ -342,6 +342,15 @@ def cast_attack_actions(agent, monsters, dy, dx):
     if agent._last_turn - agent.last_cast_fail_turn['force bolt'] < 2:
         return []
 
+    # A force bolt is only worth a turn when there is nothing to throw: a
+    # dagger volley is free and, unlike the spell, does not withhold the
+    # experience a throw would have earned.  When there is no clear throw
+    # (out of ammo, or the target sits past throw range) the bolt is the only
+    # ranged attack left, so offer it -- and give it a priority above the
+    # movement heatmap, otherwise it loses to walking and never happens.
+    if ranged_priority(agent, dy, dx, monsters) is not None:
+        return []
+
     y, x = agent.blstats.y, agent.blstats.x
     while True:
         y += dy
@@ -362,7 +371,7 @@ def cast_attack_actions(agent, monsters, dy, dx):
             dis = line_dis_from(agent, y, x)
             if dis < 2 or dis > 8:
                 return []
-            return [(5, ('cast', dy, dx, 'force bolt'))]
+            return [(12, ('cast', dy, dx, 'force bolt'))]
 
 
 def get_priorities(agent):
