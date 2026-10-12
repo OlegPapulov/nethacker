@@ -14,7 +14,7 @@ from .character import Character
 from .exceptions import AgentPanic, AgentFinished, AgentChangeStrategy
 from .exploration_logic import ExplorationLogic
 from .global_logic import GlobalLogic
-from .glyph import MON, C, Hunger, G, SHOP
+from .glyph import MON, C, Hunger, G, SHOP, SS
 from .item import Item, flatten_items
 from .item.inventory import Inventory
 from .level import Level
@@ -1012,6 +1012,9 @@ class Agent:
 
         if self._last_turn - self._allow_walking_through_traps_turn > 50:
             walkable &= ~utils.isin(level.objects, G.TRAPS)
+        elif self.blstats.depth <= 2:
+            walkable &= ~utils.isin(level.objects,
+                                    [SS.S_fire_trap, SS.S_magic_trap])
 
         for my, mx in list(zip(*np.nonzero(utils.isin(self.glyphs, G.MONS)))):
             mon = MON.permonst(self.glyphs[my][mx])
