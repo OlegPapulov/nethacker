@@ -68,7 +68,7 @@ Most items start unidentified. Price, appearance, and one careful use tell them 
 
 - A spellbook of force bolt is the ranged attack once the wizard can cast it. The measured cast is in the score lists.
 - The wielded weapon is the one the melee roll uses. Skill points in that weapon raise the score. An off-hand weapon does not.
-- Metal body armor blocks a spell. A cloak and a non-metal suit are the usual wear. Armor class still matters.
+- Metal body armor makes a spell fail more often. The parent already chooses the suit. Swapping that suit for a non-metal suit lowers the score. Armor class still matters.
 - A healing potion, a wand of magic missile, speed, or magic resistance is a useful early find.
 - A ray wand passes through and can bounce. It can hit the wizard. Keep the penalty for that self-hit. Refusing the zap lowers the score.
 - A wand of striking is a beam. The beam stops on the first monster or the first door. It does not bounce. It breaks the door. Zapping it as an attack wand lowers the score.
@@ -100,6 +100,7 @@ A change that lifts a short game and drops a long game lowers the score.
 - Waiting longer before a prayer, or praying while hit points are still high enough to fight.
 - Walking farther for a corpse, eating while a monster can walk up during the meal, or refusing a corpse underfoot that the parent still treats as fresh.
 - Dropping a carried item when the wizard is strained, overtaxed, or overloaded. The drop runs before the fight, and a corpse goes first. The parent already keeps the pack under its weight budget.
+- Swapping a metal body suit for a non-metal suit from experience level 10. Making the metal suit look worse, so a cloth or leather suit wins the slot, lowers the score. A nearby penalty on that suit is the same action. The parent already wears the suit it chose.
 
 ### These actions leave the score where it is
 

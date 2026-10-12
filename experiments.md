@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. The game rules now describe the first dungeon floors: what is there, and what kills the wizard there. The actions stay in the score lists. The brief is unchanged.
+Applied in this commit. Swapping a metal body suit for a non-metal suit from experience level 10 lowers the score. The parent already wears the suit it chose. The brief is unchanged.
 
 ## Result
 
