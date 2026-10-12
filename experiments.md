@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. The game rules now give pros, cons, and advice for the hero, the monster kinds, and the item kinds. The score lists stay the measured record. The brief is unchanged.
+Applied in this commit. The game rules now describe the first dungeon floors: what is there, and what kills the wizard there. The actions stay in the score lists. The brief is unchanged.
 
 ## Result
 

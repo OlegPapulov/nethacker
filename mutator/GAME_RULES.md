@@ -26,6 +26,16 @@ The Dungeons of Doom go down from the surface. The branches are the Gnomish Mine
 
 An early death is food, a weak melee, a trap, or poison. A later death is a wand, a spell, a mind flayer, or a cockatrice. A game that never eats, never heals, or never leaves the first floors cannot score.
 
+## The first floors
+
+The games that set this score end on the first dungeon levels. The Gnomish Mines, Sokoban, the Quest, Gehennom, and the Planes come after those levels.
+
+Dungeon level 1 holds weak monsters. A lichen, a newt, a grid bug, a jackal, a fox, a goblin, and a sewer rat are typical there. The corpse of one of those monsters is the food. A kitten or a pony on these floors can be peaceful. A bolt trap on these floors throws fire or cold. A rotten corpse on these floors poisons the wizard.
+
+The down stair is the exit after experience level 12. Until then the wizard stays on the floor. The food latch still moves the farm target one level down when the wizard is fainting and no edible corpse is in reach.
+
+The score lists name the action for each of these. When this section and a score list disagree, follow the score list.
+
 ## Character
 
 This run is one identity: a chaotic male human wizard. Do not write a branch for another role, race, alignment, or gender.
