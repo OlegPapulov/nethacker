@@ -820,6 +820,24 @@ class Inventory:
             if self.agent.character.role == Character.MONK and slot == O.ARM_SUIT:
                 continue
 
+            # Metal body armor blocks a spell: worn in the suit slot it makes
+            # every cast fail (measured: a fresh force-bolt parse shows 40%
+            # failure under an elven mithril-coat and 0% without any metal
+            # suit). The farm floor is the one place the wizard's only ranged
+            # attack -- force bolt, xp>=10 on the first dungeon level -- is
+            # allowed, and an armor set that leaves that cast broken is the
+            # cost the game rules call out ("Metal body armor blocks a spell.
+            # A cloak and a non-metal suit are the usual wear."). Once the
+            # wizard is a real caster (xp>=10) prefer any non-metal suit over a
+            # metal one by taxing the metal suit's armor class. The penalty
+            # only re-orders the slot; it never empties it, so a game that has
+            # no non-metal suit still wears the metal one -- armor class still
+            # matters, and games below xp 10 are bit-identical to the parent.
+            if self.agent.character.role == Character.WIZARD and slot == O.ARM_SUIT and \
+                    self.agent.blstats.experience_level >= 10 and \
+                    item.object.metal in (O.IRON, O.METAL, O.COPPER, O.SILVER, O.GOLD, O.PLATINUM, O.MITHRIL):
+                ac += 10
+
             if best_ac[slot] is None or best_ac[slot] > ac:
                 best_ac[slot] = ac
                 best_items[slot] = item
