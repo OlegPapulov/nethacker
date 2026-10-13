@@ -30,7 +30,7 @@ An early death is food, a weak melee, a trap, or poison. A later death is a wand
 
 The games that set this score end on the first dungeon levels. The Gnomish Mines, Sokoban, the Quest, Gehennom, and the Planes come after those levels.
 
-Dungeon level 1 holds weak monsters. A lichen, a newt, a grid bug, a jackal, a fox, a goblin, and a sewer rat are typical there. The corpse of one of those monsters is the food. A kitten or a pony on these floors can be peaceful. A bolt trap on these floors throws fire or cold. A rotten corpse on these floors poisons the wizard.
+Dungeon level 1 holds weak monsters. A lichen, a newt, a grid bug, a jackal, a fox, a goblin, and a sewer rat are typical there. The corpse of one of those monsters is the food. A kitten or a pony on these floors can be peaceful. A bolt trap on these floors throws fire or cold. Keeping a fire trap or a magic trap out of the walk path leaves the score where it is. A rotten corpse on these floors poisons the wizard.
 
 The down stair is the exit after experience level 12. Until then the wizard stays on the floor. The food latch still moves the farm target one level down when the wizard is fainting and no edible corpse is in reach.
 
@@ -109,4 +109,5 @@ A change that lifts a short game and drops a long game lowers the score.
 - Praying, or eating a lizard corpse, because the status line shows sickness.
 - Searching a smaller area for a corpse while fainting.
 - Recording a pet's kill as a corpse, and continuing when a kill message has no vanished glyph.
+- Keeping a fire trap or a magic trap out of the walk path. The same block during the window, when other traps are walkable, leaves the score where it is. A nearby depth on that block is the same action.
 

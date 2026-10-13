@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Swapping a metal body suit for a non-metal suit from experience level 10 lowers the score. The parent already wears the suit it chose. The brief is unchanged.
+Applied in this commit. Keeping a fire trap or a magic trap out of the walk path leaves the score where it is. The brief is unchanged.
 
 ## Result
 
