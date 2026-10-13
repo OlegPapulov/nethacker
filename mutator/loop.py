@@ -31,7 +31,7 @@ DEFAULT_IDENTITY = "wiz-hum-cha-mal"
 OWNER = "OlegPapulov"
 # The AutoAscend import. Used for an identity this owner has never scored.
 BASELINE_COMMIT = "8387c34be4ce7c4019f4d98a9445a48e83e42731"
-MODEL = "opencode/big-pickle"
+MODEL = "deepseek/deepseek-v4.1-flash"
 OPERATOR = "opencode2"
 EFFORT = "medium"
 RUN_NOTES = ("experience.md", "experiments.md")
