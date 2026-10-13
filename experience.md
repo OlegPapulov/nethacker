@@ -1395,3 +1395,29 @@ See `experiments.md`.
 ### What might solve it
 See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
 
+## Run wiz-hum-cha-mal (1 iteration(s))
+- iteration 1: reason=operator-error:opencode2 operator exited with status 1: {"type":"error","timestamp":1791903215130,"sessionID":"ses_eca3ed3daffeNh0txxlwS4Dxwg","error":{"name":"UnknownError","data"… dev_fitness=None improved=False notes_ignored=True code_unchanged=True
+
+### Why it stopped
+operator-error:opencode2 operator exited with status 1: {"type":"error","timestamp":1791903215130,"sessionID":"ses_eca3ed3daffeNh0txxlwS4Dxwg","error":{"name":"UnknownError","data":{"message":"Unexpected server error. Check server logs for details.","ref":"err_31c9bc27"}}}
+
+### What is the problem
+# Playthrough
+
+Identity: `wiz-hum-cha-mal`
+
+## Why it stopped
+
+The parent batch is not in this note. The judge plays the 15 seeds after you exit.
+
+## What is the problem
+
+The score is the mean of those seeds. Progress is the highest milestone a game reaches.
+
+## What might solve it
+
+See `experiments.md`.
+
+### What might solve it
+See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
