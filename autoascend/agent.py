@@ -1010,6 +1010,11 @@ class Agent:
                    ~self.monster_tracker.peaceful_monster_mask & \
                    ~level.forbidden
 
+        # The bolt traps stay out of the path even while the search-stall window
+        # below opens the other traps back up: the bolt they throw can kill a
+        # low-level wizard in one hit, so it is never worth crossing one.
+        walkable &= ~utils.isin(level.objects, G.LETHAL_TRAPS)
+
         if self._last_turn - self._allow_walking_through_traps_turn > 50:
             walkable &= ~utils.isin(level.objects, G.TRAPS)
 

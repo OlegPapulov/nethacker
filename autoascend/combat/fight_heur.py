@@ -167,6 +167,13 @@ def simulate_wand_path(agent, wand, monsters, dy, dx):
 def get_potential_wand_usages(agent, monsters, dy, dx):
     ret = []
     player_hp_ratio = agent.blstats.hitpoints / agent.blstats.max_hitpoints
+    # A floating eye gazes back the moment it is hit, freezing the wizard so
+    # any neighbouring monster can beat it to death before it can act (seed 8
+    # zaps one with a wand of magic missile and is then killed by a newt).
+    # Only avoid shooting the eye when another monster is close enough to
+    # exploit the paralysis; on its own the eye is harmless.
+    nearby_threat = any(d <= 2 and mon.mname != 'floating eye'
+                        for d, _, _, mon, _ in monsters)
     # TODO: also get items recursively from bags
     for item in agent.inventory.items:
         targeted_monsters = set()
@@ -182,7 +189,9 @@ def get_potential_wand_usages(agent, monsters, dy, dx):
                 priority -= p * 30
             elif monster is not None:
                 _, y, x, mon, _ = monster
-                if mon.mname in WEAK_MONSTERS:
+                if mon.mname == 'floating eye' and nearby_threat:
+                    priority -= 100
+                elif mon.mname in WEAK_MONSTERS:
                     priority += min(p, 1) * 1
                 elif is_dangerous_monster(monster):
                     priority += p * 25

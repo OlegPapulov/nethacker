@@ -102,6 +102,11 @@ class G:  # Glyphs
                        SS.S_level_teleporter, SS.S_magic_portal, SS.S_web, SS.S_statue_trap, SS.S_magic_trap,
                        SS.S_anti_magic_trap, SS.S_polymorph_trap})
 
+    # A fire trap or a magic trap can throw a bolt of fire or cold that kills a
+    # low-level wizard outright.  These two are never worth crossing, not even
+    # while the search-stall window has the other traps opened up to the path.
+    LETHAL_TRAPS = frozenset({SS.S_fire_trap, SS.S_magic_trap})
+
     SWALLOW = frozenset(range(nh.GLYPH_SWALLOW_OFF, nh.GLYPH_WARNING_OFF))
 
     DICT = {k: v for k, v in locals().items() if not k.startswith('_')}
