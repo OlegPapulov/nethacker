@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Giving the floating-eye zap penalty to an exploding monster within 2 squares lowers the score. The floating-eye penalty stays. The brief is unchanged.
+Applied in this commit. Dropping the pet check on a corpse underfoot leaves the score where it is. The parent skips that freshness stamp while a pet is alive. The brief is unchanged.
 
 ## Result
 
