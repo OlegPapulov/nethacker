@@ -1473,3 +1473,29 @@ See `experiments.md`.
 ### What might solve it
 See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
 
+## Run wiz-hum-cha-mal (1 iteration(s))
+- iteration 1: reason=operator-error:opencode2 operator exited with status 1: {"type":"error","timestamp":1791968340216,"sessionID":"ses_ec65d461dffegZSY3dw8LKGoYM","error":{"name":"APIError","data":{"m… dev_fitness=None improved=False notes_ignored=True code_unchanged=True
+
+### Why it stopped
+operator-error:opencode2 operator exited with status 1: {"type":"error","timestamp":1791968340216,"sessionID":"ses_ec65d461dffegZSY3dw8LKGoYM","error":{"name":"APIError","data":{"message":"Bad Request: {\"model\":\"big-pickle\"}","statusCode":400,"isRetryable":false,"responseHeaders":{"cf-placement":"remote-IAD","cf-ray":"a4a562a24dab4c92-MSP","connection":"keep-alive","content-length":"22","content-type":"application/json","date":"Wed, 14 Oct 2026 08:59:00 GMT","server":"cloudflare","x-opencode-endpoint-id":"novita-deepseek","x-opencode-log-id":"10b7e4b8-8669-48da-bb24-99c7a02cc7bf","x-opencode-upstream-model-id":"deepseek/deepseek-v4.1-flash","x-zen-model":"big-pickle"},"responseBody":"{\"model\":\"big-pickle\"}","metadata":{"url":"https://opencode.ai/inference/v1/chat/completions"}}}}
+
+### What is the problem
+# Playthrough
+
+Identity: `wiz-hum-cha-mal`
+
+## Why it stopped
+
+The parent batch is not in this note. The judge plays the 15 seeds after you exit.
+
+## What is the problem
+
+The score is the mean of those seeds. Progress is the highest milestone a game reaches.
+
+## What might solve it
+
+See `experiments.md`.
+
+### What might solve it
+See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
