@@ -90,6 +90,7 @@ A change that lifts a short game and drops a long game lowers the score.
 - Staying on the first dungeon level until experience level 12. The food latch still moves the farm target one level down when the wizard is fainting and no edible corpse is in reach. The corpse search keeps its current reach.
 - Putting skill points into the wielded weapon.
 - Casting force bolt from experience level 10, on the first dungeon level, at a monster that is not adjacent. Re-reading that spellbook on the same floor, from experience level 10, only while no monster is close.
+- Refusing a zap at a floating eye when another monster is within 2 squares. The parent already lowers that zap's priority. A nearby distance on that refusal is the same action.
 
 ### These actions lower the score
 
@@ -101,6 +102,7 @@ A change that lifts a short game and drops a long game lowers the score.
 - Walking farther for a corpse, eating while a monster can walk up during the meal, or refusing a corpse underfoot that the parent still treats as fresh.
 - Dropping a carried item when the wizard is strained, overtaxed, or overloaded. The drop runs before the fight, and a corpse goes first. The parent already keeps the pack under its weight budget.
 - Swapping a metal body suit for a non-metal suit from experience level 10. Making the metal suit look worse, so a cloth or leather suit wins the slot, lowers the score. A nearby penalty on that suit is the same action. The parent already wears the suit it chose.
+- Giving the floating-eye zap penalty to an exploding monster when the wizard is within 2 squares. A gas spore, a yellow light, and a sphere are in that group. A nearby distance or a nearby monster name on that penalty is the same action. The floating-eye penalty stays.
 
 ### These actions leave the score where it is
 
