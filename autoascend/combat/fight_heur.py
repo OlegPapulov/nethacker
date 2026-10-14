@@ -193,6 +193,19 @@ def get_potential_wand_usages(agent, monsters, dy, dx):
                     priority -= 100
                 elif mon.mname in WEAK_MONSTERS:
                     priority += min(p, 1) * 1
+                elif mon.mname in EXPLODING_MONSTERS:
+                    # An exploding monster (gas spore and the three spheres)
+                    # blasts every square that touches it when it dies, and
+                    # the blasts of two adjacent ones chain. The wizard zaps
+                    # from inside that blast and the hit is also a hit on the
+                    # wizard: seed 12 fires a wand at an adjacent gas spore
+                    # and dies at full health. Penalize the shot instead of
+                    # dropping it, so it stays available as the last resort
+                    # when the spore blocks the only way forward.
+                    if line_dis_from(agent, y, x) <= 2:
+                        priority -= p * 60
+                    else:
+                        priority += min(p, 1) * 1
                 elif is_dangerous_monster(monster):
                     priority += p * 25
                 else:
