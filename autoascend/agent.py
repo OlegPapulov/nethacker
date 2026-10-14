@@ -1624,70 +1624,77 @@ class Agent:
         if self.blstats.experience_level < 10 or self.blstats.depth != 1:
             yield False
             return
-        if 'force bolt' not in self.character.known_spells:
-            yield False
-            return
-        if self.blstats.time - self._last_spell_read_turn['force bolt'] < 20000:
-            yield False
-            return
-        if self.blstats.time - self._spell_read_fail_turn['force bolt'] < 1000:
-            yield False
-            return
-        if any(distance <= 5 for distance, *_ in self.get_visible_monsters()):
-            # Studying the book takes several turns, and a monster reaching the
-            # wizard mid-study prints "You stop studying." and wastes the read.
-            # Defer until the vicinity is clear.
-            self._spell_read_fail_turn['force bolt'] = self.blstats.time
-            yield False
-            return
+        # The wizard learns one spell from its starting book and a second from a
+        # random book; both lapse on the same ~20,000 turn clock. The farm floor
+        # starts long past that, so re-learn every *usable* spell the wizard knows
+        # (not just force bolt), keeping its attack, heal and buff spells ready
+        # rather than "twisted". Pure-utility books (detect monsters, cure
+        # sickness, slow monster, ...) are left alone: walking to fetch one costs
+        # farm turns and only ever spends them on a spell this character cannot
+        # fire from the farm rotation anyway.
+        for spell_name in ('force bolt', 'haste self', 'healing', 'extra healing', 'drain life'):
+            if spell_name not in self.character.known_spells:
+                continue
+            if self.blstats.time - self._last_spell_read_turn[spell_name] < 20000:
+                continue
+            if self.blstats.time - self._spell_read_fail_turn[spell_name] < 1000:
+                continue
+            if any(distance <= 5 for distance, *_ in self.get_visible_monsters()):
+                # Studying the book takes several turns, and a monster reaching the
+                # wizard mid-study prints "You stop studying." and wastes the read.
+                # Defer until the vicinity is clear.
+                self._spell_read_fail_turn[spell_name] = self.blstats.time
+                continue
 
-        book = next((i for i in flatten_items(self.inventory.items)
-                     if i.category == nh.SPBOOK_CLASS and i.objs[0].name == 'force bolt'), None)
-        if book is None:
-            level = self.current_level()
+            book = next((i for i in flatten_items(self.inventory.items)
+                         if i.category == nh.SPBOOK_CLASS and i.objs[0].name == spell_name), None)
             target = None
-            for y, x in zip(*((self.bfs() > 0).nonzero())):
-                for stack in level.items[y, x]:
-                    for i in flatten_items([stack]):
-                        if i.category == nh.SPBOOK_CLASS and i.objs[0].name == 'force bolt':
-                            target = (int(y), int(x))
+            if book is None:
+                level = self.current_level()
+                for y, x in zip(*((self.bfs() > 0).nonzero())):
+                    for stack in level.items[y, x]:
+                        for i in flatten_items([stack]):
+                            if i.category == nh.SPBOOK_CLASS and i.objs[0].name == spell_name:
+                                target = (int(y), int(x))
+                                break
+                        if target is not None:
                             break
                     if target is not None:
                         break
-                if target is not None:
-                    break
-            if target is None:
-                self._spell_read_fail_turn['force bolt'] = self.blstats.time
-                yield False
-                return
+                if target is None:
+                    self._spell_read_fail_turn[spell_name] = self.blstats.time
+                    continue
 
-        yield True
+            yield True
 
-        if book is None:
-            if (target[0], target[1]) != (self.blstats.y, self.blstats.x):
-                self.go_to(target[0], target[1])
-            below = flatten_items(self.inventory.items_below_me)
-            book = next((i for i in below
-                         if i.category == nh.SPBOOK_CLASS and i.objs[0].name == 'force bolt'), None)
             if book is None:
-                self._spell_read_fail_turn['force bolt'] = self.blstats.time
-                return
-            book = self.inventory.move_to_inventory(book)
+                if (target[0], target[1]) != (self.blstats.y, self.blstats.x):
+                    self.go_to(target[0], target[1])
+                below = flatten_items(self.inventory.items_below_me)
+                book = next((i for i in below
+                             if i.category == nh.SPBOOK_CLASS and i.objs[0].name == spell_name), None)
+                if book is None:
+                    self._spell_read_fail_turn[spell_name] = self.blstats.time
+                    return
+                book = self.inventory.move_to_inventory(book)
 
-        read_msg = ''
-        try:
-            with self.atom_operation():
-                self.step(A.Command.READ)
-                if 'What do you want to read?' in self.message:
-                    self.type_text(self.inventory.items.get_letter(book))
-                    read_msg = self.message
-        except Exception:
-            pass
-        if any(text in read_msg for text in ('memoriz', 'recall', 'learn', 'restored')) and \
-                'stop studying' not in read_msg:
-            self._last_spell_read_turn['force bolt'] = self.blstats.time
-        else:
-            self._spell_read_fail_turn['force bolt'] = self.blstats.time
+            read_msg = ''
+            try:
+                with self.atom_operation():
+                    self.step(A.Command.READ)
+                    if 'What do you want to read?' in self.message:
+                        self.type_text(self.inventory.items.get_letter(book))
+                        read_msg = self.message
+            except Exception:
+                pass
+            if any(text in read_msg for text in ('memoriz', 'recall', 'learn', 'restored')) and \
+                    'stop studying' not in read_msg:
+                self._last_spell_read_turn[spell_name] = self.blstats.time
+            else:
+                self._spell_read_fail_turn[spell_name] = self.blstats.time
+            return
+
+        yield False
 
     @utils.debug_log('cure_disease')
     @Strategy.wrap
