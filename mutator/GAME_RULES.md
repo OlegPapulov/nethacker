@@ -30,7 +30,7 @@ An early death is food, a weak melee, a trap, or poison. A later death is a wand
 
 The games that set this score end on the first dungeon levels. The Gnomish Mines, Sokoban, the Quest, Gehennom, and the Planes come after those levels.
 
-Dungeon level 1 holds weak monsters. A lichen, a newt, a grid bug, a jackal, a fox, a goblin, and a sewer rat are typical there. The corpse of one of those monsters is the food. A kitten or a pony on these floors can be peaceful. A bolt trap on these floors throws fire or cold. Keeping a fire trap or a magic trap out of the walk path leaves the score where it is. A rotten corpse on these floors poisons the wizard.
+Dungeon level 1 holds weak monsters. A lichen, a newt, a grid bug, a jackal, a fox, a goblin, and a sewer rat are typical there. The corpse of one of those monsters is the food. A kitten or a pony on these floors can be peaceful. A bolt trap on these floors throws fire or cold. A rotten corpse on these floors poisons the wizard.
 
 The down stair is the exit after experience level 12. Until then the wizard stays on the floor. The food latch still moves the farm target one level down when the wizard is fainting and no edible corpse is in reach.
 
@@ -91,6 +91,7 @@ A change that lifts a short game and drops a long game lowers the score.
 - Putting skill points into the wielded weapon.
 - Casting force bolt from experience level 10, on the first dungeon level, at a monster that is not adjacent. Re-reading that spellbook on the same floor, from experience level 10, only while no monster is close.
 - Refusing a zap at a floating eye when another monster is within 2 squares. The parent already lowers that zap's priority. A nearby distance on that refusal is the same action.
+- During the 50-turn trap window, keeping a hole, a trap door, a fire trap, a magic trap, a teleportation trap, and a level teleporter out of the walk path. The parent already blocks those six. A nearby trap glyph on that block is the same action. A nearby turn count on that window is the same action.
 
 ### These actions lower the score
 
@@ -112,5 +113,5 @@ A change that lifts a short game and drops a long game lowers the score.
 - Searching a smaller area for a corpse while fainting.
 - Recording a pet's kill as a corpse, and continuing when a kill message has no vanished glyph.
 - Dropping the pet check on a corpse underfoot. The parent skips the freshness stamp while a pet is alive. Dropping that skip leaves the score where it is. A nearby check on that stamp is the same action.
-- Keeping a fire trap or a magic trap out of the walk path. The same block during the window, when other traps are walkable, leaves the score where it is. A nearby depth on that block is the same action.
+- Keeping only a fire trap and a magic trap out of the walk path. That smaller block leaves the score where it is, during the window and on every call. A nearby depth on that smaller block is the same action. Taking one glyph out of the six-trap window block is that smaller block.
 
