@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. During the 50-turn trap window, keeping a hole, a trap door, a fire trap, a magic trap, a teleportation trap, and a level teleporter out of the walk path raises the score. The parent already blocks those six. The brief is unchanged.
+Applied in this commit. Raising the hungry corpse walk from 5 squares to 6 leaves the score where it is. The parent keeps that cap at 5. The brief is unchanged.
 
 ## Result
 

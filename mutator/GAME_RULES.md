@@ -100,7 +100,7 @@ A change that lifts a short game and drops a long game lowers the score.
 - Dropping the melee bonus for a faster monster. Starting a fight farther than the current reach, on the first floors, while hit points are still high. Stepping toward a doorway because the wizard is hurt or two monsters are adjacent.
 - Stopping a zap on a peaceful monster, making a zap easier to choose, refusing a zap because the path hits the wizard, or zapping a wand of striking as an attack wand. The parent already subtracts points for a self-hit.
 - Waiting longer before a prayer, or praying while hit points are still high enough to fight.
-- Walking farther for a corpse, or eating while a monster can walk up during the meal. Refusing a corpse the parent already treats as fresh lowers the score. The parent already eats that corpse.
+- Walking farther for a corpse, or eating while a monster can walk up during the meal. The hungry corpse cap stays at 5. Refusing a corpse the parent already treats as fresh lowers the score. The parent already eats that corpse.
 - Dropping a carried item when the wizard is strained, overtaxed, or overloaded. The drop runs before the fight, and a corpse goes first. The parent already keeps the pack under its weight budget.
 - Swapping a metal body suit for a non-metal suit from experience level 10. Making the metal suit look worse, so a cloth or leather suit wins the slot, lowers the score. A nearby penalty on that suit is the same action. The parent already wears the suit it chose.
 - Giving the floating-eye zap penalty to an exploding monster when the wizard is within 2 squares. A gas spore, a yellow light, and a sphere are in that group. A nearby distance or a nearby monster name on that penalty is the same action. The floating-eye penalty stays.
@@ -114,4 +114,5 @@ A change that lifts a short game and drops a long game lowers the score.
 - Recording a pet's kill as a corpse, and continuing when a kill message has no vanished glyph.
 - Dropping the pet check on a corpse underfoot. The parent skips the freshness stamp while a pet is alive. Dropping that skip leaves the score where it is. A nearby check on that stamp is the same action.
 - Keeping only a fire trap and a magic trap out of the walk path. That smaller block leaves the score where it is, during the window and on every call. A nearby depth on that smaller block is the same action. Taking one glyph out of the six-trap window block is that smaller block.
+- Raising the hungry corpse walk from 5 squares to 6. That cap applies while hunger is below weak. That one-square change leaves the score where it is. A nearby number on that cap is the same action.
 
