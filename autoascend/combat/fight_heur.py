@@ -385,13 +385,18 @@ def get_priorities(agent):
         draw_monster_priority_negative(agent, m, priority, walkable)
     priority[~walkable] = float('nan')
 
-    # TODO: figure out how to use corridors priority so that it improves the score
-    # if len([m for m in monsters if m[3].mname not in chain(ONLY_RANGED_SLOW_MONSTERS, WEAK_MONSTERS)]) >= 4:
-    #     priority += get_corridors_priority_map(walkable)
-    # for _, _, _, mon, _ in monsters:
-    #     if ord(mon.mlet) == MON.S_ANT:
-    #         priority += get_corridors_priority_map(walkable)
-    #         break
+    # hypothesis: the farm deaths are swarms.  An open room lets every monster
+    # swing every turn, while a corridor or a doorway lets only the front
+    # monster reach the wizard, so with two or more threats on the floor the
+    # wizard should drift to a choke point *before* the second one closes in.
+    # Draw the corridor tiles into the heatmap as soon as two non-weak monsters
+    # are visible (not once they are already adjacent, when it is too late to
+    # step away and the retreat itself is what the score list penalises).
+    threatening = [m for m in monsters
+                   if m[3].mname not in WEAK_MONSTERS
+                   and m[3].mname not in ONLY_RANGED_SLOW_MONSTERS]
+    if len(threatening) >= 2:
+        priority += get_corridors_priority_map(walkable)
 
     # use relative priority to te current position
     priority -= priority[agent.blstats.y, agent.blstats.x]
