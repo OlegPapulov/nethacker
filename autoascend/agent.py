@@ -1479,12 +1479,11 @@ class Agent:
             if corpse_below_me is not None:
                 # Walking to a corpse can easily take longer than the 50 turns the aging check in
                 # _is_corpse_editable allows, which would make us walk to the corpse, refuse to eat it
-                # and then walk to it again on the next turn. If we can see that the corpse we recorded
-                # is still lying right here where we killed it, treat it as freshly created - unless a
-                # pet is nearby, since then the corpse could belong to a pet of the same species instead.
-                if not self.has_pet:
-                    corpse_age = self.blstats.time
-                    level.corpses_to_eat[target_y, target_x][monster_id] = corpse_age
+                # and then walk to it again on the next turn. A corpse we can see lying right here, of
+                # the species we recorded, is treated as freshly created, so the wizard no longer
+                # refuses a corpse that is underfoot while its pet is alive.
+                corpse_age = self.blstats.time
+                level.corpses_to_eat[target_y, target_x][monster_id] = corpse_age
                 if self._is_corpse_editable(monster_id, corpse_age):
                     if not yielded:
                         yielded = True
