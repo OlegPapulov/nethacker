@@ -1012,6 +1012,11 @@ class Agent:
 
         if self._last_turn - self._allow_walking_through_traps_turn > 50:
             walkable &= ~utils.isin(level.objects, G.TRAPS)
+        else:
+            from .glyph import screen_symbols as SS
+            fall_traps = frozenset({SS.S_hole, SS.S_trap_door, SS.S_fire_trap, SS.S_magic_trap,
+                                    SS.S_teleportation_trap, SS.S_level_teleporter})
+            walkable &= ~utils.isin(level.objects, fall_traps)
 
         for my, mx in list(zip(*np.nonzero(utils.isin(self.glyphs, G.MONS)))):
             mon = MON.permonst(self.glyphs[my][mx])
