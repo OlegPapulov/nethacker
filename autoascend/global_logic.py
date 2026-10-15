@@ -547,18 +547,23 @@ class GlobalLogic:
                 # remaining corpses are far past the 50 turn freshness window, and NetHack gives
                 # *zero* nutrition (plus sickening) for anything with rotted > 5, so no amount of
                 # local behaviour change can fix it. Once the wizard is getting hungry with no
-                # edible corpse anywhere near, the only remaining food and XP is one level down,
-                # so keep farming dlvl 2 until the milestone is reached. The choice is latched
-                # (`_xp_farm_level`) so the bot cannot oscillate between the two levels.
-                if self._xp_farm_level is None:
-                    # hypothesis: on dlvl 1 the wizard starves to death on an exhausted floor
-                    # when no edible corpses remain in reach. When starvation becomes severe
-                    # (FAINTING), the only viable food/XP source may be one level down; latch
-                    # to DL2 to continue farming there if reachable. This preserves good
-                    # DL1 runs while rescuing food-starved cases.
-                    if (self.agent.blstats.hunger_state >= Hunger.FAINTING and
-                            not self.agent.has_edible_corpse_in_reach()):
+                # edible corpse anywhere near, the only remaining food and XP is one level down.
+                # hypothesis: latching permanently onto dlvl 2 makes the wizard starve again on the
+                # second exhausted floor and caps every seed at experience level 9, which is worth
+                # 0.117 against 0.179 for level 10. Move the farm target down *one more* level each
+                # time the current target's food is exhausted instead of stopping at dlvl 2, so a
+                # wizard that out-eats a floor can keep finding food and experience on the deeper
+                # Doom floors. The trigger is unchanged -- hunger FAINTING with no edible corpse in
+                # reach -- so the wizard never leaves the Doom farm while it is merely weak.
+                on_farm_floor = (self._xp_farm_level is None and self.agent.blstats.depth == 1) \
+                    or (self._xp_farm_level is not None and self.agent.blstats.depth == self._xp_farm_level)
+                if (on_farm_floor and
+                        self.agent.blstats.hunger_state >= Hunger.FAINTING and
+                        not self.agent.has_edible_corpse_in_reach()):
+                    if self._xp_farm_level is None:
                         self._xp_farm_level = 2
+                    elif self._xp_farm_level < 9:
+                        self._xp_farm_level += 1
                 if self._xp_farm_level is not None:
                     level = (Level.DUNGEONS_OF_DOOM, self._xp_farm_level)
 

@@ -1174,11 +1174,14 @@ class Agent:
         while 1:
             monsters = self.get_visible_monsters()
             allow_attack_all = self._last_turn - self._allow_attack_all_turn < 3
-            only_ranged_slow_monsters = all([monster[3].mname in combat.monster_utils.ONLY_RANGED_SLOW_MONSTERS
-                                             and not combat.monster_utils.consider_melee_only_ranged_if_hp_full(self,
-                                                                                                                monster)
-                                             for monster in monsters])
-
+            only_ranged_slow_monsters = all([
+                monster[3].mname in combat.monster_utils.ONLY_RANGED_SLOW_MONSTERS
+                for monster in monsters
+            ]) and all([
+                monster[3].mname in combat.monster_utils.ONLY_RANGED_SLOW_MONSTERS
+                and not combat.monster_utils.consider_melee_only_ranged_if_hp_full(self, monster)
+                for monster in monsters
+            ])
             dis = self.bfs()
 
             if not monsters or all(dis > 7 for dis, *_ in monsters) or \
@@ -1462,6 +1465,8 @@ class Agent:
             # hypothesis: when weak, look farther for food to avoid starvation
             max_dist = 20
             to_eat = [t for t in to_eat if dis[t[0], t[1]] <= max_dist]
+            if not to_eat:
+                yield False
             if not to_eat:
                 yield False
 

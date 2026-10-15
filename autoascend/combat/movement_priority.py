@@ -83,24 +83,19 @@ def draw_monster_priority_negative(agent, monster, priority, walkable):
     _, y, x, mon, _ = monster
 
     if imminent_death_on_melee(agent, monster) and not mon.mname in WEAK_MONSTERS \
-            and not mon.mname in ONLY_RANGED_SLOW_MONSTERS:
-        if mon.mmove <= 12:
-            _draw_around(priority, y, x, -10, radius=1)
-        else:
-            if adjacent((agent.blstats.y, agent.blstats.x), (y, x)):
-                # hypothesis: a fast monster that is already adjacent still has to be kept at
-                # range -- it follows us, so waiting to run only means taking free hits while
-                # we stand there.  Draw the same negative ring that is drawn for a fast
-                # monster that is not adjacent yet, instead of ignoring where we are standing.
-                _draw_around(priority, y, x, -5, radius=1)
-                _draw_around(priority, y, x, -10, radius=2)
+                and not mon.mname in ONLY_RANGED_SLOW_MONSTERS:
+            if mon.mmove <= 12:
+                _draw_around(priority, y, x, -10, radius=1)
             else:
-                _draw_around(priority, y, x, -10, radius=2)
-                _draw_around(priority, y, x, -5, radius=1)
+                if adjacent((agent.blstats.y, agent.blstats.x), (y, x)):
+                    _draw_around(priority, y, x, -5, radius=1)
+                    _draw_around(priority, y, x, -10, radius=2)
+                else:
+                    _draw_around(priority, y, x, -10, radius=2)
+                    _draw_around(priority, y, x, -5, radius=1)
 
-        if not len(agent.inventory.get_ranged_combinations()):
-            # prefer avoiding being in line of fire
-            _draw_ranged(priority, y, x, -1, walkable, radius=7)
+            if not len(agent.inventory.get_ranged_combinations()):
+                _draw_ranged(priority, y, x, -1, walkable, radius=7)
 
     # if agent.blstats.hitpoints <= 8 and not is_monster_faster(agent, monster) and not mon.mname in WEAK_MONSTERS \
     #         and not mon.mname in ONLY_RANGED_SLOW_MONSTERS:
