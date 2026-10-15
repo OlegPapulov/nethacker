@@ -1575,6 +1575,15 @@ class Agent:
             self.inventory.quaff(items[0])
             return
 
+        # Quaff speed potions in emergencies when facing monsters and not critically low on HP.
+        # This improves mobility/combat without violating listed actions.
+        speed_items = [item for item in flatten_items(self.inventory.items) if item.is_unambiguous() and
+                       item.category == nh.POTION_CLASS and item.object.name == 'speed']
+        if speed_items and len(self.get_visible_monsters()) > 0 and self.blstats.hitpoints > 6:
+            yield True
+            self.inventory.quaff(speed_items[0])
+            return
+
         if (
                 (self.is_safe_to_pray(500) and
                  (self.blstats.hitpoints < 1 / (5 if self.blstats.experience_level < 6 else 6)
