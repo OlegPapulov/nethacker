@@ -69,7 +69,7 @@ Most items start unidentified. Price, appearance, and one careful use tell them 
 - A spellbook of force bolt is the ranged attack once the wizard can cast it. The measured cast is in the score lists.
 - The wielded weapon is the one the melee roll uses. Skill points in that weapon raise the score. An off-hand weapon does not.
 - Metal body armor makes a spell fail more often. The parent already chooses the suit. Swapping that suit for a non-metal suit lowers the score. Armor class still matters.
-- A healing potion, a wand of magic missile, or magic resistance is a useful early find. A potion of speed is a useful find. Drinking it while a monster is visible lowers the score.
+- A healing potion, a wand of magic missile, or magic resistance is a useful early find. A potion of speed is a useful find. The parent already chooses when to drink it.
 - A ray wand passes through and can bounce. It can hit the wizard. Keep the penalty for that self-hit. Refusing the zap lowers the score.
 - A wand of striking is a beam. The beam stops on the first monster or the first door. It does not bounce. It breaks the door. Zapping it as an attack wand lowers the score.
 - A corpse is food. Eat before a faint, and only when every monster is too far to walk up during the meal. A longer walk to a corpse lowers the score. A corpse the parent still treats as fresh stays edible.
@@ -104,7 +104,7 @@ A change that lifts a short game and drops a long game lowers the score.
 - Dropping a carried item when the wizard is strained, overtaxed, or overloaded. The drop runs before the fight, and a corpse goes first. The parent already keeps the pack under its weight budget.
 - Swapping a metal body suit for a non-metal suit from experience level 10. Making the metal suit look worse, so a cloth or leather suit wins the slot, lowers the score. A nearby penalty on that suit is the same action. The parent already wears the suit it chose.
 - Giving the floating-eye zap penalty to an exploding monster when the wizard is within 2 squares. A gas spore, a yellow light, and a sphere are in that group. A nearby distance or a nearby monster name on that penalty is the same action. The floating-eye penalty stays.
-- Quaffing a potion of speed while a monster is visible and hit points are above 6. The parent already chooses when to drink it. A nearby hit-point number on that drink is the same action.
+- Quaffing a potion of speed while a monster is visible and hit points are above 6. Quaffing it while hit points are 6 or below, or while no monster is visible, also lowers the score. The parent already chooses when to drink it. A nearby hit-point number on that drink is the same action.
 - Treating a dwarf, a rothe, or an orc as a dangerous monster. The parent already uses that test for a pet and an insect. A nearby monster name on that test is the same action.
 
 ### These actions leave the score where it is
@@ -117,4 +117,6 @@ A change that lifts a short game and drops a long game lowers the score.
 - Dropping the pet check on a corpse underfoot. The parent skips the freshness stamp while a pet is alive. Dropping that skip leaves the score where it is. A nearby check on that stamp is the same action.
 - Keeping only a fire trap and a magic trap out of the walk path. That smaller block leaves the score where it is, during the window and on every call. A nearby depth on that smaller block is the same action. Taking one glyph out of the six-trap window block is that smaller block.
 - Raising the hungry corpse walk from 5 squares to 6. That cap applies while hunger is below weak. That one-square change leaves the score where it is. A nearby number on that cap is the same action.
+- Raising the fainting corpse search to 25 squares. The parent keeps that reach at 20. That wider search leaves the score where it is. A nearby number on that reach is the same action.
+- Keeping a force bolt spellbook in the pack on depth 1 from experience level 10. The parent already decides which item can drop. That refusal leaves the score where it is. A nearby depth or a nearby experience level on that refusal is the same action.
 

@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Quaffing a potion of speed while a monster is visible lowers the score. Treating a dwarf, a rothe, or an orc as a dangerous monster also lowers the score. The brief is unchanged.
+Applied in this commit. Quaffing a potion of speed while hit points are 6 or below, or while no monster is visible, lowers the score. Raising the fainting corpse search to 25 squares leaves the score where it is. Keeping a force bolt spellbook on depth 1 from experience level 10 also leaves the score where it is. The brief is unchanged.
 
 ## Result
 
