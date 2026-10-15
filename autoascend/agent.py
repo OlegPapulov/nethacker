@@ -1400,6 +1400,10 @@ class Agent:
         wizard has no food left here at all -- no matter how many corpses the floor shows.
         # hypothesis: starvation occurs when no fresh corpses remain in reach on dlvl1.
         """
+        # When fainting, allow searching a bit farther to find edible food before descending.
+        from .glyph import Hunger
+        if self.blstats.hunger_state >= Hunger.FAINTING and max_dist < 25:
+            max_dist = 25
         level = self.current_level()
         candidates = []
         for (y, x), corpse_mapping in level.corpses_to_eat.items():
