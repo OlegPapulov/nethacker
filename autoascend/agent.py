@@ -1585,6 +1585,24 @@ class Agent:
             self.pray()
             return
 
+        # A potion of speed is a useful find on the farm floors: very fast speed
+        # roughly doubles the wizard's actions for over a hundred turns, so the
+        # wizard reaches more monsters, kills them sooner, and walks less per unit
+        # of food -- exactly the resource the early floors are short of. Nothing
+        # else in the agent ever drinks one (it is neither a healing potion nor
+        # food, so ItemPriority keeps it but no strategy uses it), and it is never
+        # worth a turn once a fight has already started. Drink it from the safe
+        # side of the measured line: quaffing while a monster is visible and hit
+        # points are above 6 lowers the score, so quaff only when the coast is
+        # clear, or when the wizard is hurt enough (<= 6 hit points) that the
+        # extra speed is a way out of the fight rather than a way in.
+        items = [item for item in flatten_items(self.inventory.items) if item.is_unambiguous() and
+                 item.category == nh.POTION_CLASS and item.object.name in ['speed']]
+        if items and (self.blstats.hitpoints <= 6 or not self.get_visible_monsters()):
+            yield True
+            self.inventory.quaff(items[0])
+            return
+
         # if self.inventory.engraving_below_me.lower() != 'elbereth' and self.can_engrave() and \
         #         (self.blstats.hitpoints < 1 / 5 * self.blstats.max_hitpoints or self.blstats.hitpoints < 5):
         #     yield True
