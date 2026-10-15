@@ -87,7 +87,7 @@ A change that lifts a short game and drops a long game lowers the score.
 
 ### These actions raise the score
 
-- Staying on the first dungeon level until experience level 12. The food latch still moves the farm target one level down when the wizard is fainting and no edible corpse is in reach. The corpse search keeps its current reach.
+- Staying on the first dungeon level until experience level 12. The food latch still moves the farm target once, onto dungeon level 2, when the wizard is fainting and no edible corpse is in reach. A further level on that latch lowers the score. The corpse search keeps its current reach.
 - Putting skill points into the wielded weapon.
 - Casting force bolt from experience level 10, on the first dungeon level, at a monster that is not adjacent. Re-reading that spellbook on the same floor, from experience level 10, only while no monster is close.
 - Refusing a zap at a floating eye when another monster is within 2 squares. The parent already lowers that zap's priority. A nearby distance on that refusal is the same action.
@@ -97,6 +97,7 @@ A change that lifts a short game and drops a long game lowers the score.
 
 - Changing that force bolt. Casting it before experience level 10, off the first dungeon level, or at an adjacent monster lowers the score. Keeping less energy before the cast lowers the score. Withholding a throw because the bolt can go down that line lowers the score. Reading the book while a monster is still nearby lowers the score, even when the read is overdue and nothing is adjacent.
 - Leaving the farm floor while the wizard is only weak. Refusing a down staircase while the wizard is still farming. The stay until experience level 12, and the food latch, stay.
+- Moving the food latch past dungeon level 2. The parent latches once, onto level 2, when the wizard is fainting and no edible corpse is in reach. A nearby depth on that extra step is the same action. The one-level latch stays.
 - Dropping the melee bonus for a faster monster. Starting a fight farther than the current reach, on the first floors, while hit points are still high. Stepping toward a doorway because the wizard is hurt or two monsters are adjacent.
 - Stopping a zap on a peaceful monster, making a zap easier to choose, refusing a zap because the path hits the wizard, or zapping a wand of striking as an attack wand. The parent already subtracts points for a self-hit.
 - Waiting longer before a prayer, or praying while hit points are still high enough to fight.

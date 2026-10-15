@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Drinking a healing potion below half of maximum hit points lowers the score. The parent drinks below one third, or below 8 hit points. The brief is unchanged.
+Applied in this commit. Moving the food latch past dungeon level 2 lowers the score. The parent latches once, onto level 2. The brief is unchanged.
 
 ## Result
 
