@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Raising the hungry corpse walk from 5 squares to 6 leaves the score where it is. The parent keeps that cap at 5. The brief is unchanged.
+Applied in this commit. Quaffing a potion of speed while a monster is visible lowers the score. Treating a dwarf, a rothe, or an orc as a dangerous monster also lowers the score. The brief is unchanged.
 
 ## Result
 
