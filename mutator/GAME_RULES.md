@@ -69,7 +69,7 @@ Most items start unidentified. Price, appearance, and one careful use tell them 
 - A spellbook of force bolt is the ranged attack once the wizard can cast it. The measured cast is in the score lists.
 - The wielded weapon is the one the melee roll uses. Skill points in that weapon raise the score. An off-hand weapon does not.
 - Metal body armor makes a spell fail more often. The parent already chooses the suit. Swapping that suit for a non-metal suit lowers the score. Armor class still matters.
-- A healing potion, a wand of magic missile, or magic resistance is a useful early find. A potion of speed is a useful find. The parent already chooses when to drink it.
+- A healing potion, a wand of magic missile, or magic resistance is a useful early find. The parent drinks a healing potion below one third of maximum hit points, or below 8 hit points. A potion of speed is a useful find. The parent already chooses when to drink it.
 - A ray wand passes through and can bounce. It can hit the wizard. Keep the penalty for that self-hit. Refusing the zap lowers the score.
 - A wand of striking is a beam. The beam stops on the first monster or the first door. It does not bounce. It breaks the door. Zapping it as an attack wand lowers the score.
 - A corpse is food. Eat before a faint, and only when every monster is too far to walk up during the meal. A longer walk to a corpse lowers the score. A corpse the parent still treats as fresh stays edible.
@@ -105,6 +105,7 @@ A change that lifts a short game and drops a long game lowers the score.
 - Swapping a metal body suit for a non-metal suit from experience level 10. Making the metal suit look worse, so a cloth or leather suit wins the slot, lowers the score. A nearby penalty on that suit is the same action. The parent already wears the suit it chose.
 - Giving the floating-eye zap penalty to an exploding monster when the wizard is within 2 squares. A gas spore, a yellow light, and a sphere are in that group. A nearby distance or a nearby monster name on that penalty is the same action. The floating-eye penalty stays.
 - Quaffing a potion of speed while a monster is visible and hit points are above 6. Quaffing it while hit points are 6 or below, or while no monster is visible, also lowers the score. The parent already chooses when to drink it. A nearby hit-point number on that drink is the same action.
+- Drinking a healing potion below half of maximum hit points. The parent drinks below one third, or below 8 hit points. A nearby fraction on that drink is the same action. The line at 8 hit points stays.
 - Treating a dwarf, a rothe, or an orc as a dangerous monster. The parent already uses that test for a pet and an insect. A nearby monster name on that test is the same action.
 
 ### These actions leave the score where it is

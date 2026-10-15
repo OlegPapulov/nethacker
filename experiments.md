@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Quaffing a potion of speed while hit points are 6 or below, or while no monster is visible, lowers the score. Raising the fainting corpse search to 25 squares leaves the score where it is. Keeping a force bolt spellbook on depth 1 from experience level 10 also leaves the score where it is. The brief is unchanged.
+Applied in this commit. Drinking a healing potion below half of maximum hit points lowers the score. The parent drinks below one third, or below 8 hit points. The brief is unchanged.
 
 ## Result
 
