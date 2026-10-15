@@ -59,6 +59,25 @@ class Item:
         return len(self.objs) == 1
 
     def can_be_dropped_from_inventory(self):
+        from autoascend import objects as O
+        import nle.nethack as nh
+        try:
+            from autoascend import agent as _agent_mod
+        except Exception:
+            _agent_mod = None
+        if _agent_mod is not None:
+            try:
+                if hasattr(_agent_mod, 'instance') and _agent_mod.instance is not None:
+                    ag = _agent_mod.instance
+                    if ag.blstats.depth == 1 and ag.blstats.experience_level >= 10:
+                        if self.is_unambiguous() and self.category == nh.SPBOOK_CLASS:
+                            try:
+                                if self.object.name == 'force bolt':
+                                    return False
+                            except Exception:
+                                pass
+            except Exception:
+                pass
         return not (
                 (isinstance(self.objs[0], (O.Weapon, O.WepTool)) and self.status == Item.CURSED and self.equipped) or
                 (isinstance(self.objs[0], O.Armor) and self.equipped) or
