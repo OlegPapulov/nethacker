@@ -490,6 +490,24 @@ class GlobalLogic:
 
     @utils.debug_log('follow_guard')
     @Strategy.wrap
+    def should_latch_to_dlvl2_early(self):
+        """Latch to dlvl 2 earlier when food is running low.
+
+        Moves the farm target to dungeon level 2 when hunger becomes WEAK
+        and there is no edible corpse in reach (max 20 squares). This is a
+        conservative early latch that preserves food-starved runs without
+        violating the existing FAINTING latch rule.
+        """
+        if self._xp_farm_level is not None:
+            return False
+        if self.agent.blstats.depth != 1:
+            return False
+        if self.agent.blstats.hunger_state >= Hunger.WEAK:
+            if not self.agent.has_edible_corpse_in_reach():
+                return True
+        return False
+
+    @Strategy.wrap
     def follow_guard(self):
         if not utils.isin(self.agent.glyphs, G.GUARD).any():
             yield False
@@ -556,7 +574,8 @@ class GlobalLogic:
                     # (FAINTING), the only viable food/XP source may be one level down; latch
                     # to DL2 to continue farming there if reachable. This preserves good
                     # DL1 runs while rescuing food-starved cases.
-                    if (self.agent.blstats.hunger_state >= Hunger.FAINTING and
+                    if ((self.agent.blstats.hunger_state >= Hunger.FAINTING or
+                         self.should_latch_to_dlvl2_early()) and
                             not self.agent.has_edible_corpse_in_reach()):
                         self._xp_farm_level = 2
                 if self._xp_farm_level is not None:
