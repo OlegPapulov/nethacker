@@ -8,9 +8,9 @@ Progress is the highest milestone a game reaches. The judge score is the mean of
 
 Your task is to raise the score. You raise it by changing the bot. You use the knowledge in this file.
 
-Make one change. That change is one new function, or one rewrite of one function. The lists below name the actions that lower the score and the actions that leave the score where it is. Do not repeat a listed action. The one change raises the score. It does not lower the score.
+Make one change. That change is one new function, or one rewrite of one function. The lists below name the actions that lower the score and the actions that leave the score where it is. Do not repeat a listed action. A listed action is a finished measurement. The next change is not a guard for the last death. The next change is one unlisted action that can raise a long game by one experience level. A short game may fall. The mean still has to rise. The one change raises the score. It does not lower the score.
 
-`experience.md` holds the ends of the games the judge already played. Read it. Describe why the bot lost. Do not invent a death that file does not state.
+`experience.md` holds the ends of the games the judge already played. Read it. Describe why the bot lost. Do not invent a death that file does not state. The loss is not the proposal.
 
 `experiments.md` holds the one proposal. Propose one change in `experiments.md`, in accordance with these rules. Name the one function you add or the one function you rewrite. Then change the bot from that proposal. Then exit.
 
@@ -83,7 +83,7 @@ A fight in a doorway lets one monster hit. A fight in a corridor lets one monste
 
 These actions are already measured. The lists below say what raises the score and what lowers the score. Do not repeat a listed action. A nearby number on a listed action is the same action. Leave those actions as they are. Do not revert the change. The judge scores the tree you exit with. A tree that matches the parent is not a result.
 
-A change that lifts a short game and drops a long game lowers the score.
+A change that lifts a short game and drops a long game lowers the score. A change that raises a long game can pay for a short game that falls.
 
 ### These actions raise the score
 
@@ -98,6 +98,7 @@ A change that lifts a short game and drops a long game lowers the score.
 - Changing that force bolt. Casting it before experience level 10, off the first dungeon level, or at an adjacent monster lowers the score. Keeping less energy before the cast lowers the score. Withholding a throw because the bolt can go down that line lowers the score. Reading the book while a monster is still nearby lowers the score, even when the read is overdue and nothing is adjacent.
 - Leaving the farm floor while the wizard is only weak. Refusing a down staircase while the wizard is still farming. The stay until experience level 12, and the food latch, stay.
 - Moving the food latch past dungeon level 2. The parent latches once, onto level 2, when the wizard is fainting and no edible corpse is in reach. A nearby depth on that extra step is the same action. The one-level latch stays.
+- Latching onto dungeon level 2 before the wizard is fainting. The parent latches only when the wizard is fainting and no edible corpse is in reach. A wrapped call inside that test is true before the hunger check runs. A nearby hunger state on that early latch is the same action.
 - Dropping the melee bonus for a faster monster. Starting a fight farther than the current reach, on the first floors, while hit points are still high. Stepping toward a doorway because the wizard is hurt or two monsters are adjacent.
 - Stopping a zap on a peaceful monster, making a zap easier to choose, refusing a zap because the path hits the wizard, or zapping a wand of striking as an attack wand. The parent already subtracts points for a self-hit.
 - Waiting longer before a prayer, or praying while hit points are still high enough to fight.

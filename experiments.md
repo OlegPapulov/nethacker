@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Moving the food latch past dungeon level 2 lowers the score. The parent latches once, onto level 2. The brief is unchanged.
+Applied in this commit. Latching onto dungeon level 2 before the wizard is fainting lowers the score. The parent latches only when the wizard is fainting. The brief now asks for one unlisted action that can raise a long game by one experience level.
 
 ## Result
 
