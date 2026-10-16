@@ -77,7 +77,7 @@ Most items start unidentified. Price, appearance, and one careful use tell them 
 
 ## Tips
 
-A fight in a doorway lets one monster hit. A fight in a corridor lets one monster hit. An open room lets several monsters hit. Writing Elbereth takes the turn. The word helps only on a later turn. When a faster monster can reach the wizard during the writing, the wizard hits, zaps, or steps into a doorway. A seed-specific branch does not count. The private seeds are different games. When a tip and a score list disagree, follow the score list.
+A fight in a doorway lets one monster hit. A fight in a corridor lets one monster hit. An open room lets several monsters hit. Walking toward a doorway while two threats are still at range lowers the score. Writing Elbereth takes the turn. The word helps only on a later turn. When a faster monster can reach the wizard during the writing, the wizard hits, zaps, or steps into a doorway. A seed-specific branch does not count. The private seeds are different games. When a tip and a score list disagree, follow the score list.
 
 ## Assumptions
 
@@ -100,6 +100,7 @@ A change that lifts a short game and drops a long game lowers the score. A chang
 - Moving the food latch past dungeon level 2. The parent latches once, onto level 2, when the wizard is fainting and no edible corpse is in reach. A nearby depth on that extra step is the same action. The one-level latch stays.
 - Latching onto dungeon level 2 before the wizard is fainting. The parent latches only when the wizard is fainting and no edible corpse is in reach. A wrapped call inside that test is true before the hunger check runs. A nearby hunger state on that early latch is the same action.
 - Dropping the melee bonus for a faster monster. Starting a fight farther than the current reach, on the first floors, while hit points are still high. Stepping toward a doorway because the wizard is hurt or two monsters are adjacent.
+- Adding movement points to a doorway or a corridor while two threats are still at range. The parent does not add those points. A nearby distance or a nearby bonus on that walk is the same action.
 - Stopping a zap on a peaceful monster, making a zap easier to choose, refusing a zap because the path hits the wizard, or zapping a wand of striking as an attack wand. The parent already subtracts points for a self-hit.
 - Waiting longer before a prayer, or praying while hit points are still high enough to fight.
 - Walking farther for a corpse, or eating while a monster can walk up during the meal. The hungry corpse cap stays at 5. Refusing a corpse the parent already treats as fresh lowers the score. The parent already eats that corpse.

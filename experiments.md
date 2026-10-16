@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Putting on a ring or an amulet lowers the score to 0. Every game ended in the first 14 turns. The parent leaves rings and amulets in the pack. The brief is unchanged.
+Applied in this commit. Adding movement points to a doorway or a corridor while two threats are still at range lowers the score. The parent does not add those points. The brief is unchanged.
 
 ## Result
 
