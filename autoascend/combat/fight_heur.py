@@ -374,6 +374,49 @@ def cast_attack_actions(agent, monsters, dy, dx):
             return [(5, ('cast', dy, dx, 'force bolt'))]
 
 
+def chokepoint_fight_priority(agent, priority, walkable, monsters):
+    """Bias the movement heatmap toward a nearby doorway or corridor while a
+    group of real threats is still at range.
+
+    A doorway lets one monster hit, a corridor lets one monster hit, an open
+    room lets several hit. The wizard trades blows with whatever the room can
+    reach it with, so whether a level 10-11 fight is won or lost is often how
+    many monsters land in the same turn. Reaching a chokepoint on the approach
+    is worth the detour.
+
+    This only nudges movement before the tuned melee action takes over:
+      * skipped when only one threat is present -- one monster hits you in a
+        corridor too, so repositioning buys nothing and costs turns;
+      * skipped when a threat is already adjacent -- there the tuned melee
+        action decides, and melee is still worth 16;
+      * skipped when we are already standing in a chokepoint, so we do not
+        shuffle.
+    It never raises the melee bonus, never starts a fight past the current
+    reach, and never steps toward a doorway because we are hurt or because two
+    monsters are adjacent. It adds value only to chokepoint tiles within a short
+    walk, so a missing doorway nearby leaves the parent behaviour untouched.
+    """
+    threats = [m for m in monsters
+               if m[3].mname not in WEAK_MONSTERS + ONLY_RANGED_SLOW_MONSTERS]
+    if len(threats) < 2:
+        return
+
+    my = (agent.blstats.y, agent.blstats.x)
+    if any(adjacent(my, (y, x)) for _, y, x, _, _ in threats):
+        return
+
+    corridor = get_corridors_priority_map(walkable)
+    if corridor[my]:
+        return
+
+    dis = agent.bfs()
+    nearby = (dis != -1) & (dis <= 7) & corridor
+    if not nearby.any():
+        return
+
+    priority += nearby * 6
+
+
 def get_priorities(agent):
     """ Returns a pair (move priority heatmap, other actions (with priorities) list) """
     walkable = agent.current_level().walkable
@@ -384,6 +427,8 @@ def get_priorities(agent):
     for m in monsters:
         draw_monster_priority_negative(agent, m, priority, walkable)
     priority[~walkable] = float('nan')
+
+    chokepoint_fight_priority(agent, priority, walkable, monsters)
 
     # TODO: figure out how to use corridors priority so that it improves the score
     # if len([m for m in monsters if m[3].mname not in chain(ONLY_RANGED_SLOW_MONSTERS, WEAK_MONSTERS)]) >= 4:
