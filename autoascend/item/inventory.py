@@ -835,6 +835,7 @@ class Inventory:
             self.pickup_and_drop_items()
                 .before(self.check_containers())
                 .before(self.wear_best_stuff())
+                .before(self.wear_best_accessories())
                 .before(self.wand_engrave_identify())
                 .before(self.go_to_unchecked_containers())
                 .before(self.check_items()
@@ -1212,6 +1213,52 @@ class Inventory:
 
         if not yielded:
             yield False
+
+    @utils.debug_log('inventory.wear_best_accessories')
+    @Strategy.wrap
+    def wear_best_accessories(self):
+        # hypothesis: the wizard picks every ring and amulet up (the item priority
+        # lists both classes) and then never puts a single one on, because the whole
+        # equipping path only knows the seven armor slots.  A ring of protection is
+        # armor class the wizard never spends, and armor class still matters: the
+        # first floors are where this weak melee survives or does not.  A ring of
+        # increase damage or accuracy does the same for the melee roll the skill
+        # points are already being poured into.  The unknown ring is worn anyway --
+        # one careful use is how the game itself names a ring, and a missed ring
+        # cannot be aimed at the wizard the way a missed potion or scroll can.
+        # Amulets are the one accessory that can kill on the spot (strangulation),
+        # so only ever put one on once it has already been identified as a help.
+        equipped_rings = [i for i in self.items if i.category == nh.RING_CLASS and i.equipped]
+        equipped_amulets = [i for i in self.items if i.category == nh.AMULET_CLASS and i.equipped]
+
+        accessory = None
+        if len(equipped_rings) < 2:
+            rings = [i for i in self.items
+                     if i.category == nh.RING_CLASS and not i.equipped and i.status != Item.CURSED]
+            if rings:
+                rings.sort(key=lambda i: not i.is_unambiguous())
+                accessory = rings[0]
+        if accessory is None and not equipped_amulets:
+            amulets = [i for i in self.items
+                       if i.category == nh.AMULET_CLASS and not i.equipped
+                       and i.status != Item.CURSED and i.is_unambiguous()
+                       and i.object.name in ['amulet of reflection', 'amulet of ESP',
+                                             'amulet of life saving', 'amulet of magical breathing',
+                                             'amulet of unchanging', 'amulet versus poison']]
+            if amulets:
+                accessory = amulets[0]
+
+        if accessory is None:
+            yield False
+
+        yield True
+        letter = self.items.get_letter(accessory)
+        with self.agent.atom_operation():
+            self.agent.step(A.Command.PUTON)
+            if "Don't even bother." in self.agent.message:
+                return
+            assert 'What do you want to put on?' in self.agent.message, self.agent.message
+            self.agent.type_text(letter)
 
     @utils.debug_log('inventory.check_items')
     @Strategy.wrap
