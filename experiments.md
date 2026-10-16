@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Latching onto dungeon level 2 before the wizard is fainting lowers the score. The parent latches only when the wizard is fainting. The brief now asks for one unlisted action that can raise a long game by one experience level.
+Applied in this commit. Putting on a ring or an amulet lowers the score to 0. Every game ended in the first 14 turns. The parent leaves rings and amulets in the pack. The brief is unchanged.
 
 ## Result
 

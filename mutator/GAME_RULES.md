@@ -83,7 +83,7 @@ A fight in a doorway lets one monster hit. A fight in a corridor lets one monste
 
 These actions are already measured. The lists below say what raises the score and what lowers the score. Do not repeat a listed action. A nearby number on a listed action is the same action. Leave those actions as they are. Do not revert the change. The judge scores the tree you exit with. A tree that matches the parent is not a result.
 
-A change that lifts a short game and drops a long game lowers the score. A change that raises a long game can pay for a short game that falls.
+A change that lifts a short game and drops a long game lowers the score. A change that raises a long game can pay for a short game that falls. A change that ends every game in the first turns lowers the score to 0.
 
 ### These actions raise the score
 
@@ -109,6 +109,7 @@ A change that lifts a short game and drops a long game lowers the score. A chang
 - Quaffing a potion of speed while a monster is visible and hit points are above 6. Quaffing it while hit points are 6 or below, or while no monster is visible, also lowers the score. The parent already chooses when to drink it. A nearby hit-point number on that drink is the same action.
 - Drinking a healing potion below half of maximum hit points. The parent drinks below one third, or below 8 hit points. A nearby fraction on that drink is the same action. The line at 8 hit points stays.
 - Treating a dwarf, a rothe, or an orc as a dangerous monster. The parent already uses that test for a pet and an insect. A nearby monster name on that test is the same action.
+- Putting on a ring or an amulet. Every game ended in the first 14 turns, and the score fell to 0. An unknown ring is included. A nearby accessory on that wear is the same action. The parent leaves rings and amulets in the pack.
 
 ### These actions leave the score where it is
 
