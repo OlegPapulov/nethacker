@@ -688,6 +688,12 @@ class GlobalLogic:
                 self.agent.fight2(),
             ])
             .preempt(self.agent, [
+                # The second starting spellbook (extra healing or healing) also
+                # lapses and its book is dropped early. Re-learn it from level 10
+                # on and cast it when hurt, so the wizard actually uses it.
+                self.agent.keep_healing_spell(),
+            ])
+            .preempt(self.agent, [
                 # The starting spellbook of force bolt is dropped early on like the
                 # other unneeded items, and the spell itself expires ~20k turns
                 # after it is learned, while the farm floor (the only place the
