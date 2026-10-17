@@ -16,7 +16,7 @@ def is_monster_faster(agent, monster):
 
 def imminent_death_on_melee(agent, monster):
     if is_dangerous_monster(monster):
-        return agent.blstats.hitpoints <= 16
+        return agent.blstats.hitpoints <= 20
     return agent.blstats.hitpoints <= 8
 
 
