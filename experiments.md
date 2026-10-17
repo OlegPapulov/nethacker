@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Adding movement points to a doorway or a corridor while two threats are still at range lowers the score. The parent does not add those points. The brief is unchanged.
+Applied in this commit. Raising the dangerous-monster melee line from 16 hit points to 20 leaves the score where it is. The parent keeps that line at 16. The brief is unchanged.
 
 ## Result
 

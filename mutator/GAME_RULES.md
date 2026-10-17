@@ -124,4 +124,5 @@ A change that lifts a short game and drops a long game lowers the score. A chang
 - Raising the hungry corpse walk from 5 squares to 6. That cap applies while hunger is below weak. That one-square change leaves the score where it is. A nearby number on that cap is the same action.
 - Raising the fainting corpse search to 25 squares. The parent keeps that reach at 20. That wider search leaves the score where it is. A nearby number on that reach is the same action.
 - Keeping a force bolt spellbook in the pack on depth 1 from experience level 10. The parent already decides which item can drop. That refusal leaves the score where it is. A nearby depth or a nearby experience level on that refusal is the same action.
+- Raising the dangerous-monster melee line from 16 hit points to 20. The parent keeps that line at 16. That change leaves the score where it is. A nearby number on that line is the same action.
 
