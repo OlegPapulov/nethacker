@@ -42,7 +42,7 @@ This run is one identity: a chaotic male human wizard. Do not write a branch for
 
 There are thirteen roles, five races, three alignments, and two genders. Valkyrie is female only. That is 73 identities. The six stats are strength, dexterity, constitution, intelligence, wisdom, and charisma. Armor class goes down as protection goes up. Energy is the spell budget. A heavy pack drops speed to zero. Do not assume an item that you have not seen in the inventory.
 
-A wizard casts spells. That is the advantage. A spell does damage from a distance. The cost is few hit points, hunger when the wizard casts, and spell failure in metal body armor. A learned spell lapses after many turns. Re-reading the force bolt book only while no monster is close raises the score. Reading it while a monster is still nearby lowers the score.
+A wizard casts spells. That is the advantage. A spell does damage from a distance. The cost is few hit points, hunger when the wizard casts, and spell failure in metal body armor. A learned spell lapses after many turns. Re-reading the force bolt book only while no monster is close raises the score. Reading it while a monster is still nearby lowers the score. Reading that book before the spell is known lowers the score.
 
 A human has no racial intrinsic. An elf has sleep resistance. A dwarf, a gnome, an elf, and an orc have infravision. An orc has poison resistance. This wizard is human, so none of those apply.
 
@@ -89,13 +89,13 @@ A change that lifts a short game and drops a long game lowers the score. A chang
 
 - Staying on the first dungeon level until experience level 12. The food latch still moves the farm target once, onto dungeon level 2, when the wizard is fainting and no edible corpse is in reach. A further level on that latch lowers the score. The corpse search keeps its current reach.
 - Putting skill points into the wielded weapon.
-- Casting force bolt from experience level 10, on the first dungeon level, at a monster that is not adjacent. Re-reading that spellbook on the same floor, from experience level 10, only while no monster is close.
+- Casting force bolt from experience level 10, on the first dungeon level, at a monster that is from 2 squares away to 8 squares away. Re-reading that spellbook on the same floor, from experience level 10, only while no monster is close and only after the spell is known.
 - Refusing a zap at a floating eye when another monster is within 2 squares. The parent already lowers that zap's priority. A nearby distance on that refusal is the same action.
 - During the 50-turn trap window, keeping a hole, a trap door, a fire trap, a magic trap, a teleportation trap, and a level teleporter out of the walk path. The parent already blocks those six. A nearby trap glyph on that block is the same action. A nearby turn count on that window is the same action.
 
 ### These actions lower the score
 
-- Changing that force bolt. Casting it before experience level 10, off the first dungeon level, or at an adjacent monster lowers the score. Keeping less energy before the cast lowers the score. Withholding a throw because the bolt can go down that line lowers the score. Reading the book while a monster is still nearby lowers the score, even when the read is overdue and nothing is adjacent.
+- Changing that force bolt. Casting it before experience level 10, off the first dungeon level, or at an adjacent monster lowers the score. Casting it farther than 8 squares lowers the score. The parent casts it only when the monster is from 2 squares away to 8 squares away. A nearby distance on that far cast is the same action. Keeping less energy before the cast lowers the score. Withholding a throw because the bolt can go down that line lowers the score. Reading the book while a monster is still nearby lowers the score, even when the read is overdue and nothing is adjacent. Reading the book before the spell is known lowers the score. The parent re-reads it only after the spell is known, from experience level 10, on dungeon level 1, when the last read is at least 20,000 turns old. A nearby turn count on that re-read is the same action.
 - Learning or casting a second attack spell on dungeon level 1 from experience level 6. A magic missile, a drain life, a chain lightning, a cone of cold, and a fireball are in that group. The parent casts force bolt from experience level 10. A nearby spell name or a nearby experience level on that second cast is the same action.
 - Leaving the farm floor while the wizard is only weak. Refusing a down staircase while the wizard is still farming. The stay until experience level 12, and the food latch, stay.
 - Moving the food latch past dungeon level 2. The parent latches once, onto level 2, when the wizard is fainting and no edible corpse is in reach. A nearby depth on that extra step is the same action. The one-level latch stays.

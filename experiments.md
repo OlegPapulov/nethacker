@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Raising the hungry corpse walk from 5 squares to 10 leaves the score where it is. The parent keeps that cap at 5. The brief is unchanged.
+Applied in this commit. Casting force bolt farther than 8 squares lowers the score. Reading the force bolt book before the spell is known also lowers the score. The parent casts that bolt only from 2 to 8 squares, and re-reads the book only after the spell is known. The brief is unchanged.
 
 ## Result
 
