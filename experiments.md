@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Learning or casting a second attack spell on dungeon level 1 from experience level 6 lowers the score. The parent casts force bolt from experience level 10. The brief is unchanged.
+Applied in this commit. Raising the hungry corpse walk from 5 squares to 10 leaves the score where it is. The parent keeps that cap at 5. The brief is unchanged.
 
 ## Result
 
