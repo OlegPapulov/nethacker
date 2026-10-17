@@ -369,7 +369,7 @@ def cast_attack_actions(agent, monsters, dy, dx):
             if mon.mname in WEAK_MONSTERS:
                 return []
             dis = line_dis_from(agent, y, x)
-            if dis < 2 or dis > 8:
+            if dis < 2:
                 return []
             return [(5, ('cast', dy, dx, 'force bolt'))]
 
