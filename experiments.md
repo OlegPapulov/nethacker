@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Raising the dangerous-monster melee line from 16 hit points to 20 leaves the score where it is. The parent keeps that line at 16. The brief is unchanged.
+Applied in this commit. Learning or casting a second attack spell on dungeon level 1 from experience level 6 lowers the score. The parent casts force bolt from experience level 10. The brief is unchanged.
 
 ## Result
 

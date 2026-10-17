@@ -96,6 +96,7 @@ A change that lifts a short game and drops a long game lowers the score. A chang
 ### These actions lower the score
 
 - Changing that force bolt. Casting it before experience level 10, off the first dungeon level, or at an adjacent monster lowers the score. Keeping less energy before the cast lowers the score. Withholding a throw because the bolt can go down that line lowers the score. Reading the book while a monster is still nearby lowers the score, even when the read is overdue and nothing is adjacent.
+- Learning or casting a second attack spell on dungeon level 1 from experience level 6. A magic missile, a drain life, a chain lightning, a cone of cold, and a fireball are in that group. The parent casts force bolt from experience level 10. A nearby spell name or a nearby experience level on that second cast is the same action.
 - Leaving the farm floor while the wizard is only weak. Refusing a down staircase while the wizard is still farming. The stay until experience level 12, and the food latch, stay.
 - Moving the food latch past dungeon level 2. The parent latches once, onto level 2, when the wizard is fainting and no edible corpse is in reach. A nearby depth on that extra step is the same action. The one-level latch stays.
 - Latching onto dungeon level 2 before the wizard is fainting. The parent latches only when the wizard is fainting and no edible corpse is in reach. A wrapped call inside that test is true before the hunger check runs. A nearby hunger state on that early latch is the same action.
