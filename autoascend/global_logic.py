@@ -698,6 +698,11 @@ class GlobalLogic:
                 self.agent.keep_attack_spell_memorized(),
             ])
             .preempt(self.agent, [
+                # hypothesis: learn and use the wizard's second attack spell if present
+                # to get a better ranged attack (e.g. magic missile) on the farm floor.
+                self.agent.learn_and_cast_secondary_attack_spell(),
+            ])
+            .preempt(self.agent, [
                 self.agent.engulfed_fight(),
             ])
             .preempt(self.agent, [

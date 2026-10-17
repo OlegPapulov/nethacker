@@ -1694,6 +1694,113 @@ class Agent:
         else:
             self._spell_read_fail_turn['force bolt'] = self.blstats.time
 
+    @utils.debug_log('learn_and_cast_secondary_attack_spell')
+    @Strategy.wrap
+    def learn_and_cast_secondary_attack_spell(self):
+        # hypothesis: a wizard's second spellbook (force bolt + a random level<=3
+        # spellbook) may contain a useful attack spell (e.g. magic missile, the
+        # special spell). If the book is identified and no monster is nearby, learn
+        # it. When an appropriate ranged target exists, cast the best known attack
+        # spell available.
+        if self.blstats.experience_level < 6 or self.blstats.depth != 1:
+            yield False
+            return
+        if any(distance <= 5 for distance, *_ in self.get_visible_monsters()):
+            yield False
+            return
+
+        # attack spells to prefer
+        attack_cands = ('magic missile', 'force bolt', 'drain life', 'chain lightning')
+        # prefer magic missile over force bolt if both known? check best
+        best = None
+        for sp in attack_cands:
+            if sp in self.character.known_spells:
+                # check spell failure
+                fail = self.character.spell_fail_chance.get(sp, 1.0)
+                if fail <= 0.15:
+                    best = sp
+                    break
+        # if only force bolt known, see if we can learn a better one
+        if best == 'force bolt':
+            # maybe we can learn a spare
+            pass
+
+        # look for an unidentified-or-known spare attack spellbook to read
+        attack_book_names = ('magic missile', 'drain life', 'chain lightning', 'cone of cold', 'fireball')
+        book_to_read = None
+        for item in flatten_items(self.inventory.items):
+            if item.category == nh.SPBOOK_CLASS and item.is_unambiguous():
+                name = item.objs[0].name
+                if name in attack_book_names:
+                    book_to_read = item
+                    break
+        if book_to_read is None:
+            level = self.current_level()
+            target_pos = None
+            for y, x in zip(*((self.bfs() > 0).nonzero())):
+                for stack in level.items[y, x]:
+                    for i in flatten_items([stack]):
+                        if i.category == nh.SPBOOK_CLASS and i.is_unambiguous():
+                            name = i.objs[0].name
+                            if name in attack_book_names:
+                                target_pos = (int(y), int(x))
+                                break
+                    if target_pos is not None:
+                        break
+                if target_pos is not None:
+                    break
+        if book_to_read is None and target_pos is None:
+            # if we already know magic missile or a non-force-bolt attack, good; else give up
+            if any(sp in self.character.known_spells and sp != 'force bolt' and
+                   self.character.spell_fail_chance.get(sp, 1.0) <= 0.15 for sp in attack_cands[1:]):
+                best = next((sp for sp in attack_cands if sp in self.character.known_spells
+                             and self.character.spell_fail_chance.get(sp, 1.0) <= 0.15), best)
+            # don't read blindly if unsure; just proceed to cast best
+            monsters = self.get_visible_monsters()
+            if not monsters:
+                yield False
+                return
+            if best is None or best not in self.character.known_spells:
+                yield False
+                return
+            if any(distance <= 1 for distance, *_ in monsters):
+                yield False
+                return
+            yield True
+            # try to cast; but fight2 also does; just don't fight here
+            return
+
+        # read the book if we found one
+        if book_to_read is None:
+            if (target_pos[0], target_pos[1]) != (self.blstats.y, self.blstats.x):
+                yield True
+                self.go_to(target_pos[0], target_pos[1])
+                return
+            below = flatten_items(self.inventory.items_below_me)
+            book_to_read = next((i for i in below if i.category == nh.SPBOOK_CLASS and i.is_unambiguous()
+                                 and i.objs[0].name in attack_book_names), None)
+        if book_to_read is not None:
+            # read it
+            try:
+                yield True
+                read_msg = ''
+                with self.atom_operation():
+                    self.step(A.Command.READ)
+                    if 'What do you want to read?' in self.message:
+                        self.type_text(self.inventory.items.get_letter(book_to_read))
+                        read_msg = self.message
+                # re-parse spell list
+                try:
+                    self.character.parse_spellcast_view()
+                except Exception:
+                    pass
+            except Exception:
+                pass
+            return
+
+        yield False
+        return
+
     @utils.debug_log('cure_disease')
     @Strategy.wrap
     def cure_disease(self):
