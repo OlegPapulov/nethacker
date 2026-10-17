@@ -1867,3 +1867,31 @@ See `experiments.md`.
 ### What might solve it
 See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
 
+## Run wiz-hum-cha-mal (3 iteration(s))
+- iteration 1: reason=no-cell-improved dev_fitness=0.13815443408729056 improved=False notes_ignored=False code_unchanged=False
+- iteration 2: reason=no-cell-improved dev_fitness=0.12806044032759337 improved=False notes_ignored=False code_unchanged=False
+- iteration 3: reason=gate:child identical to parent dev_fitness=None improved=False notes_ignored=True code_unchanged=True
+
+### Why it stopped
+gate:child identical to parent
+
+### What is the problem
+# Playthrough
+
+Identity: `wiz-hum-cha-mal`
+
+## Why it stopped
+
+The parent batch is not in this note. The judge plays the 15 seeds after you exit.
+
+## What is the problem
+
+The score is the mean of those seeds. Progress is the highest milestone a game reaches.
+
+## What might solve it
+
+See `experiments.md`.
+
+### What might solve it
+See the proposal in experiments.md. Do not edit mutator/ until a human approves it.
+
