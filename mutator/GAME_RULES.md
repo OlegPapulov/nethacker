@@ -8,9 +8,9 @@ Progress is the highest milestone a game reaches. The judge score is the mean of
 
 Your task is to raise the score. You raise it by changing the bot. You use the knowledge in this file.
 
-Make one change. That change is one new function, or one rewrite of one function. The lists below name the actions that lower the score and the actions that leave the score where it is. Do not repeat a listed action. A listed action is a finished measurement. The next change is not a guard for the last death. The next change is one unlisted action that can raise a long game by one experience level. A short game may fall. The mean still has to rise. The one change raises the score. It does not lower the score.
+Make one change. That change is one new function, or one rewrite of one function. The change is one small step up the score. Keep the step only when the mean rises. The lists below name the actions that lower the score and the actions that leave the score where it is. Do not repeat a listed action. A listed action is a finished measurement. A listed action covers the measured situation and a similar situation. A similar situation is the same action. The one change raises the score. It does not lower the score.
 
-`experience.md` holds the ends of the games the judge already played. Read it. Describe why the bot lost. Do not invent a death that file does not state. The loss is not the proposal.
+`experience.md` holds the ends of the games the judge already played. Read it. Describe why the bot lost. Do not invent a death that file does not state.
 
 `experiments.md` holds the one proposal. Propose one change in `experiments.md`, in accordance with these rules. Name the one function you add or the one function you rewrite. Then change the bot from that proposal. Then exit.
 
@@ -81,9 +81,9 @@ A fight in a doorway lets one monster hit. A fight in a corridor lets one monste
 
 ## Assumptions
 
-These actions are already measured. The lists below say what raises the score and what lowers the score. Do not repeat a listed action. A nearby number on a listed action is the same action. Leave those actions as they are. Do not revert the change. The judge scores the tree you exit with. A tree that matches the parent is not a result.
+These actions are already measured. The lists below say what raises the score and what lowers the score. Do not repeat a listed action. A listed action covers the measured situation and a similar situation. A similar situation is the same action. A nearby number on a listed action is a similar situation. Leave those actions as they are. Do not revert the change. The judge scores the tree you exit with. A tree that matches the parent is not a result.
 
-A change that lifts a short game and drops a long game lowers the score. A change that raises a long game can pay for a short game that falls. A change that ends every game in the first turns lowers the score to 0.
+A change that lifts a short game and drops a long game lowers the score. Take one small step. Keep the step only when the mean rises. A change that ends every game in the first turns lowers the score to 0.
 
 ### These actions raise the score
 
