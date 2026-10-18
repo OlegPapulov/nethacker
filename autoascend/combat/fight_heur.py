@@ -212,27 +212,38 @@ def elbereth_action(agent, monsters):
         return []
     if not agent.can_engrave():
         return []
-    adj_monsters_count = 0
+    hp_ratio = agent.blstats.hitpoints / max(agent.blstats.max_hitpoints, 1)
+    if not 0.45 <= hp_ratio <= 0.7:
+        return []
+    adjacent_weight = 0.0
+    experience_level = agent.blstats.experience_level
     for monster in monsters:
         _, my, mx, mon, _ = monster
-        if mon.mname in ONLY_RANGED_SLOW_MONSTERS:
+        if mon.mname in ONLY_RANGED_SLOW_MONSTERS or mon.mname in WEAK_MONSTERS:
             continue
         if not adjacent((my, mx), (agent.blstats.y, agent.blstats.x)):
             continue
-        multiplier = np.clip(20 / agent.blstats.hitpoints, 1.0, 1.5)
-        if is_monster_faster(agent, monster):
-            multiplier *= 2
-        if mon in WEAK_MONSTERS:
-            adj_monsters_count += 0.1 * multiplier
+        monster_level = getattr(mon, 'mlevel', None)
+        if monster_level is None or monster_level > experience_level:
+            return []
+        weight = 3 if is_dangerous_monster(monster) else 1
+        if mon.mmove > 12:
+            weight *= 2
+        adjacent_weight += weight
+    if adjacent_weight <= 0:
+        return []
+    dis = agent.bfs()
+    y, x = agent.blstats.y, agent.blstats.x
+    step_off = False
+    for ny, nx in product((y - 1, y, y + 1), (x - 1, x, x + 1)):
+        if not (0 <= ny < dis.shape[0] and 0 <= nx < dis.shape[1]):
             continue
-        adj_monsters_count += 1 * multiplier
-        if is_dangerous_monster(monster):
-            adj_monsters_count += 2 * multiplier
-
-    player_hp_ratio = (agent.blstats.hitpoints / agent.blstats.max_hitpoints) ** 0.5
-    if agent.blstats.hitpoints < 30 and adj_monsters_count > 0:
-        return [(-15 + 20 * adj_monsters_count * (1 - player_hp_ratio), ('elbereth',))]
-    return []
+        if dis[ny, nx] == 1 and agent.glyphs[ny, nx] not in G.MONS:
+            step_off = True
+            break
+    if not step_off:
+        return []
+    return [(100 * adjacent_weight * (0.7 - hp_ratio), ('elbereth',))]
 
 
 def wait_action(agent, monsters):
