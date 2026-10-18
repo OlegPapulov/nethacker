@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. The brief is a hill climb. One small step is kept only when the mean rises. A listed action covers the measured situation and a similar situation.
+Applied in this commit. Catching an unexpected error and continuing the game leaves the score where it is. The parent re-raises that error. The brief is unchanged.
 
 ## Result
 

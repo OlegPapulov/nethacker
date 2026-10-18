@@ -126,4 +126,5 @@ A change that lifts a short game and drops a long game lowers the score. Take on
 - Raising the fainting corpse search to 25 squares. The parent keeps that reach at 20. That wider search leaves the score where it is. A nearby number on that reach is the same action.
 - Keeping a force bolt spellbook in the pack on depth 1 from experience level 10. The parent already decides which item can drop. That refusal leaves the score where it is. A nearby depth or a nearby experience level on that refusal is the same action.
 - Raising the dangerous-monster melee line from 16 hit points to 20. The parent keeps that line at 16. That change leaves the score where it is. A nearby number on that line is the same action.
+- Catching an unexpected error and continuing the game. The parent re-raises that error. That catch leaves the score where it is. A nearby error type on that catch is the same action.
 
