@@ -1726,8 +1726,19 @@ class Agent:
         if isinstance(exc, (KeyboardInterrupt, AgentFinished, SystemExit)):
             raise exc
         if isinstance(exc, BaseException):
-            if not isinstance(exc, AgentPanic) and not self.panic_on_errors:
-                raise exc
+            # hypothesis: an unexpected error is not a reason to abandon the run. The
+            # only recovery this agent has is the one written for AgentPanic: main()
+            # logs it, steps ESC twice, calls on_panic() to re-read the observation,
+            # and re-enters the global strategy. Every other error re-raises out of
+            # the agent thread, and through the arena adapter that is silent and
+            # terminal -- act() then hands out ESC forever, no game turn is taken
+            # again, and the run is cut off at the no-progress abort with nothing
+            # banked past that point. A one-off parse or popup error should cost a
+            # couple of turns, not the rest of the run, so treat it exactly like an
+            # AgentPanic. A loop that keeps failing without taking a single game turn
+            # is still stopped: main()'s inactivity_counter raises a cyclic panic
+            # after five such recoveries. The score is the maximum ever seen, so a
+            # run that keeps playing can only hold or raise it.
             self.stats_logger.log_event('agent_panic')
             self.all_panics.append(exc)
             if self.verbose:
