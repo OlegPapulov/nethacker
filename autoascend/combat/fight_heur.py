@@ -44,6 +44,20 @@ def melee_monster_priority(agent, monsters, monster):
             agent.stats_logger.log_event('melee_gas_spore')
             return 1  # a priority higher than random moving around
 
+    # hypothesis: with two monsters adjacent the parent scores a weak monster
+    # (lichen, newt, shrieker, grid bug) exactly like the threat beside it --
+    # both are worth 16 while the wizard is healthy -- and the tie falls to map
+    # order, so the wizard's single attack can go to the creature that deals no
+    # damage while the jackal beside it keeps biting. A weak monster is food
+    # more than a threat, so break the tie toward the threat: only when another
+    # adjacent monster is outside the weak group, and only by one point, which
+    # leaves every single-monster fight and every weak-only tie untouched.
+    if mon.mname in WEAK_MONSTERS and any(
+            m[3].mname not in WEAK_MONSTERS and
+            adjacent((m[1], m[2]), (agent.blstats.y, agent.blstats.x))
+            for m in monsters):
+        ret -= 1
+
     return ret
 
 
