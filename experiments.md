@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Catching an unexpected error and continuing the game leaves the score where it is. The parent re-raises that error. The brief is unchanged.
+Applied in this commit. Writing Elbereth when hit points are between 45% and 70% of the maximum lowers the score. The parent writes Elbereth when hit points are below 30 and a monster is adjacent. The brief is unchanged.
 
 ## Result
 
