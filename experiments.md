@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Writing Elbereth when hit points are between 45% and 70% of the maximum lowers the score. The parent writes Elbereth when hit points are below 30 and a monster is adjacent. The brief is unchanged.
+Applied in this commit. Lowering the melee priority of a weak monster by 1 when another monster is adjacent lowers the score. The parent does not subtract that point. The brief is unchanged.
 
 ## Result
 
