@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Lowering the melee priority of a weak monster by 1 when another monster is adjacent lowers the score. The parent does not subtract that point. The brief is unchanged.
+Applied in this commit. Praying because the wizard is weak, before fainting, lowers the score. The parent prays for hunger only when the wizard is fainting. The brief is unchanged.
 
 ## Result
 
