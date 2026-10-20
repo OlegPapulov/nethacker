@@ -8,13 +8,13 @@ Progress is the highest milestone a game reaches. The judge score is the mean of
 
 Your task is to raise the score. You raise it by changing the bot. You use the knowledge in this file.
 
-Make one change. That change is one new function, or one rewrite of one function. The change is one small step up the score. Keep the step only when the mean rises. The lists below name the actions that lower the score and the actions that leave the score where it is. Do not repeat a listed action. A listed action is a finished measurement. A listed action covers the measured situation and a similar situation. A similar situation is the same action. The one change raises the score. It does not lower the score.
+Make one change. That change is one new function, or one rewrite of one function. The lists below name the actions that raise the score, the actions that lower the score, and the actions that leave the score where it is. Do not repeat a listed action. A listed action is a finished measurement. A listed action covers the measured situation and a similar situation. A similar situation is the same action. Do not rewrite a listed action. When the change you can name is a listed action, leave the bot as it is. You do not know the mean until the judge plays the 15 seeds.
 
-`experience.md` holds the ends of the games the judge already played. Read it. Describe why the bot lost. Do not invent a death that file does not state.
+`experience.md` holds the ends of the games the judge already played. Those ends are not the proposal. Do not invent a death that file does not state. An older mean in `experiments.md` is not the current parent.
 
 `experiments.md` holds the one proposal. Propose one change in `experiments.md`, in accordance with these rules. Name the one function you add or the one function you rewrite. Then change the bot from that proposal. Then exit.
 
-Do not revert the change. The judge scores the tree you exit with. A tree that matches the parent is not a result. A child is kept only when the mean is strictly higher. Do not run `python -m nethackers.arena.run`. The judge plays the 15 seeds after you exit.
+Do not revert the change. The judge scores the tree you exit with. A child is kept only when the mean is strictly higher. Do not run `python -m nethackers.arena.run`. The judge plays the 15 seeds after you exit.
 
 ## Goal
 
@@ -81,9 +81,9 @@ A fight in a doorway lets one monster hit. A fight in a corridor lets one monste
 
 ## Assumptions
 
-These actions are already measured. The lists below say what raises the score and what lowers the score. Do not repeat a listed action. A listed action covers the measured situation and a similar situation. A similar situation is the same action. A nearby number on a listed action is a similar situation. Leave those actions as they are. Do not revert the change. The judge scores the tree you exit with. A tree that matches the parent is not a result.
+These actions are already measured. The lists below say what raises the score and what lowers the score. Do not repeat a listed action. A listed action covers the measured situation and a similar situation. A similar situation is the same action. A nearby number on a listed action is a similar situation. Leave those actions as they are. Do not rewrite a listed action. When the change you can name is a listed action, leave the bot as it is. Do not revert the change. The judge scores the tree you exit with. You do not know the mean until the judge plays the 15 seeds.
 
-A change that lifts a short game and drops a long game lowers the score. Take one small step. Keep the step only when the mean rises. A change that ends every game in the first turns lowers the score to 0.
+A change that lifts a short game and drops a long game lowers the score. A change that ends every game in the first turns lowers the score to 0.
 
 ### These actions raise the score
 
@@ -131,4 +131,5 @@ A change that lifts a short game and drops a long game lowers the score. Take on
 - Raising the dangerous-monster melee line from 16 hit points to 20. The parent keeps that line at 16. That change leaves the score where it is. A nearby number on that line is the same action.
 - Catching an unexpected error and continuing the game. The parent re-raises that error. That catch leaves the score where it is. A nearby error type on that catch is the same action.
 - Casting force bolt at a weak monster. A lichen, a newt, a shrieker, and a grid bug are in that group. The parent refuses that cast. That cast leaves the score where it is. A nearby monster name on that cast is the same action.
+- Searching or waiting after 150 inactive steps. The parent does not add that guard. That guard leaves the score where it is. A nearby step count on that guard is the same action.
 
