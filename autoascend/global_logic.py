@@ -335,6 +335,31 @@ class GlobalLogic:
         if not yielded:
             yield False
 
+    @utils.debug_log('stall_guard')
+    @Strategy.wrap
+    def stall_guard(self):
+        # The farm floor is the whole score, and the farm loop can reach a fixed
+        # point: on an exhausted floor open_visit_search yields False, the whole
+        # global_strategy returns, and main() re-enters it after two ESC presses.
+        # ESC is not a game turn, so the turn count stops rising while env steps
+        # keep climbing, and the arena aborts the seed at 10_000 no-progress
+        # steps -- a zero. Every other preempt on the farm path is gated on a
+        # condition that can be absent. This strategy is always entered and, once
+        # update()'s turn-inactivity counter has climbed, spends exactly one real
+        # turn (a search on the farm floors, a wait elsewhere). One added turn on
+        # a seed that would otherwise stall weakly cannot lower the mean, because
+        # progress is monotone; and on a floor that is still explorable it never
+        # fires, so it costs nothing. The threshold sits below the agent's own
+        # 200-step inactivity assert, so the guard fires before that assert can.
+        if self.agent._inactivity_counter < 150:
+            yield False
+        yield True
+
+        if self.agent.current_level().dungeon_number == Level.DUNGEONS_OF_DOOM:
+            self.agent.search()
+        else:
+            self.agent.move('.')
+
     @utils.debug_log('identify_items_on_altar')
     @Strategy.wrap
     def identify_items_on_altar(self):
@@ -650,6 +675,9 @@ class GlobalLogic:
     def global_strategy(self):
         return (
             self.current_strategy().repeat()
+            .preempt(self.agent, [
+                self.stall_guard(),
+            ])
             .preempt(self.agent, [
                 self.solve_sokoban_strategy()
                 .condition(lambda: self.milestone == Milestone.SOLVE_SOKOBAN and
