@@ -346,7 +346,7 @@ def cast_attack_actions(agent, monsters, dy, dx):
         return []
     if agent.character.spell_fail_chance.get('force bolt', 1.0) > 0.15:
         return []
-    if agent.blstats.energy < 10:
+    if agent.blstats.energy < 15:
         return []
     if agent._last_turn - agent.last_cast_fail_turn['force bolt'] < 2:
         return []
