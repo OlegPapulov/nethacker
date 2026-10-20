@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Praying because the wizard is weak, before fainting, lowers the score. The parent prays for hunger only when the wizard is fainting. The brief is unchanged.
+Applied in this commit. Casting force bolt at a weak monster leaves the score where it is. The parent refuses that cast. The brief is unchanged.
 
 ## Result
 
