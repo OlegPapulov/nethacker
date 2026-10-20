@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Searching or waiting after 150 inactive steps leaves the score where it is. The parent does not add that guard. The brief now says to leave the bot in place when the only change is a listed action. An older mean in the notes is not the current parent.
+Applied in this commit. Raising the non-dangerous melee line from 8 hit points to 12 lowers the score. The parent keeps that line at 8. The brief is unchanged.
 
 ## Result
 
