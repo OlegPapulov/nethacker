@@ -133,4 +133,5 @@ A change that lifts a short game and drops a long game lowers the score. A chang
 - Catching an unexpected error and continuing the game. The parent re-raises that error. That catch leaves the score where it is. A nearby error type on that catch is the same action.
 - Casting force bolt at a weak monster. A lichen, a newt, a shrieker, and a grid bug are in that group. The parent refuses that cast. That cast leaves the score where it is. A nearby monster name on that cast is the same action.
 - Searching or waiting after 150 inactive steps. The parent does not add that guard. That guard leaves the score where it is. A nearby step count on that guard is the same action.
+- Raising the force bolt energy wait from 10 to 15. The parent casts when energy is at least 10. That higher wait leaves the score where it is. A nearby energy number on that wait is the same action.
 

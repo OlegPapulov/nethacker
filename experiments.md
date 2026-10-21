@@ -1,6 +1,6 @@
 # Next mutator experiment
 
-Applied in this commit. Raising the non-dangerous melee line from 8 hit points to 12 lowers the score. The parent keeps that line at 8. The brief is unchanged.
+Applied in this commit. Raising the force bolt energy wait from 10 to 15 leaves the score where it is. The parent casts when energy is at least 10. The brief is unchanged.
 
 ## Result
 
